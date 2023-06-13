@@ -28,7 +28,7 @@ class IBApi(EWrapper, EClient):
 
     def newsArticle(self, requestId: int, articleType: int, articleText: str):
         print(f"article_type: {articleType}, articleText: {articleText}")
-        self.disconnect()
+        #self.disconnect()
 
 
     def historicalNews(self, requestId: int, time: str, providerCode: str, articleId: str, headline: str):
