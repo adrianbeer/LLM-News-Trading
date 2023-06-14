@@ -9,6 +9,7 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 import time
 import datetime
+import numpy as np
 
 def format_time(elapsed):
     '''
@@ -46,12 +47,15 @@ class MyBertModel(nn.Module):
        return out
 
 
-def train(model, optimizer, scheduler, loss_function, epochs,       
-          train_dataloader, device, clip_value=2):
+def train(model, optimizer, scheduler, loss_function, epochs, train_dataloader, validation_dataloader, device, clip_value=2):
+    
+    training_stats = []
+    t0 = time.time()
+
     for epoch in range(epochs):
         print(f'======== Epoch {epoch} / {epochs} ========')
         print('Training...')
-        t0 = time.time()
+        
         total_train_loss = 0
         best_loss = 1e10
         model.train()
@@ -79,32 +83,44 @@ def train(model, optimizer, scheduler, loss_function, epochs,
 
         avg_train_loss = total_train_loss / len(train_dataloader)
         training_time = format_time(time.time() - t0)
+
+        val_loss, val_mae = evaluate(model, loss_function, validation_dataloader, device)
+        training_stats.append(
+            {
+                'epoch': epoch + 1,
+                'Training Loss': avg_train_loss,
+                'Valid. Loss':np.mean(val_loss),
+                'Valid. MAE.': np.mean(val_mae),
+                'Training Time': training_time,
+                # 'Validation Time': validation_time
+            }
+        )
+
         print("")
         print("  Average training loss: {0:.2f}".format(avg_train_loss))
-        print("  Training epcoh took: {:}".format(training_time))        
-    return model
+        print("  Training epoch took: {:}".format(training_time))        
+    return model, training_stats
    
-def evaluate(model, loss_function, test_dataloader, device):
+def evaluate(model, loss_function, validation_dataloader, device):
     model.eval()
-    test_loss, test_r2 = [], []
-    for batch in test_dataloader:
-        batch_inputs, batch_masks, batch_labels = \
-                                 tuple(b.to(device) for b in batch)
+    test_loss, test_mae = [], []
+    for batch in validation_dataloader:
+        batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
         with torch.no_grad():
             outputs = model(batch_inputs, batch_masks)
         loss = loss_function(outputs, batch_labels)
+
+        outputs = outputs.detach().cpu().numpy()
+        label_ids = batch_labels.to('cpu').numpy()
+
         test_loss.append(loss.item())
-        r2 = r2_score(outputs, batch_labels)
-        test_r2.append(r2.item())
-    return test_loss, test_r2
+        mae = mae_score(outputs, label_ids)
+        test_mae.append(mae.item())
+    return test_loss, test_mae
 
 
-def r2_score(outputs, labels):
-    labels_mean = torch.mean(labels)
-    ss_tot = torch.sum((labels - labels_mean) ** 2)
-    ss_res = torch.sum((labels - outputs) ** 2)
-    r2 = 1 - ss_res / ss_tot
-    return r2
+def mae_score(outputs, labels):
+    return np.mean(np.abs(outputs - labels))
 
 def predict(model, dataloader, device):
     model.eval()
@@ -116,3 +132,4 @@ def predict(model, dataloader, device):
             output += model(batch_inputs, 
                             batch_masks).view(1,-1).tolist()[0]
     return output
+

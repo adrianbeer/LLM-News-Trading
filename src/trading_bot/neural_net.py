@@ -7,13 +7,13 @@ from transformers import BertModel
 from torch.nn.utils.clip_grad import clip_grad_norm
 import torch
 from torch.utils.data import TensorDataset, DataLoader
-
+import pandas as pd
 from util import create_dataloaders, MyBertModel, train
 
 ### Input formatting
-text = ["win", "lose", "mid", "better", "worse"] * 50
-labels = [1, -1, 0, 1, -0.5] * 50
-batch_size = 2
+text = ["win", "lose", "mid", "better", "worse"] * 100
+labels = [1, -1, 0, 1, -0.5] * 100
+batch_size = 16
 seed = 420
 test_size = 0.1
 
@@ -41,7 +41,7 @@ train_masks, test_masks, _, _ = train_test_split(attention_mask, labels, test_si
 
 train_dataloader = create_dataloaders(train_inputs, train_masks, 
                                       train_labels, batch_size)
-test_dataloader = create_dataloaders(test_inputs, test_masks, 
+validation_dataloader = create_dataloaders(test_inputs, test_masks, 
                                      test_labels, batch_size)
 
 
@@ -65,10 +65,10 @@ scheduler = get_linear_schedule_with_warmup(optimizer,
 loss_function = nn.MSELoss()
 
 
-model = train(model, optimizer, scheduler, loss_function, epochs, 
-              train_dataloader, device, clip_value=2)
+model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
+              train_dataloader, validation_dataloader, device, clip_value=2)
 
-#print(model)
-
+df_stats = pd.DataFrame(data=training_stats)
+print(df_stats)
 
 
