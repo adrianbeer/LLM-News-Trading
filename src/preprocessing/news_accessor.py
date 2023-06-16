@@ -8,6 +8,8 @@ def parse_story_to_row(story):
     tags = [d["name"] for d in story["tags"]]
     channels = [d["name"] for d in story["channels"]]
     stocks = [d["name"] for d in story["stocks"]]
+    assert len(stocks) == 1
+    stocks = stocks[0]
     body = story["body"]
     time = story["created"]
     title = story["title"]
@@ -51,5 +53,5 @@ for i in range(len(stories)):
 
 print(story_df.shape)
 print(story_df.head(10))
-story_df.to_csv("stories.csv")
+story_df.to_csv("data/stories.csv")
 #print(story_df[story_df.channels.apply(lambda x: "Earnings" in x)]["body"].iloc[0])

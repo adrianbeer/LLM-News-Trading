@@ -85,4 +85,4 @@ def file_to_dataframe(file_path, sep='\t', _open=True, chlo=False, _format='%m/%
 
 if __name__ == '__main__':
     df = tai_pan_dir_to_dataframe_extended(data_path, _open=False, chlo=True, format='%d.%m.%Y')
-    print(df.head())
+    df.to_csv("data/stocks.csv")
