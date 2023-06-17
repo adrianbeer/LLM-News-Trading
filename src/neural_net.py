@@ -1,4 +1,5 @@
-from transformers import BertTokenizer, AdamW, get_linear_schedule_with_warmup
+from transformers import BertTokenizer, get_linear_schedule_with_warmup
+from torch.optim import AdamW
 import torch.nn as nn
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -8,16 +9,20 @@ from torch.nn.utils.clip_grad import clip_grad_norm
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 import pandas as pd
-from util import create_dataloaders, MyBertModel, train
+from util import create_dataloaders, MyBertModel, train, TRANSFORMER_HF_ID, predict
+import pickle
+
+# Download dataset
+dataset = pd.read_pickle("data/dataset.pkl")
 
 ### Input formatting
-text = ["win", "lose", "mid", "better", "worse"] * 100
-labels = [1, -1, 0, 1, -0.5] * 100
-batch_size = 16
+text = dataset.body.tolist()
+labels = dataset.IntradayReturn.tolist()
+batch_size = 1
 seed = 420
 test_size = 0.1
 
-tokenizer = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
+tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 
 # Truncation = True as bert can only take inputs of max 512 tokens.
 # return_tensors = "pt" makes the funciton return PyTorch tensors
@@ -27,6 +32,7 @@ encoding = tokenizer(
     add_special_tokens = True, 
     truncation = True, 
     padding = "max_length", 
+    max_length = 512,
     return_attention_mask = True, 
     return_tensors = "pt"
 )
@@ -64,11 +70,16 @@ scheduler = get_linear_schedule_with_warmup(optimizer,
                  num_warmup_steps=0, num_training_steps=total_steps)
 loss_function = nn.MSELoss()
 
+# Training
+# model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
+#               train_dataloader, validation_dataloader, device, clip_value=2)
 
-model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
-              train_dataloader, validation_dataloader, device, clip_value=2)
+# df_stats = pd.DataFrame(data=training_stats)
+# print(df_stats)
 
-df_stats = pd.DataFrame(data=training_stats)
-print(df_stats)
+model.save_model("data/model")
 
+# # Forecasting
+
+# y_pred_scaled = predict(model, validation_dataloader, device)
 

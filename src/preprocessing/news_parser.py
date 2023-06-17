@@ -6,10 +6,12 @@ from bs4 import BeautifulSoup
 import pickle
 import itertools
 
+RELEVANT_CHANNELS = ["Earnings", "Dividends", "News", "Financing", "Events"]
+
 def parse_story_to_row(story):
     tags = [d["name"] for d in story["tags"]]
     channels = [d["name"] for d in story["channels"]]
-    if len(set(channels).intersection(set(["Earnings", "Dividends", "News", "Financing", "Events"]))) == 0: 
+    if len(set(channels).intersection(set(RELEVANT_CHANNELS))) == 0: 
         return None
     stocks = [d["name"] for d in story["stocks"]]
     if len(stocks) != 1: 

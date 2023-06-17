@@ -11,15 +11,19 @@ paper = news_data.News(api_key)
 
 all_stories = []
 
+# source = open("data/tickers.pkl", 'rb').read()
+# tickers = json.loads(source)
+
 no_error = True
-i = 1
+i = 0
 while no_error and i <= 100:
     try:
         #  channel="Earnings"
-        stories = paper.news(display_output="full", page=i, pagesize=100, )
+        stories = paper.news(display_output="full", page=i, channel=",".join(["Earnings", "Dividends", "News", "Financing", "Events"]), pagesize=100)
         all_stories.append(stories)
         i += 1
-    except: 
+    except Exception as e:
+        print(e) 
         no_error = False
 
 with open("data/stories_raw.pkl", "wb") as f:

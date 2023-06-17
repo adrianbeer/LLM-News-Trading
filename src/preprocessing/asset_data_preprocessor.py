@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 data_path = 'C:\\Users\Adria\Documents\\Github Projects\\data\\Russell2k'
-
+import pickle
 #dataframe_path = f"{path}/dataframe.pkl"
 
 
@@ -85,4 +85,6 @@ def file_to_dataframe(file_path, sep='\t', _open=True, chlo=False, _format='%m/%
 
 if __name__ == '__main__':
     df = tai_pan_dir_to_dataframe_extended(data_path, _open=False, chlo=True, format='%d.%m.%Y')
+    with open("../../data/tickers.pkl", 'wb') as f:
+        pickle.dump(df.ID.unique, f)
     df.to_csv("data/stocks.csv")

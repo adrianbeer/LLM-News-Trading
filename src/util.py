@@ -1,4 +1,4 @@
-from transformers import BertTokenizer, AdamW, get_linear_schedule_with_warmup
+from transformers import BertTokenizer, AdamW, get_linear_schedule_with_warmup, PretrainedConfig
 import torch.nn as nn
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -10,6 +10,8 @@ from torch.utils.data import TensorDataset, DataLoader
 import time
 import datetime
 import numpy as np
+
+TRANSFORMER_HF_ID = 'yiyanghkust/finbert-tone'
 
 def format_time(elapsed):
     '''
@@ -32,12 +34,13 @@ def create_dataloaders(inputs, masks, labels, batch_size):
                             shuffle=True)
     return dataloader
 
+# class MyNNConfig(PretrainedConfig)
 
 class MyBertModel(nn.Module):
    
    def __init__(self):
        super(MyBertModel, self).__init__()
-       self.bert = BertModel.from_pretrained('yiyanghkust/finbert-tone')
+       self.bert = BertModel.from_pretrained(TRANSFORMER_HF_ID)
        D_in, D_out = self.bert.config.hidden_size, 1
        self.regr = nn.Sequential(nn.Linear(D_in, D_out))
 
@@ -108,7 +111,7 @@ def evaluate(model, loss_function, validation_dataloader, device):
         batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
         with torch.no_grad():
             outputs = model(batch_inputs, batch_masks)
-        loss = loss_function(outputs, batch_labels)
+        loss = loss_function(outputs, batch_labels.unsqueeze(1))
 
         outputs = outputs.detach().cpu().numpy()
         label_ids = batch_labels.to('cpu').numpy()
