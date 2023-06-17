@@ -16,34 +16,40 @@ import pickle
 dataset = pd.read_pickle("data/dataset.pkl")
 
 ### Input formatting
-text = dataset.body.tolist()
+texts = dataset.body.tolist()
 labels = dataset.IntradayReturn.tolist()
-batch_size = 1
+batch_size = 2
 seed = 420
 test_size = 0.1
 
 tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 
-# Truncation = True as bert can only take inputs of max 512 tokens.
-# return_tensors = "pt" makes the funciton return PyTorch tensors
-# tokenizer.encode_plus specifically returns a dictionary of values instead of just a list of values
-encoding = tokenizer(
-    text, 
-    add_special_tokens = True, 
-    truncation = True, 
-    padding = "max_length", 
-    max_length = 512,
-    return_attention_mask = True, 
-    return_tensors = "pt"
-)
+input_ids = []
+attention_masks = []
+for text in texts:
+    # Truncation = True as bert can only take inputs of max 512 tokens.
+    # return_tensors = "pt" makes the funciton return PyTorch tensors
+    # tokenizer.encode_plus specifically returns a dictionary of values instead of just a list of values
+    encoding = tokenizer(
+        text, 
+        add_special_tokens = True, 
+        truncation = True, 
+        padding = "max_length", 
+        max_length = 512,
+        return_attention_mask = True, 
+        return_tensors = "pt"
+    )
 
-# input_ids: mapping the words to tokens
-# attention masks: idicates if index is word or padding
-input_ids = encoding["input_ids"]
-attention_mask = encoding["attention_mask"]
+    # input_ids: mapping the words to tokens
+    # attention masks: idicates if index is word or padding
+    input_ids.append(encoding['input_ids'])
+    attention_masks.append(encoding['attention_mask'])
+    
+input_ids = torch.cat(input_ids, dim=0)
+attention_masks = torch.cat(attention_masks, dim=0)
 
 train_inputs, test_inputs, train_labels, test_labels = train_test_split(input_ids, labels, test_size=test_size, random_state=seed)
-train_masks, test_masks, _, _ = train_test_split(attention_mask, labels, test_size=test_size, random_state=seed)
+train_masks, test_masks, _, _ = train_test_split(attention_masks, labels, test_size=test_size, random_state=seed)
 
 train_dataloader = create_dataloaders(train_inputs, train_masks, 
                                       train_labels, batch_size)
@@ -71,15 +77,14 @@ scheduler = get_linear_schedule_with_warmup(optimizer,
 loss_function = nn.MSELoss()
 
 # Training
-# model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
-#               train_dataloader, validation_dataloader, device, clip_value=2)
+model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
+              train_dataloader, validation_dataloader, device, clip_value=2)
 
-# df_stats = pd.DataFrame(data=training_stats)
-# print(df_stats)
+df_stats = pd.DataFrame(data=training_stats)
+print(df_stats)
 
-model.save_model("data/model")
+# Store Model
+torch.save(model.state_dict(), "data/model")
 
-# # Forecasting
 
-# y_pred_scaled = predict(model, validation_dataloader, device)
 

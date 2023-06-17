@@ -11,7 +11,7 @@ import time
 import datetime
 import numpy as np
 
-TRANSFORMER_HF_ID = 'yiyanghkust/finbert-tone'
+TRANSFORMER_HF_ID = 'yiyanghkust/finbert-fls'
 
 def format_time(elapsed):
     '''
