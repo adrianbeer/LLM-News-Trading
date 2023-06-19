@@ -59,32 +59,33 @@ validation_dataloader = create_dataloaders(test_inputs, test_masks,
 
 model = MyBertModel()
 
-if torch.cuda.is_available():       
-    device = torch.device("cuda")
-    print("Using GPU.")
-else:
-    print("No GPU available, using the CPU instead.")
-    device = torch.device("cpu")
-model.to(device)
+if __name__ == "__main__":
+    if torch.cuda.is_available():       
+        device = torch.device("cuda")
+        print("Using GPU.")
+    else:
+        print("No GPU available, using the CPU instead.")
+        device = torch.device("cpu")
+    model.to(device)
 
-# Optimizer, scheduler and loss function
-optimizer = AdamW(model.parameters(), lr=5e-5, eps=1e-8)
+    # Optimizer, scheduler and loss function
+    optimizer = AdamW(model.parameters(), lr=5e-5, eps=1e-8)
 
-epochs = 5
-total_steps = len(text) * epochs
-scheduler = get_linear_schedule_with_warmup(optimizer,       
-                 num_warmup_steps=0, num_training_steps=total_steps)
-loss_function = nn.MSELoss()
+    epochs = 5
+    total_steps = len(text) * epochs
+    scheduler = get_linear_schedule_with_warmup(optimizer,       
+                    num_warmup_steps=0, num_training_steps=total_steps)
+    loss_function = nn.MSELoss()
 
-# Training
-model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
-              train_dataloader, validation_dataloader, device, clip_value=2)
+    # Training
+    model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
+                train_dataloader, validation_dataloader, device, clip_value=2)
 
-df_stats = pd.DataFrame(data=training_stats)
-print(df_stats)
+    df_stats = pd.DataFrame(data=training_stats)
+    print(df_stats)
 
-# Store Model
-torch.save(model.state_dict(), "data/model")
+    # Store Model
+    torch.save(model.state_dict(), "data/model")
 
 
 
