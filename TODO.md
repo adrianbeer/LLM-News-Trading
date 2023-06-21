@@ -15,3 +15,7 @@
 3. Train-test split -> Auslagern
 
 4. re.sub zu bündeln ist wahrscheinlich schneller/effizienter als mehrere re.sub calls zu machen
+
+5. can NN relate dividend and share price?
+
+6. Intradayreturn targete variable kann nur benutzt werden, wenn auf nachrichten gefiltert wird, die vor börsenschluss herauskamen

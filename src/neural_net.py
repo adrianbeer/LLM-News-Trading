@@ -11,19 +11,18 @@ from torch.utils.data import TensorDataset, DataLoader
 import pandas as pd
 from util import create_dataloaders, MyBertModel, train, TRANSFORMER_HF_ID, embed_input, embed_inputs, WeightedSquaredLoss
 import pickle
+from transformers import BertTokenizer
+from util import embed_inputs, create_dataloaders, TRANSFORMER_HF_ID
+
+FROM_SCRATCH = False
+batch_size = 4
 
 # Download dataset
 dataset = pd.read_pickle("data/dataset.pkl")
-assert dataset.index.is_unique
+(train_idx, test_idx) = pd.read_pickle("data/dataset_train_test_idx.pkl")
 
-
-batch_size = 4
-seed = 420
-test_size = 0.8
-
-### Train-test split -> Auslagern
-train_dat = dataset.sample(frac=test_size, random_state=seed)
-test_dat = dataset.drop(train_dat.index)
+train_dat = dataset.iloc[train_idx, :]
+test_dat = dataset.iloc[test_idx, :]
 
 tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 
@@ -42,6 +41,7 @@ validation_dataloader = create_dataloaders(test_inputs, test_masks,
 
 
 model = MyBertModel()
+if not FROM_SCRATCH: model.load_state_dict(torch.load("data/model")) # Use latest iteration of the model for training
 
 if __name__ == "__main__":
     if torch.cuda.is_available():       

@@ -5,6 +5,9 @@ from util import predict
 import numpy as np
 import pandas as pd
 import time
+import plotly.graph_objects as go
+import plotly.io as pio
+pio.renderers.default = "vscode"
 
 model = MyBertModel()
 
@@ -23,6 +26,10 @@ model.to(device)
 
 start = time.time()
 y_pred_scaled = predict(model, validation_dataloader, device)
+
+
+test_dat.loc[:, "Fcst"] = y_pred_scaled
+
 end = time.time()
 print(f"{start-end:.2f}s")
 
@@ -48,7 +55,7 @@ metrics_df = pd.DataFrame.from_dict(metrics_dict)
 print(metrics_df)
 
 
-pred_margin_mask = np.abs(y_pred_scaled) >= 0.03
+pred_margin_mask = np.abs(y_pred_scaled) >= 0.02
 
 print(f"\nWith prediction margin mask:")
 y_hat = y_pred_scaled[pred_margin_mask]
@@ -58,3 +65,25 @@ mae, rw_mae, TP, TN = get_metrics(y_hat, y)
 metrics_dict = dict(mae=[mae], mae_rw=[rw_mae], TP=[TP], TN=[TN])
 metrics_df = pd.DataFrame.from_dict(metrics_dict)
 print(metrics_df)
+
+
+##############
+# Import stocks
+stocks = pd.read_csv("data/stocks.csv")
+stocks.loc[:, "Date"] = pd.to_datetime(stocks.Date)
+# TODO: Do same transformations as import in asset_data_preprocessor
+
+# Analysis of single forecast: 
+pr_time, ticker, fcst = test_dat.iloc[150, :][["Date", "ID", "Fcst"]]
+df = stocks.query("(Date >= @pr_time) & (ID == @ticker)").head()
+fig = go.Figure(data=[go.Candlestick(x=df['Date'],
+                open=df['Open'],
+                high=df['High'],
+                low=df['Low'],
+                close=df['Close'])])
+
+fig.show()
+
+
+
+
