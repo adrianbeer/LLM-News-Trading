@@ -63,9 +63,10 @@ def filter_body(body, ticker, author, pr_date):
 
     LINK_SENTENCE_REGEX = "www\.[a-z]*\.com"
     EMAIL_SENTENCE_REGEX = "[a-z]*@[a-z]*\.com"
+    PHONE_NUMBER_REGEX = "(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}"
     # Remove sentences with links
     # Remove sentences with emails
-    body = re.sub("|".join([LINK_SENTENCE_REGEX, EMAIL_SENTENCE_REGEX]), "REMOVE_THIS_SENTENCE", body) 
+    body = re.sub("|".join([LINK_SENTENCE_REGEX, EMAIL_SENTENCE_REGEX, PHONE_NUMBER_REGEX]), "REMOVE_THIS_SENTENCE", body) 
 
     body_dot_split = sent_tokenize(body)
     body = [sentence for sentence in body_dot_split if "REMOVE_THIS_SENTENCE" not in sentence]
