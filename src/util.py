@@ -42,7 +42,10 @@ class MyBertModel(nn.Module):
        super(MyBertModel, self).__init__()
        self.bert = BertModel.from_pretrained(TRANSFORMER_HF_ID)
        D_in, D_out = self.bert.config.hidden_size, 1
-       self.regr = nn.Sequential(nn.Linear(D_in, D_out))
+       self.regr = nn.Sequential(
+           nn.Dropout(0.2),
+           nn.Linear(D_in, D_out)
+           )
 
    def forward(self, input_ids, attention_masks):
        output = self.bert(input_ids, attention_mask=attention_masks)
@@ -104,7 +107,7 @@ def train(model, optimizer, scheduler, loss_function, epochs, train_dataloader, 
         print("  Training epoch took: {:}".format(training_time))        
     return model, training_stats
    
-   
+
 def evaluate(model, loss_function, validation_dataloader, device):
     model.eval()
     test_loss, test_mae = [], []

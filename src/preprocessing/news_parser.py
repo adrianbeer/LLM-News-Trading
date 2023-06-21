@@ -9,6 +9,13 @@ from news_importer import RELEVANT_CHANNELS
 import yfinance as yf
 import re
 from nltk.tokenize import sent_tokenize
+import datefinder
+from dateutil.parser import UnknownTimezoneWarning
+import warnings
+warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
+
+with open("data/tickers.pkl",'rb') as f:
+    TICKERS = pickle.load(f)
 
 def parse_story_to_row(story):
     # Converts JSON (dict) story to a list 
@@ -22,9 +29,11 @@ def parse_story_to_row(story):
     if len(stocks) != 1: 
         return None
     
-    stocks = stocks[0]
+    stocks = stocks[0] # This is the ticker(s)
+    if stocks not in TICKERS: return None # Don't process, if we have no stock data for it
+
     body = story["body"]
-    time = story["created"]
+    time = pd.to_datetime(story["created"])
     title = story["title"]
     author = story["author"]
     id = story["id"]
@@ -47,12 +56,17 @@ def body_formatter(body):
     return h.handle(new_body)
 
 
-def filter_body(body, ticker, author):
+def filter_body(body, ticker, author, pr_date):
     # Remove links
     # Identify all sentences with links (probably at the end of the document with links to company website with some advertisement...)
     # And remove them
-    body = re.sub("www\.[a-z]*\.com", "REMOVE_THIS_SENTENCE", body) # remove sentences with links
-    body = re.sub("[a-z]*@[a-z]*\.com", "REMOVE_THIS_SENTENCE", body) # remove sentences with emails
+
+    LINK_SENTENCE_REGEX = "www\.[a-z]*\.com"
+    EMAIL_SENTENCE_REGEX = "[a-z]*@[a-z]*\.com"
+    # Remove sentences with links
+    # Remove sentences with emails
+    body = re.sub("|".join([LINK_SENTENCE_REGEX, EMAIL_SENTENCE_REGEX]), "REMOVE_THIS_SENTENCE", body) 
+
     body_dot_split = sent_tokenize(body)
     body = [sentence for sentence in body_dot_split if "REMOVE_THIS_SENTENCE" not in sentence]
     body = " ".join(body)
@@ -71,14 +85,24 @@ def filter_body(body, ticker, author):
     except:
         pass
     
-    body = re.sub(f"\([A-Z]*:{ticker}\)", "REMOVE_THIS", body) # remove sentences with emails
+    # Remove ticker info
+    body = re.sub(f"\([A-Z]*:{ticker}\)", "REMOVE_THIS", body)
     body = body.replace("REMOVE_THIS", "")
 
-    # Remove Date 
-    body = re.sub(" [A-Z][a-z]* [0-9][0-9], [0-9]* ", " ", body) # remove sentences with links
+    # Remove Dates
+    dates = datefinder.find_dates(body, source=True)
+    for date, date_string in dates:
+        if pr_date.date() < date.date():
+            body = body.replace(date_string, "a past date")
+        elif pr_date.date() == date.date():
+            body = body.replace(date_string, "today")
+        else:
+            body = body.replace(date_string, "a future date")
+    #body = re.sub(" [A-Z][a-z]* [0-9][0-9], [0-9]* ", " ", body)
     
     # Remove author (preamble)
-    body = re.sub(f".*\({author}\)", "", body, flags=re.IGNORECASE)
+    body = re.sub(f".*{author}", "", body, flags=re.IGNORECASE) # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
+    body = re.sub("^((\)|-| |\/|\\\\|_)*)", "", body)
     return body
 
 
@@ -106,7 +130,7 @@ if __name__ == "__main__":
 
     print(f"Filtered stories: {story_df.shape[0]}")
 
-    story_df.loc[:, "body"] = story_df.apply(lambda x: filter_body(x.body, x.stocks, x.author), axis=1)
+    story_df.loc[:, "body"] = story_df.apply(lambda x: filter_body(x.body, x.stocks, x.author, x.time), axis=1)
 
     print(story_df.shape)
     print(story_df.head(10))

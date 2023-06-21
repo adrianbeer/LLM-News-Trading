@@ -1,6 +1,6 @@
 import torch
 from util import MyBertModel
-from neural_net import validation_dataloader, test_labels
+from neural_net import validation_dataloader, test_dat
 from util import predict
 import numpy as np
 import pandas as pd
@@ -34,6 +34,7 @@ def get_metrics(y, y_hat):
     TN = ((y_hat < 0)  & (y < 0)).mean()
     return mae, rw_mae, TP, TN
 
+test_labels = test_dat.IntradayReturn.tolist()
 
 print(f"Length of evaluation set: {len(y_pred_scaled)}")
 print("Vanilla results:")
