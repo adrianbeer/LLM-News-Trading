@@ -19,15 +19,16 @@ RELEVANT_CHANNELS = ["Earnings", "Dividends", "News", "Financing", "Events"]
 if __name__ == "__main__":
     no_error = True
     i = 0
-    while no_error and i <= 100:
+    while no_error and i <= 2:
         try:
             #  channel="Earnings"
-            stories = paper.news(display_output="full", page=i, channel=",".join(RELEVANT_CHANNELS), pagesize=100)
+            stories = paper.news(display_output="full", page=i, channel=",".join(RELEVANT_CHANNELS), pagesize=1000)
             all_stories.append(stories)
             i += 1
         except Exception as e:
             print(e) 
             no_error = False
 
+    print(f"Pagesize: {len(all_stories[0])}")
     with open("data/stories_raw.pkl", "wb") as f:
         pickle.dump(all_stories, f)

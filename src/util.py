@@ -104,6 +104,7 @@ def train(model, optimizer, scheduler, loss_function, epochs, train_dataloader, 
         print("  Training epoch took: {:}".format(training_time))        
     return model, training_stats
    
+   
 def evaluate(model, loss_function, validation_dataloader, device):
     model.eval()
     test_loss, test_mae = [], []
@@ -125,6 +126,7 @@ def evaluate(model, loss_function, validation_dataloader, device):
 def mae_score(outputs, labels):
     return np.mean(np.abs(outputs - labels))
 
+
 def predict(model, dataloader, device):
     model.eval()
     output = []
@@ -134,5 +136,48 @@ def predict(model, dataloader, device):
         with torch.no_grad():
             output += model(batch_inputs, 
                             batch_masks).view(1,-1).tolist()[0]
-    return output
+    return np.array(output)
 
+
+def embed_input(text, tokenizer):
+    # Truncation = True as bert can only take inputs of max 512 tokens.
+    # return_tensors = "pt" makes the funciton return PyTorch tensors
+    # tokenizer.encode_plus specifically returns a dictionary of values instead of just a list of values
+    encoding = tokenizer(
+        text, 
+        add_special_tokens = True, 
+        truncation = True, 
+        padding = "max_length", 
+        max_length = 512,
+        return_attention_mask = True, 
+        return_tensors = "pt"
+    )
+    # input_ids: mapping the words to tokens
+    # attention masks: idicates if index is word or padding
+    input_ids = encoding['input_ids']
+    attention_masks = encoding['attention_mask']
+    return input_ids, attention_masks
+
+
+def embed_inputs(texts, tokenizer):
+    input_ids = []
+    attention_masks = []
+    for text in texts:
+        x, y = embed_input(text, tokenizer)
+        input_ids.append(x)
+        attention_masks.append(y)
+    input_ids = torch.cat(input_ids, dim=0)
+    attention_masks = torch.cat(attention_masks, dim=0)
+    return input_ids, attention_masks
+    
+
+class WeightedSquaredLoss(nn.Module):
+    def __init__(self):
+        super(WeightedSquaredLoss, self).__init__()
+
+    def forward(self, output, target):
+        flat_output = torch.flatten(output)
+        flat_target = torch.flatten(target)
+        N = len(output)
+        loss = torch.dot(torch.add(torch.abs(flat_output), 1), torch.square(flat_output - flat_target)) / N
+        return loss

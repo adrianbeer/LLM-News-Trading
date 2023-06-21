@@ -78,7 +78,7 @@ def filter_body(body, ticker, author):
     body = re.sub(" [A-Z][a-z]* [0-9][0-9], [0-9]* ", " ", body) # remove sentences with links
     
     # Remove author (preamble)
-    body = re.sub(f".*\({author}\)", "", flags=re.IGNORECASE)
+    body = re.sub(f".*\({author}\)", "", body, flags=re.IGNORECASE)
     return body
 
 
@@ -111,4 +111,3 @@ if __name__ == "__main__":
     print(story_df.shape)
     print(story_df.head(10))
     story_df.to_csv("data/stories.csv")
-    #print(story_df[story_df.channels.apply(lambda x: "Earnings" in x)]["body"].iloc[0])
