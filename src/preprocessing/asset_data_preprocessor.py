@@ -3,6 +3,7 @@ import pandas as pd
 
 data_path = 'C:\\Users\Adria\Documents\\Github Projects\\data\\Russell2k'
 import pickle
+import numpy as np
 #dataframe_path = f"{path}/dataframe.pkl"
 
 
@@ -73,7 +74,7 @@ def file_to_dataframe(file_path, sep='\t', _open=True, chlo=False, _format='%m/%
     else:
         df.columns = ["Close"]
     
-    ## Remove Holidays. 
+    ## Remove Holidays. (WHY?)
     # TODO: D othis with the holiday package
     # 01-Jan
     df = df.loc[~((df.index.get_level_values('Date').day == 1) & (df.index.get_level_values('Date').month == 1)), :]
@@ -85,6 +86,28 @@ def file_to_dataframe(file_path, sep='\t', _open=True, chlo=False, _format='%m/%
 
 if __name__ == '__main__':
     df = tai_pan_dir_to_dataframe_extended(data_path, _open=False, chlo=True, format='%d.%m.%Y')
+    
+    # Make datetime dtype
+    df.index = df.index.set_levels(pd.to_datetime(df.index.levels[0], format="%Y-%m-%d"), level=0)
+
+    # Make ID index categorical
+    ID_lvl = 1
+    df.index = df.index.set_levels(df.index.levels[ID_lvl].astype("category"), level=ID_lvl)
+
+    # Converting prices to floats
+    df.loc[:,["Close", "High", "Low", "Open"]] = df.loc[:,["Close", "High", "Low", "Open"]].applymap(lambda x: str(x).replace(",", ".")).replace("nan", np.nan)
+    df.dropna(inplace=True)
+    df.loc[:,["Close", "High", "Low", "Open"]] = df[["Close", "High", "Low", "Open"]].apply(pd.to_numeric)
+    df = df.astype(dict(zip(["Close", "High", "Low", "Open"], [float]*4)))
+
+    # First look and memory information
+    print(df.head(10))
+    print(df.index.dtypes)
+    print(df.dtypes)
+    print(df.memory_usage())
+
+    # Save dataframe and categorical data structure
     with open("data/tickers.pkl", 'wb') as f:
-        pickle.dump(df.index.get_level_values("ID").unique(), f)
-    df.to_csv("data/stocks.csv")
+        pickle.dump(df.index.get_level_values(ID_lvl).dtype, f)
+        
+    df.to_pickle("data/stocks.pkl")

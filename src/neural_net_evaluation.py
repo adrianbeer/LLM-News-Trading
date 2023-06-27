@@ -69,7 +69,7 @@ print(metrics_df)
 
 ##############
 # Import stocks
-stocks = pd.read_csv("data/stocks.csv")
+stocks = pd.read_pickle("data/stocks.pkl")
 stocks.loc[:, "Date"] = pd.to_datetime(stocks.Date)
 # TODO: Do same transformations as import in asset_data_preprocessor
 

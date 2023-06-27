@@ -14,10 +14,6 @@ from dateutil.parser import UnknownTimezoneWarning
 import warnings
 warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
 
-with open("data/tickers.pkl",'rb') as f:
-    TICKERS = pickle.load(f)
-
-
 def filter_body(body, ticker, author, pr_date):
     # Remove links
     # Identify all sentences with links (probably at the end of the document with links to company website with some advertisement...)
@@ -55,7 +51,7 @@ def filter_body(body, ticker, author, pr_date):
     # Remove Dates
     dates = datefinder.find_dates(body, source=True, strict=True)
     for date, date_string in dates:
-        if pr_date.date() < date.date():
+        if pr_date.date() > date.date():
             body = body.replace(date_string, "a past date")
         elif pr_date.date() == date.date():
             body = body.replace(date_string, "today")
@@ -86,6 +82,10 @@ if __name__ == "__main__":
 
     story_df.loc[:, "body"] = story_df.apply(lambda x: filter_body(x.body, x.stocks, x.author, x.time), axis=1)
 
+    story_df.loc[:, "NewsTimestamp"] = pd.to_datetime(story_df.time)
+    story_df.drop(columns=["time"], inplace=True)
+
     print(story_df.shape)
     print(story_df.head(10))
-    story_df.to_csv("data/stories.csv")
+
+    story_df.to_pickle("data/stories.pkl")

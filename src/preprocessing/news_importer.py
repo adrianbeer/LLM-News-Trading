@@ -15,9 +15,6 @@ with open("data/tickers.pkl",'rb') as f:
 # "News"
 RELEVANT_CHANNELS = ["Earnings", "Dividends", "Financing", "Events"]
 
-# source = open("data/tickers.pkl", 'rb').read()
-# tickers = json.loads(source)
-
 
 def parse_story_to_row(story):
     # Converts JSON (dict) story to a list 
@@ -32,7 +29,7 @@ def parse_story_to_row(story):
         return None
     
     stocks = stocks[0] # This is the ticker(s)
-    if stocks not in TICKERS: return None # Don't process, if we have no stock data for it
+    if stocks not in TICKERS.categories: return None # Don't process, if we have no stock data for it
 
     body = story["body"]
     time = pd.to_datetime(story["created"])
@@ -58,14 +55,19 @@ def body_formatter(body):
 
 
 if __name__ == "__main__":
+    # Initialize empty data frame
     story_df = pd.DataFrame(columns=["time", "stocks", "author", "title", "channels", "body", "html_body"], dtype=object)
+    story_df = story_df.astype({"stocks": TICKERS})
     
     no_error = True
-    i = 0
+    # `i`  together with `pagesize` specifies how many stories entries will be downloaded
+    # Not all these stories will be valid news, so the size of the resulting data frame has to be checked
+    i = 0 
+    pagesize = 1000
     while no_error and i <= 5:
         try:
             #  channel="Earnings"
-            stories = paper.news(display_output="full", page=i, channel=",".join(RELEVANT_CHANNELS), pagesize=1000)
+            stories = paper.news(display_output="full", page=i, channel=",".join(RELEVANT_CHANNELS), pagesize=pagesize)
             for s in range(len(stories)):
                 story = stories[s]
                 parsed_story = parse_story_to_row(story)
@@ -78,6 +80,10 @@ if __name__ == "__main__":
             print(e) 
             no_error = False
     print(f"#rows: {story_df.shape[0]}")
+
+    # story_df = story_df.astype({"author": "category", "channels": "category"})
+    print(story_df.dtypes)
+
     with open("data/story_df_raw.pkl", "wb") as f:
         pickle.dump(story_df, f)
 

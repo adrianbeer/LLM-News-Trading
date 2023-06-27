@@ -16,6 +16,7 @@ from util import embed_inputs, create_dataloaders, TRANSFORMER_HF_ID
 
 FROM_SCRATCH = False
 batch_size = 4
+loss_confidence_parameter = 1 # Je höher, desto größer ist die Aussagekraft einer hohen Prognose
 
 # Download dataset
 dataset = pd.read_pickle("data/dataset.pkl")
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     total_steps = len(train_dataloader) * epochs
     scheduler = get_linear_schedule_with_warmup(optimizer,       
                     num_warmup_steps=0, num_training_steps=total_steps)
-    loss_function = WeightedSquaredLoss()
+    loss_function = WeightedSquaredLoss(gamma=loss_confidence_parameter)
 
     # Training
     model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
