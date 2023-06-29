@@ -14,7 +14,7 @@ import pickle
 from transformers import BertTokenizer
 from util import embed_inputs, create_dataloaders, TRANSFORMER_HF_ID
 
-FROM_SCRATCH = False
+FROM_SCRATCH = True
 batch_size = 4
 loss_confidence_parameter = 1 # Je höher, desto größer ist die Aussagekraft einer hohen Prognose
 
@@ -22,8 +22,8 @@ loss_confidence_parameter = 1 # Je höher, desto größer ist die Aussagekraft e
 dataset = pd.read_pickle("data/dataset.pkl")
 (train_idx, test_idx) = pd.read_pickle("data/dataset_train_test_idx.pkl")
 
-train_dat = dataset.iloc[train_idx, :]
-test_dat = dataset.iloc[test_idx, :]
+train_dat = dataset.loc[train_idx, :]
+test_dat = dataset.loc[test_idx, :]
 
 tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 

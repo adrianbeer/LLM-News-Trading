@@ -9,6 +9,9 @@ import plotly.graph_objects as go
 import plotly.io as pio
 pio.renderers.default = "vscode"
 
+
+# OBSOLOTE -> evaluation.ipynb
+
 model = MyBertModel()
 
 #Later to restore:

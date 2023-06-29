@@ -4,6 +4,7 @@ import json
 import html2text
 from bs4 import BeautifulSoup
 import pickle
+import time
 
 api_key = "63bcced6972b4b88b66b0e669336555f"
 fin = financial_data.Benzinga(api_key)
@@ -63,18 +64,20 @@ if __name__ == "__main__":
     # `i`  together with `pagesize` specifies how many stories entries will be downloaded
     # Not all these stories will be valid news, so the size of the resulting data frame has to be checked
     i = 0 
-    pagesize = 1000
-    while no_error and i <= 5:
+    pagesize = 100
+    while no_error:
         try:
+            time.sleep(2)
+            print(i)
             #  channel="Earnings"
             stories = paper.news(display_output="full", page=i, channel=",".join(RELEVANT_CHANNELS), pagesize=pagesize)
             for s in range(len(stories)):
                 story = stories[s]
                 parsed_story = parse_story_to_row(story)
                 if parsed_story is None: continue
-                id, title, tags, channels, stocks, html_body, body, time, author = parsed_story
+                id, title, tags, channels, stocks, html_body, body, timestamp, author = parsed_story
                 #if "Earnings" in channels:
-                story_df.loc[id, ["time", "stocks", "author", "title", "channels", "body", "html_body"]] = time, stocks, author, title, channels, body, html_body
+                story_df.loc[id, ["time", "stocks", "author", "title", "channels", "body", "html_body"]] = timestamp, stocks, author, title, channels, body, html_body
             i += 1
         except Exception as e:
             print(e) 

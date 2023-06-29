@@ -13,6 +13,7 @@ import datefinder
 from dateutil.parser import UnknownTimezoneWarning
 import warnings
 warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
+import time
 
 def filter_body(body, ticker, author, pr_date):
     # Remove links
@@ -60,11 +61,11 @@ def filter_body(body, ticker, author, pr_date):
     #body = re.sub(" [A-Z][a-z]* [0-9][0-9], [0-9]* ", " ", body)
     
     # Remove author (preamble)
-    body = re.sub(f"(\n.*{author})|(^.*{author})", "\n", body, flags=re.IGNORECASE) # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
+    body = re.sub(f"(\n.*{author})|(^.*{author})", "", body, flags=re.IGNORECASE) # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
     
     # Remove weird symbols
     SYMBOLS_REGEX = "(\)|-| |\/|\\\\|_)"
-    body = re.sub(f"\n{SYMBOLS_REGEX}*|^({SYMBOLS_REGEX}|\")", "\n", body)
+    body = re.sub(f"\n{SYMBOLS_REGEX}*|^({SYMBOLS_REGEX}|\")", "", body)
     body = body.replace("*", "")
 
     # Remove (the "Company") parenthesis 
@@ -80,7 +81,11 @@ if __name__ == "__main__":
 
     print(f"Filtered stories: {story_df.shape[0]}")
 
+    start = time.time()
     story_df.loc[:, "body"] = story_df.apply(lambda x: filter_body(x.body, x.stocks, x.author, x.time), axis=1)
+    end = time.time()
+    print(f"Time elapsed: {end-start}s")
+    print(f"Average seconds required per body: {(end-start)/story_df.shape[0]}s")
 
     story_df.loc[:, "NewsTimestamp"] = pd.to_datetime(story_df.time)
     story_df.drop(columns=["time"], inplace=True)
