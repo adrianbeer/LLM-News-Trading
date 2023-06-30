@@ -45,7 +45,7 @@ def filter_body(body, ticker, author, pr_date):
     except:
         pass
     
-    # Remove ticker info
+    # Remove exchange/ticker info
     body = re.sub(f"\([A-Z]*[ ]?:[ ]?{ticker}\)", "REMOVE_THIS", body)
     body = body.replace("REMOVE_THIS", "")
 
@@ -58,19 +58,42 @@ def filter_body(body, ticker, author, pr_date):
             body = body.replace(date_string, "today")
         else:
             body = body.replace(date_string, "a future date")
-    #body = re.sub(" [A-Z][a-z]* [0-9][0-9], [0-9]* ", " ", body)
     
     # Remove author (preamble)
     body = re.sub(f"(\n.*{author})|(^.*{author})", "", body, flags=re.IGNORECASE) # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
     
-    # Remove weird symbols
-    SYMBOLS_REGEX = "(\)|-| |\/|\\\\|_)"
-    body = re.sub(f"\n{SYMBOLS_REGEX}*|^({SYMBOLS_REGEX}|\")", "", body)
-    body = body.replace("*", "")
+   # Remove (the "Company") parenthesis and other `("different name")`-constructs
+    body = re.sub('\(.*"(.{1,})".*\)', "", body)
 
-    # Remove (the "Company") parenthesis 
-    body = re.sub('(.*"Company".*)', "", body)
-    body = body.strip("\n - \\")
+    # Remove underscores
+    body = body.replace("_", " ")
+    
+    # Remove bullet point dots
+    body = body.replace("•", " ")
+
+    # Remove weird symbols at the start of a new line (bullet points)
+    SYMBOLS_REGEX = "(\*|-|\/|\\\\)"
+    body = re.sub(f"\n{SYMBOLS_REGEX}"+ "{1,}", " ", body)
+
+    # Remove weird symbol clusters
+    body = re.sub(f"{SYMBOLS_REGEX}"+ "{2,}", " ", body)
+
+    # Replace all new lines with a space
+    body = body.replace("\n", " ")
+
+      # Remove exccess spaces
+    body = re.sub("( ){2,}", " ", body)
+
+    # Remove exccess spaces
+    body = re.sub("( ){2,}", " ", body)
+
+    # Remove exccess dots
+    body = re.sub("(( )*\.){1,}", ".", body)
+
+
+    # Final stripping of stuff at the start/end of the file
+    body = body.strip("\n -\\_*/().'")
+
 
     return body
 
@@ -94,3 +117,4 @@ if __name__ == "__main__":
     print(story_df.head(10))
 
     story_df.to_pickle("data/stories.pkl")
+    story_df.to_csv("data/stories.csv")

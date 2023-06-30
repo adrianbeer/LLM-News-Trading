@@ -7,5 +7,10 @@
 
 5. can NN relate dividend and share price? JA -> Fundamentaldaten als Text einfügen.
 
-6. Intradayreturn targete variable kann nur benutzt werden, wenn auf nachrichten gefiltert wird, die vor börsenschluss herauskamen
+7. Berücksichtigen wann die Nachrichten rauskommen und lieber C-C anstatt O-C betrachten, um, Gaps mitzuerfassen.
 
+8. Was machen, wenn zwei nachrichten an einem Tag rauskommen? -> Löschen
+
+9. Pharmaceuticals ausschliessen (Suche nach Phase 2b oder soetwas)
+
+10. NN-Vorhersagen nutzen und Clustern, um besten Trades zu identifizieren.

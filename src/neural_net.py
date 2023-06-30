@@ -13,6 +13,7 @@ from util import create_dataloaders, MyBertModel, train, TRANSFORMER_HF_ID, embe
 import pickle
 from transformers import BertTokenizer
 from util import embed_inputs, create_dataloaders, TRANSFORMER_HF_ID
+from config import TARGET_COL_NAME
 
 FROM_SCRATCH = True
 batch_size = 4
@@ -24,13 +25,14 @@ dataset = pd.read_pickle("data/dataset.pkl")
 
 train_dat = dataset.loc[train_idx, :]
 test_dat = dataset.loc[test_idx, :]
+print(f"train_dat size: {train_dat.shape[0]}")
 
 tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 
 train_texts = train_dat.body.tolist()
 test_texts = test_dat.body.tolist()
-test_labels = test_dat.IntradayReturn.tolist()
-train_labels = train_dat.IntradayReturn.tolist()
+test_labels = test_dat.loc[:, TARGET_COL_NAME].tolist()
+train_labels = train_dat.loc[:, TARGET_COL_NAME].tolist()
 
 train_inputs, train_masks = embed_inputs(train_texts, tokenizer)
 test_inputs, test_masks = embed_inputs(test_texts, tokenizer)
