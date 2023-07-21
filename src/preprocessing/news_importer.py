@@ -29,15 +29,15 @@ def parse_story_to_row(story):
     if len(stocks) != 1: 
         return None
     
-    stocks = stocks[0] # This is the ticker(s)
-    if stocks not in TICKERS.categories: return None # Don't process, if we have no stock data for it
+    ticker = stocks[0] # This is the ticker(s)
+    if ticker not in TICKERS.categories: return None # Don't process, if we have no stock data for it
 
     body = story["body"]
     time = pd.to_datetime(story["created"])
     title = story["title"]
     author = story["author"]
     id = story["id"]
-    return id, title, tags, json.dumps(channels), stocks, body, body_formatter(body), time, author
+    return id, title, tags, json.dumps(channels), ticker, body, body_formatter(body), time, author
 
 
 def body_formatter(body):
@@ -63,9 +63,10 @@ if __name__ == "__main__":
     no_error = True
     # `i`  together with `pagesize` specifies how many stories entries will be downloaded
     # Not all these stories will be valid news, so the size of the resulting data frame has to be checked
-    i = 0 
+    i = 1
     pagesize = 100
-    while no_error:
+    current_year = 0
+    while no_error and i <= 5:
         try:
             time.sleep(2)
             print(i)
@@ -76,17 +77,31 @@ if __name__ == "__main__":
                 parsed_story = parse_story_to_row(story)
                 if parsed_story is None: continue
                 id, title, tags, channels, stocks, html_body, body, timestamp, author = parsed_story
+                
+                year = timestamp.year
+                if current_year != year:
+                    print(f"#rows: {story_df.shape[0]}")
+                    with open(f"data/story_df_raw_{year}.pkl", "wb") as f:
+                        pickle.dump(story_df, f)
+
+                    story_df = pd.DataFrame(columns=["time", "stocks", "author", "title", "channels", "body", "html_body"], dtype=object)
+                    story_df = story_df.astype({"stocks": TICKERS})   
+                    current_year = year
+                    print(year)      
+
                 #if "Earnings" in channels:
                 story_df.loc[id, ["time", "stocks", "author", "title", "channels", "body", "html_body"]] = timestamp, stocks, author, title, channels, body, html_body
+
             i += 1
         except Exception as e:
             print(e) 
             no_error = False
-    print(f"#rows: {story_df.shape[0]}")
 
-    # story_df = story_df.astype({"author": "category", "channels": "category"})
+    print(f"#rows: {story_df.shape[0]}")
+    with open(f"data/story_df_raw_{year}.pkl", "wb") as f:
+        pickle.dump(story_df, f)
+
     print(story_df.dtypes)
 
-    with open("data/story_df_raw.pkl", "wb") as f:
-        pickle.dump(story_df, f)
+
 
