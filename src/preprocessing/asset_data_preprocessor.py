@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-data_path = 'C:\\Users\Adria\Documents\\Github Projects\\data\\Russell2k'
+data_path = 'C:\\Users\Adria\Documents\\Github Projects\\data\\Russell3k'
 import pickle
 import numpy as np
 #dataframe_path = f"{path}/dataframe.pkl"
