@@ -1,9 +1,9 @@
-# First execute asset_data_preprocessor (to get relevant list of tickers)
-# Then news_importer
-# Then news_parser (here tickers from assert_data_processor are used)
-# Then data_merger, where price and news data are merged.
-# Then neural_net.py, where the neural network is trained
-# Then neural_net_evaluation where the performance of the neurlal network that was trained in the last step is eavluated
+1. First execute asset_data_preprocessor (to get relevant list of tickers)
+2. Then news_importer
+3. Then news_parser (here tickers from assert_data_processor are used)
+4. Then data_merger, where price and news data are merged.
+5. Then neural_net.py, where the neural network is trained
+6. Then neural_net_evaluation(.ipynb) where the performance of the neurlal network that was trained in the last step is eavluated
 
 4. Authorenfeld für Daten von vor 2017 berichtigen und evtl. noch andere Felder? (Aktienbezug, Datum?)
 
@@ -23,3 +23,11 @@
 - Sell-on-good-news
 - Buy-on-bad-news
 - GD-Richtungsfilter
+
+11. Versuche unterschiedliche html-to-text-parser
+newsText = ek.get_news_story(storyId) #get the news story
+if newsText:
+    soup = BeautifulSoup(newsText,"lxml") #create a BeautifulSoup object from our HTML news article
+    sentA = TextBlob(soup.get_text())
+
+12. Mass für Kursbewegung: GDRs/ADRs ?
