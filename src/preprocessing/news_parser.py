@@ -1,11 +1,9 @@
-from benzinga import news_data, financial_data
 import pandas as pd 
-import json
 import html2text
 from bs4 import BeautifulSoup
 import pickle
-import itertools
-from news_importer import RELEVANT_CHANNELS
+import html2text
+from bs4 import BeautifulSoup
 import yfinance as yf
 import re
 from nltk.tokenize import sent_tokenize
@@ -15,7 +13,23 @@ import warnings
 warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
 import time
 
+def body_formatter(body):
+    soup = BeautifulSoup(body, features="html.parser")
+    for t in soup.find_all('table'):
+        t.decompose()
+
+    new_body = str(soup)
+    h = html2text.HTML2Text()
+    h.ignore_links = True
+    h.ignore_images = True
+    # h.bypass_tables = True
+    # h.ignore_emphasis = True
+    h.drop_white_space = True
+    return h.handle(new_body)
+
+
 def filter_body(body, ticker, author, pr_date):
+    body = body_formatter(body)
     # Remove links
     # Identify all sentences with links (probably at the end of the document with links to company website with some advertisement...)
     # And remove them
@@ -93,7 +107,6 @@ def filter_body(body, ticker, author, pr_date):
 
     # Final stripping of stuff at the start/end of the file
     body = body.strip("\n -\\_*/().'")
-
 
     return body
 

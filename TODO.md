@@ -17,6 +17,8 @@
 
 10. NN-Vorhersagen nutzen und Clustern, um besten Trades zu identifizieren.
 
+11. Schätze Verteilungseigentschaften für die Kursbewegung nach Nachrichtne mit bestimmten Kennzeichen.
+Z.B. wenn ein bestimmtes Wort vorkommt ist die Varianz/Erwartungswert größer etc.
 ------------------
 
 # Langfristige Ideen:
