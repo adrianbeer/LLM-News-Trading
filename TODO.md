@@ -21,6 +21,10 @@
 Z.B. wenn ein bestimmtes Wort vorkommt ist die Varianz/Erwartungswert größer etc.
 ------------------
 
+# Topicextraktion:
+- Können Text2Topic benutzen zum beispiel...
+- Oder ChatGPT
+
 # Langfristige Ideen:
 - Sell-on-good-news
 - Buy-on-bad-news
