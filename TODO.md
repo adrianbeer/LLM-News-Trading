@@ -5,10 +5,6 @@
 5. Then neural_net.py, where the neural network is trained
 6. Then neural_net_evaluation(.ipynb) where the performance of the neurlal network that was trained in the last step is eavluated
 
-3. company_endings erweiterung und nicht in /data, sondern in einem /shared_data ablegen (im github)
-
-4. Authorenfeld für Daten von vor 2017 berichtigen und evtl. noch andere Felder? (Aktienbezug, Datum?)
-
 5. can NN relate dividend and share price? JA -> Fundamentaldaten als Text einfügen.
 
 7. Berücksichtigen wann die Nachrichten rauskommen und lieber C-C anstatt O-C betrachten, um, Gaps mitzuerfassen.
@@ -31,6 +27,7 @@ Z.B. wenn ein bestimmtes Wort vorkommt ist die Varianz/Erwartungswert größer e
 - Sell-on-good-news
 - Buy-on-bad-news
 - GD-Richtungsfilter
+- Dividendenerhöhuung
 
 11. Versuche unterschiedliche html-to-text-parser
 newsText = ek.get_news_story(storyId) #get the news story

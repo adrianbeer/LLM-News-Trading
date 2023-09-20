@@ -20,6 +20,7 @@ Inc.
 , Inc.
 ,Inc.
 INC.
+inc.
 Incorporated
 INCORPORATED
 International Inc.
@@ -29,3 +30,13 @@ Ltd
 LTD
 Ltd.
 LTD.
+plc
+PLC
+Plc
+REIT
+SE
+S.A.
+, S. A.
+Bancorp
+Bancorporation
+, LLC

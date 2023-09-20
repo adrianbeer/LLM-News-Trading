@@ -13,6 +13,16 @@ import warnings
 warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
 import time
 
+
+def get_company_abbreviation(company_name, company_endings):
+    matching_mask = company_endings.apply(lambda x: x in company_name)
+    if matching_mask.sum() == 0: return None
+    longest_match_idx = company_endings[matching_mask].apply(lambda x: len(x)).idxmax()
+    longest_match = company_endings.iloc[longest_match_idx]
+    company_abbrev = company_name.replace(longest_match, "")
+    return company_abbrev
+
+
 def body_formatter(body):
     soup = BeautifulSoup(body, features="html.parser")
     for t in soup.find_all('table'):
@@ -28,7 +38,7 @@ def body_formatter(body):
     return h.handle(new_body)
 
 
-def filter_body(body, ticker, author, pr_date, company_name):
+def filter_body(body, ticker, author, pr_date, company_name, short_name):
     # Remove links
     # Identify all sentences with links (probably at the end of the document with links to company website with some advertisement...)
     # And remove them
@@ -45,12 +55,7 @@ def filter_body(body, ticker, author, pr_date, company_name):
     body = " ".join(body)
 
     # 2. Replace the name with "the company"
-    company_endings = pd.read_table("data_shared/corporation_endings.txt").iloc[:, 0]
-    matching_mask = company_endings.apply(lambda x: x in company_name)
-    longest_match_idx = company_endings[matching_mask].apply(lambda x: len(x)).idxmax()
-    longest_match = company_endings.iloc[longest_match_idx]
-    company_abbrev = company_name.replace(longest_match, "")
-    body = body.replace(company_name, "the company").replace(company_abbrev, "the company")
+    body = body.replace(company_name, " the company ").replace(short_name, " the company ")
 
     
     # Remove exchange/ticker info
