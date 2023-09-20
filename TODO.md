@@ -5,6 +5,8 @@
 5. Then neural_net.py, where the neural network is trained
 6. Then neural_net_evaluation(.ipynb) where the performance of the neurlal network that was trained in the last step is eavluated
 
+3. company_endings erweiterung und nicht in /data, sondern in einem /shared_data ablegen (im github)
+
 4. Authorenfeld für Daten von vor 2017 berichtigen und evtl. noch andere Felder? (Aktienbezug, Datum?)
 
 5. can NN relate dividend and share price? JA -> Fundamentaldaten als Text einfügen.

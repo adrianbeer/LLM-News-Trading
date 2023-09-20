@@ -45,7 +45,7 @@ def filter_body(body, ticker, author, pr_date, company_name):
     body = " ".join(body)
 
     # 2. Replace the name with "the company"
-    company_endings = pd.read_table("data/corporation_endings.txt").iloc[:, 0]
+    company_endings = pd.read_table("data_shared/corporation_endings.txt").iloc[:, 0]
     matching_mask = company_endings.apply(lambda x: x in company_name)
     longest_match_idx = company_endings[matching_mask].apply(lambda x: len(x)).idxmax()
     longest_match = company_endings.iloc[longest_match_idx]
