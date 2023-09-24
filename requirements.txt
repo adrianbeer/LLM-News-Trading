@@ -6,3 +6,4 @@ dask[complete]
 nltk
 dateparser
 sutime
+yfinance

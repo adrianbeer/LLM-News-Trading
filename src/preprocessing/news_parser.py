@@ -75,17 +75,16 @@ def remove_contact_info_sentences(body):
     # Remove links
     # Identify all sentences with links (probably at the end of the document with links to company website with some advertisement...)
     # And remove them
-
+    # Remove sentences with links
+    # Remove sentences with emails
     LINK_SENTENCE_REGEX = "www\.[a-z]*\.com"
     EMAIL_SENTENCE_REGEX = "[a-z]*@[a-z]*\.com"
     PHONE_NUMBER_REGEX = "(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}"
-    # Remove sentences with links
-    # Remove sentences with emails
-    f".([^.])*{LINK_SENTENCE_REGEX}([^.]*).?"
+    LINK_EMAIL_PHONE_REGEX = "|".join([LINK_SENTENCE_REGEX, EMAIL_SENTENCE_REGEX, PHONE_NUMBER_REGEX])
     
-    body = re.sub(".([^.])*" + # End of some sentene, starting current sentence
-                  "|".join([LINK_SENTENCE_REGEX, EMAIL_SENTENCE_REGEX, PHONE_NUMBER_REGEX]) + # regices of interest
-                  "([^.]*).?", # End of current sentence.
+    body = re.sub("\.([^\.])*" + # End of some sentene, starting current sentence
+                  f"({LINK_EMAIL_PHONE_REGEX})" + # regices of interest
+                  "([^\.]*)\.?", # End of current sentence.
                   ".", body) 
     return body
 
