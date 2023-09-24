@@ -1,0 +1,8 @@
+# !sudo apt update
+# !sudo apt install maven
+html2text
+datefinder
+dask[complete]
+nltk
+dateparser
+sutime

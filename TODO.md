@@ -15,6 +15,10 @@
 
 10. NN-Vorhersagen nutzen und Clustern, um besten Trades zu identifizieren.
 
+
+Dateparser -> "XXX days ago" anstatt "previous date" ? 
+-> XXX days in the futured anstatt "a future date" ? 
+
 11. Schätze Verteilungseigentschaften für die Kursbewegung nach Nachrichtne mit bestimmten Kennzeichen.
 Z.B. wenn ein bestimmtes Wort vorkommt ist die Varianz/Erwartungswert größer etc.
 ------------------
@@ -36,3 +40,4 @@ if newsText:
     sentA = TextBlob(soup.get_text())
 
 12. Mass für Kursbewegung: GDRs/ADRs ?
+
