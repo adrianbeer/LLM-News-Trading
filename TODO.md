@@ -5,6 +5,11 @@
 5. Then neural_net.py, where the neural network is trained
 6. Then neural_net_evaluation(.ipynb) where the performance of the neurlal network that was trained in the last step is eavluated
 
+4. Sobald wir ein Mapping von Nachrichten zu Kursen haben, können wir versuchen einen KNN Algorithmus basierend auf
+der Word Mover's Distance zu benutzen, bzw. generell Clustering-Algorithmen mit diesem Distanzmass benutzen, siehe
+[Gensim](https://radimrehurek.com/gensim/auto_examples/tutorials/run_wmd.html#sphx-glr-auto-examples-tutorials-run-wmd-py).
+
+
 5. can NN relate dividend and share price? JA -> Fundamentaldaten als Text einfügen.
 
 7. Berücksichtigen wann die Nachrichten rauskommen und lieber C-C anstatt O-C betrachten, um, Gaps mitzuerfassen.
