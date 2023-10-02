@@ -64,10 +64,15 @@ def remove_date_specifics(body, pr_date):
 
 
 def remove_company_specifics(body, company_name, short_name, ticker):
-    # Replace the actual company name with "the company"
-    body = re.sub(f"({company_name})|({short_name})", " the company ", body)
     # Remove exchange/ticker info in parentheses
-    body = re.sub(f"\([A-Z]*[ ]?:[ ]?{ticker}\)", "", body)
+    # Doing this first is important if ticker equals short_name
+    body = re.sub(f"\([A-Z ]*:[ ]*{ticker}\)", "", body)
+    
+    # Replace the actual company name with "the company"
+    body = re.sub(f"(\*\*)*{company_name}(\*\*)*", " the company ", body)
+    # The full name should take precedence, otherwise trailing ", LLC" for example.
+    body = re.sub(f"(\*\*)*({short_name})(\*\*)*", " the company ", body)
+
     return body
 
 
@@ -77,32 +82,44 @@ def remove_contact_info_sentences(body):
     # And remove them
     # Remove sentences with links
     # Remove sentences with emails
+    ACRONYMS = r'(?:[A-Z]\.)+'
     LINK_SENTENCE_REGEX = "www\.[a-z]*\.com"
     EMAIL_SENTENCE_REGEX = "[a-z]*@[a-z]*\.com"
     PHONE_NUMBER_REGEX = "(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}"
-    LINK_EMAIL_PHONE_REGEX = "|".join([LINK_SENTENCE_REGEX, EMAIL_SENTENCE_REGEX, PHONE_NUMBER_REGEX])
-    
-    body = re.sub("\.([^\.])*" + # End of some sentene, starting current sentence
-                  f"({LINK_EMAIL_PHONE_REGEX})" + # regices of interest
-                  "([^\.]*)\.?", # End of current sentence.
-                  ".", body) 
+    HTML_LINK_INDEX = "\.html"
+    CONTACT_INFO_REGEX = "|".join([LINK_SENTENCE_REGEX, 
+                                   EMAIL_SENTENCE_REGEX, 
+                                   PHONE_NUMBER_REGEX, 
+                                   HTML_LINK_INDEX])
+    # This way is required, in case of multiple web links in a sentence for example
+    body = re.sub(CONTACT_INFO_REGEX, 
+                  "REMOVESENTENCE", 
+                  body)
+    body = re.sub("[^\.]*" + # End of some sentene, starting current sentence
+                  f"(REMOVESENTENCE)" + # regices of interest
+                  f"([^\.]|{ACRONYMS})*\.?", # End of current sentence.
+                  "", 
+                  body) 
     return body
 
 
 def filter_body(body, ticker, author, pr_date, company_name, short_name):
-    body = remove_contact_info_sentences(body)
     body = remove_company_specifics(body, company_name, short_name, ticker)
+    body = remove_contact_info_sentences(body)
     body = remove_date_specifics(body, pr_date)
     
     # Remove author (preamble)
     # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
     body = re.sub(f"(\n.*{author})|(^.*{author})", "", body, flags=re.IGNORECASE) 
     
-   # Remove (the "Company") parenthesis and other `("different name")`-constructs
-    body = re.sub('\(.*"(.{1,})".*\)', "", body)
+    # Remove (the "Company") parenthesis and other `("different name")`-constructs
+    # body = re.sub('\(.*"(.{1,})".*\)', "", body)
 
-    # Remove underscores and dots
-    body = re.sub("_|•", " ", body)
+    # Remove underscores 
+    body = re.sub("_", " ", body)
+    
+    # Converts itemized lists to sentences.
+    body = re.sub("(\*|•)", ".", body)
     
     # Remove weird symbols at the start of a new line (bullet points)
     remover_list = [
@@ -124,8 +141,8 @@ def filter_body(body, ticker, author, pr_date, company_name, short_name):
                     "•"]
     body = re.sub("|".join(remover_list), " ", body)
 
-    # Remove exccess dots
-    body = re.sub("(( )*\.){1,}", ".", body)
+    # Remove exccess dots and white space around them
+    body = re.sub("(( )*(\.)( )*){1,}", ".", body)
 
     # Final stripping of stuff at the start/end of the file
     body = body.strip("\n -\\_*/().'")
