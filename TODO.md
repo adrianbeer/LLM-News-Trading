@@ -1,9 +1,22 @@
+Instruktion
+==============
 1. First execute asset_data_preprocessor (to get relevant list of tickers)
 2. Then news_importer
 3. Then news_parser (here tickers from assert_data_processor are used)
 4. Then data_merger, where price and news data are merged.
 5. Then neural_net.py, where the neural network is trained
 6. Then neural_net_evaluation(.ipynb) where the performance of the neurlal network that was trained in the last step is eavluated
+
+--------------------------------
+Big Picture:
+1. Tai-Pan Daten fetchen (Oktober), säubern und zusammenführen und input-output-Paare erstellen.
+
+2. Schauen ob IQFeed über R-Bibliothek leicht zu benutzen ist. Ansonsten Kallsen fragen, ob Uni Kauff der kibot.com-Daten übernehmen würde.
+
+3. Ami-Daten bestellen und zusammenführen.
+
+
+--------------------------------
 
 4. Sobald wir ein Mapping von Nachrichten zu Kursen haben, können wir versuchen einen KNN Algorithmus basierend auf
 der Word Mover's Distance zu benutzen, bzw. generell Clustering-Algorithmen mit diesem Distanzmass benutzen, siehe

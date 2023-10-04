@@ -1,42 +1,46 @@
-Co
-CO
-Co.
-CO.
+Corporations
+CORPORATIONS
+Corporation
+CORPORATION
 Companies
 COMPANIES
 Company
 COMPANY
-Corp
-CORP
 Corp.
 CORP.
-Corporation
-CORPORATION
-Corporations
-CORPORATIONS
-Inc
-INC
-Inc.
-, Inc.
-,Inc.
-INC.
-inc.
+Corp
+CORP
+Co.
+CO.
+Co
+CO
+Industries Incorporated
 Incorporated
 INCORPORATED
 International Inc.
+Holdings
+, Inc.
+,Inc.
+Inc.
+INC.
+inc.
+Inc
+INC
 Limited
 LIMITED
-Ltd
-LTD
 Ltd.
 LTD.
+Ltd
+LTD
 plc
 PLC
 Plc
 REIT
 SE
-S.A.
 , S. A.
-Bancorp
-Bancorporation
+S.A.
 , LLC
+Bancorporation
+Bancorp
+N.V.
+Enterprise

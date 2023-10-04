@@ -17,12 +17,19 @@ from sutime import SUTime
 
 
 def get_company_abbreviation(company_name, company_endings):
-    matching_mask = company_endings.apply(lambda x: x in company_name)
-    if matching_mask.sum() == 0: return None
-    longest_match_idx = company_endings[matching_mask].apply(lambda x: len(x)).idxmax()
-    longest_match = company_endings.iloc[longest_match_idx]
-    company_abbrev = company_name.replace(longest_match, "")
-    return company_abbrev
+    f = lambda x: _get_company_abbreviation(x, company_endings=company_endings) if x else x
+    return f(f(company_name))
+
+def _get_company_abbreviation(company_name, company_endings):
+    # Special treatment for double-sided name wrappers
+    if re.search("The (.)* Company", company_name):
+        return re.sub("(The )|( Company)", "", company_name)  
+    
+    matching_mask = company_endings.apply(lambda x: company_name.endswith(x))
+    if matching_mask.sum() == 0: return company_name
+    first_match = company_endings[matching_mask].iloc[0]
+    company_abbrev = company_name.replace(first_match, "")
+    return company_abbrev.strip(" ")
 
 
 def body_formatter(body):
