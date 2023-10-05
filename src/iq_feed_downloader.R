@@ -10,10 +10,10 @@ QuantTools_settings_defaults()
 
 from = '2022-12-03'
 to   = '2023-10-04'
-symbol = 'VECT'
+symbol = 'TRTN'
 
 # Daily
-get_iqfeed_data(symbol, from, to)
+stock <- get_iqfeed_data(symbol, from, to)
 
 # Hourly
 # get_iqfeed_data( symbol, from, to, period = 'hour' )
