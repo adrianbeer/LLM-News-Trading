@@ -5,7 +5,7 @@
 \usepackage[round]{natbib}
 %\usepackage{parskip}
 
-\title{Backtesting Expected Shortfall}
+\title{Market Efficiency of News Events}
 \author{Adrian Beer}
 \date{\vspace{-10ex}}
 \setlength{\droptitle}{-10em}
@@ -13,223 +13,60 @@
 \begin{document}
 	\maketitle
 	\tableofcontents 
+	\section{Introduction}	
 	
-
-	\section{Literatur}
-	\cite{garcia_performance_2019} untersuchen die 3 vorgestellten Tests aus \cite{kratz_multinomial_2016}, $Z_1$ und $Z_2$ von \cite{acerbi_back-testing_2014} und Berkowitz' Test.
-	Sie untersuchen die Grösse und Macht der Tests, wobei sie die Alternativhypothese entlang drei verschiedener Dimensionen verändern.
-	Die Nullhypothese ist $H_0: R_t \sim A R(1)-N G A R C H(1,1)$ with Normal innovations. 
-	Die drei Alterantivhypothesen lauteten: 
-	1. t-Student-Fehler mit variierenden Freiheitsgraden, 
-	2. t-Student-Fehler mit variierender Schiefe,
-	3. $H_1: R_t \sim A R(1)-N G A R C H(1,1)$ with asymmetric parameter $c$ and Normal innovations.
-	%
-	In allen Experimenten wurde T=250 und T=500 gewählt.
-	They found that $Z_1$ and the Berkowitz test had quantitatively significantly higher powers when the student-t was considered as the $H_1$.
-	Das ist verwunderlich, da doch $Z_1$ auch in der Alternativhypothese korrekt spezifizierte VaR voraussetzt und in \cite{berglund_backtesting_2022} beobachtet wurde, dass $Z_1$ schlechter (als die anderen Z-Tests) performt, wenn VaR falsch spezifiziert ist.
-	Bei \cite{garcia_performance_2019} wird aber nicht die VaR konstant gehalten, sondern lediglich die Fehlerterme des GARCH-Modells werden standardisiert auf $\mu=0, \sigma=1$.
-	%
-	In ihrem MC-Experiment simulieren sie 1000 Backtest. 
-	Eine Stichprobengrösse von n[250, 500] + T[2500] wird benutzt, wobei mit einem rollierenden Fenster der Grösse T die Modell-Parameter geschätzt werden, mit denen die n=250 bzw. n=500 Vorhersagen berechnet werden.\\
-	Um ES- und VaR-Vorhersagen zu berechnen benutzen sie eine parametrische Methode, wobei die Parameter mit der Maximum Likelihood-Methode geschätzt werden.
+	One possible explanation is that "low-capitalisation, young, unprofitable, low-dividend-paying, high-volatility and highgrowth companies are difficult to arbitrage or value according to traditional financial theory and are therefore very sensitive to investor sentiment".
 	
 	
-	Zeliade Systems benutzen die Student-t-Verteilung für sowohl die Null- als auch die Alternativhypothese. 
-	Zur Untersuchung der Macht werden die Freiheitsgrade für beide Hypothesen verändert.\\
-
+	\subsection{Categories}
+	\cite{peng_leverage_2015}:
+	Bag of Keywords, Polarity Score, Category Tagging...
+	Using initial seed words for each category.
+	Categories: new-product, acquisition, pricerise, price-drop, law-suit, fiscal-report, investment,
+	bankrupt, government, analyst-highlights.
 	
-	\cite{bayer_regression-based_2022} betrachten untersuchen in einem Experiment die Power, indem sie die Vorhersagen von einem zu einfachen Modell (Historische Simulation) backtesten. 
-	PAUC mit variierender Stichprobengröße und ROC-Kurve mit verschiedensten Datengenerierungsprozessen.
-	These ES backtests are the first which solely backtest the ES in the sense that they only require ES forecasts as input variables.
-	In einem anderen werden Parameter in der Alternativhypothese falsch spezifiziert: sie variieren hier den ARCH-Parameter, die unbedingte Varianz, die Persistenz, die Anzhal der Freiheitsgrade und das Wahrscheinlichkeitslevel.
-	Tests: Expected Shortfall Regression (ESR), Conditional Calibration (CC) of Nolde and Ziegel (2017), exceedance residuals (ER) tests of McNeil and Frey (2000).
-	(Vergleichstests sind solche, die keine strengen Annahmen an die Verteilung stellt, da nicht von Autoritäten forderbar... 
-	Darum nicht z.B. Multinomialer Test.)
-	ESR performte am besten.\\
-
+	\subsubsection{Labeling}
+	\begin{itemize}
+		\item{Next Days Close}
+		\item{Next Close/Open}
+		\item{Trailing Stop-Loss}
+	\end{itemize}
 	
-	\cite{spring_backtesting_2021} implementiert 5 verschiedene Tests: 
-	Den Multinomialen Test von \cite{kratz_multinomial_2016}, 
-	den $Z_2$ von \cite{acerbi_back-testing_2014},  
-	Intercept ESR von \cite{bayer_regression-based_2022}, 
-	Z-Tests von \cite{costanzino_backtesting_2015} und combined ES residuals. 
-	Die Größe von den Tests. 
-	Nehme 250 Stichproben einer standardnormalverteilten return loss distribution.
-	Dabei fiel auf, dass der Z-Test die Nullhypothese in 10\% der Fälle ablehnt, obwohl ein Signifikanzlevel von 5\% gewählt wurde und das diese Rate noch schlechter wird für Große T.
-
-	%QUOTE
-	For all single power scenarios, again 250 initial loss observations are drawn from the standard normal distribution. Again both $\mu_t$ and $\sigma_t$ are estimated over the previous 250 observations for every observation t within the backtesting horizon. 
-	Furthermore, the risk manager again estimates the underlying risk 
-	$\widehat{ES}_{t,\alpha}$ based on the respective normal distribution, i.e. $\widehat{L}_t \sim N\left(\mu_t, \sigma_t \right)$.
-	%QUOTE
-	In zwei Szenarien-Kategorien wird die Macht der Tests gemessen:
-	1. Misspez. tail behaviour and conditional variance unter Verwendung einer Student-t-Verteilung. 
-	2. Misspez. tail behaviour aber mit korrekt spezifizierter bedinger Varianz und Erwartungswert.
-	Einmal mit Student-t-Verteilung und einmal mit schiefer Normalverteilung.
-	Jeder Tests wird anhand von Größe und Macht in den Simulationen beurteilt. 
-	Therefore, according to both empirical size and power, the defacto one-sided version of the multinomial backtest yields the best results followed by both the intercept ESR backtest and the combined ES residuals backtest.\\
+	\section{Related Work}
+	\textbf{\cite{salbrechter_financial_2021-1}} investigates the impact of financial news on the daily returns of S\&P 500 constituents using a self-fine-tuned BERT model. 
+	Their algorithm produce the CLS Token from FinNewsBert and a Topic vector from Text2Topic and feed these into a standard feed forward NN, which then produces probabilities for the 3 classes.
+	They find that the news is priced in within one day, but not instantaneously.
+	Their FinNewsBert model is retrained every two years in order to obtain a large time-frame for their out-of-sample study.
+	They consider the problem of look-ahead-bias of the base BERT model, due to the data that it is trained on.
+	They use a dataset of financial news published by Refinitiv from 1996 to 2020 and from Refinitive Datastream daily price data of 1330 companies, which were at some point in time S\&P consituents.
+	As part of the preprocessing they convert news articles to lower case, remove all numbers, punctuation marks and brackets, so that only letters remain.
+	Multiple news articles about one company published in quick succession are merged into a single document.
+	(Q: How is this handled coupled with the token limitations of BERT?)
+	An algorithms is used to discern fresh ans stale news.
+	The labels for the training of FinNewsBert are constructed based on the idiosynchratic price movement following the news,
+	namely on the following formula: 
+	$$I R_{i, t}=R_{i, t}-R_{f, t}-\beta_{i, t} *\left(R_{S \& P 500, t}-R_{f, t}\right)$$
+	Afterwards z-scores are calculated for each stock, in order to avoid overweighting price movements in smaller, more volatile stocks.
+	$$z_{i, t}=\frac{I R_{i, t}-\mu_{i, t}}{\sigma_{i, t}}$$
+	They find improved classification performance, with the topic vector being used as input.
+	With the Text2Vec algorithm they differentiate between analyst forecasts, earnings reports, monetary policy and business/strategic.
 	
-	
-	\cite{kratz_multinomial_2016}: 
-	In der Simulationsstudie benutzen sie 4 verschiedene Verteilungen, welche denselben Erwartungswert und dieselbe VArianz besitzen. 
-	We choose sample sizes n1 = 250, 500, 1000, 2000 and estimate the rejection probability for the null hypothesis using 10000 replications. 
-	Sie vergleichen Student t5, t3 und schiefe Student t3-Verteilungen mit der Null-Hypothese einer Normalverteilung.
-	Dabei werden die $\alpha$-Level variiert.
-	Weiter wurden statische und dynamische Backtesting-Experimente durchgeführt. 
-	Dynamisch -> The true data-generating mechanism for the losses is a stationary GARCH model with Student innovations.
-	Statisch -> In each experiment we generate a total dataset of n + n2 values from the true distribution G; we use the same four choices as in the previous section. 
-	The length n of the backtest is fixed at the value 1000. 
-	The modeller uses a rolling window of n2 values to obtain an estimated distribution F , n2 taking the values 250 and 500.
-	Zuletzt empfehlen sie eine Testprozedur für die Praxis: The most powerful test is the LRT which gives good and stable results for N $\leq$ 4. 
-	However, it requires a sample size for estimation of at least 500 not to be oversized. 
-	Moreover, this test requires a little more work to implement as we must carry out an optimization to determine the maximum-likelihood estimates of $\mu$ and $\sigma$ in (2.5).\\
-	
-	\cite{berglund_backtesting_2022} have main areas of investigation, being the comparison of VaR 99.5\% and VaR 99.7\% with corresponding levels of ES, the evaluation of the backtests based on simulated data and the evaluation of the backtests based on empirical market data.
-	%
-	They tested the 3 tests from \cite{acerbi_back-testing_2014} and the new test from \cite{acerbi_minimally_2019}.
-	The so called Minimally Biased Relative backtest showing the overall best performance of the looked at backtests.
-	Die Authoren benutzen einen zu \cite{edberg_non-parametricbacktesting_2017} sehr ähnlichen Ansatz.
-	Auch ähnlich zu \cite{acerbi_back-testing_2014}, Wimmerstedt 2015 und Envgall 2016 benutzen sie simulierte Datenpunkte von Normal- und Student-t-Verteilungen, um die Macht und Größe der Tests zu vergleichen.
-	Predicted Distribution is \\
-	1. standard Normal, actual distribution is Normal with varying std, \\
-	2. Student-t with df=15, actual distribution is Student-t with varying df. \\
-	%%%
-	Note that the VaRs of the predicted and the actual distribution can differ, so we don't assume VaR to have been validated and true in this setting.
-	%%%
-	Further, just like \cite{edberg_non-parametricbacktesting_2017} this validation will  be performed with the simulated distributions shifted so that their individual VaR measures matches that of the predicted VaR.
-	No cross-distributional setting, da nach der Meinung der Authoren unnötig, da Verteilungen genügend Unterscheidbar alleine durch die Verteilungsparameter.
-	"Previous studies have tried to test as many kinds of backtests as possible whereas this study reasons a bit different. Since many of the previous studies within the area were conducted the three original backtests by Acerbi and Szekely (2014) have grown in popularity and are arguably the backtests which at the moment are the closest to actually being implemented in a real-world setting."
-	%
-	The backtest which this thesis favors and would recommend Nasdaq to look into is Z4, the minimally biased relative backtest.
-	Regarding Z3, this thesis discourages from implementing it. The reason for this being its earlier discussed flaws, namely the fact that it is computationally intensive as well as unintuitive. Those are to flaws that are not appreciated by regulators and other stakeholders, making a real-world implementation improbable.
-	%
-	Die Authoren finden heraus das $Z_1$ von \cite{acerbi_back-testing_2014} besser, als die anderen Tests performt, wenn VaR korrekt spezifiziert ist,
-	wenn sich das vorhergesagte VaR allerdings unterscheidet, dann haben $Z_2$ und $Z_3$ grössere Macht.
-	So erklären die Authoren das Ergebnis:
-	$Z_1$ nimmt an, das $VaR$ auch unter der Alternativhyhpothese korrekt spezifiziert ist, daher macht das Ergebnis Sinn.
-	Dies ist nicht der Fall für $Z_2$ und $Z_3$.
-	Daher performt $Z_1$ für varierendes VaR in den Alternativverteilungen schlechter.
-	\\
-	\cite{edberg_non-parametricbacktesting_2017} 
-	An important takeaway from the thesis is that the different backtests all use some kind of trade-off between measuring the number of Value at Risk exceedances and their magnitudes.
-	They (mostly) hold VaR constant in their simulations.
-	They use the Normal and Student's t distribution to make their study comparable to others and also the Generalized Pareto distribution.
-	
-	They compare the 3 Z-tests from \cite{acerbi_back-testing_2014}, \cite{costanzino_backtesting_2015}, Kratz..
-	and Basel's 2016 suggested Backtest.
-	
-	As seen in the literature review several of the backtests use the number of VaR exceedances to determine if ES is underestimated.
-	% Kommentar: Das ist problematisch, da die Anzahl der Exceedences sehr gering sein kann. Die Grösse der Exceedence sollte auch sehr wichtig sein!
-	They use a sample length T of 250. Each backtest will be evaluated $10^5$ times to create a rejection ratio.
-	For Acerbi and Szekely backtests, that need simulated distributions for their test statistics, this thesis will use $10^5$ simulations to create these distributions.
-	
-	Kallsen schlägt eine Prozedur vor, die das Signifikanzniveau des VaR-Tests berücksichtigt, d.h. den VaR-Test miteinbezieht.
-	
-	\subsection{Zusammenfassung}
-	Viele der Arbeiten fokusieren sich auf den Fall, dass VaR entweder zu 100\% korrekt spezifiziert ist, oder misspezifiziert ist (mit unterschiedl. Ausmassen).
-	Viele der Verfahren, die von einem korrekt spezifizierten VaR ausgehen verhalten sich gut, wenn die VaR korrekt spezifiziert ist, logischerweise.
-	Diese Tests sind z.B. solche, die nicht auf die Anzahl, sondern nur auf das Ausmass der Überschreitungen eingehen.
-	Die Benutzung solcher Tests verlangt einen VaR-Test, dessen Signifikanzlevel zusammen mit dem Signifikanzlevel des ES-Tests genommen werden müssen, um ein für den gesamten ES-Test gültiges Signifikanzlevel zu berechnen.\\
-	
-	Andere Tests testen auch die Anzahl der Überschreitungen implizit mit und können daher auch misspezifizierte Modelle bzgl. VaR gut erkennen. (Z.B. $Z_3$ von \cite{acerbi_back-testing_2014})
-	Diese benötigen zwangsweise auch VaR-Vorhersagen, um die Überschreitungen zu berechnen, allerdings ist hier die Interaktion zwischen den Signifikanzleveln nicht ganz klar.
-	Hier kann das Ausmass des Fehlers der VaR-Vorhersage die Wahrscheinlichkeit explizit über eben diese beeinflussen, dass der nachfolgende "ES"-Test das Modell ablehnt.\\
-	
-	Alle Tests benötigen VaR-Vorhersagen, bevor die Überschreitungen gemessen und zum berechnen der ES benutzt werden können.
-	Diese VaR-Vorhersagen sind offensichtlich stochastisch Fehlerbehaftet.
-	Das heisst selbst wenn ein erwartungstreuer und konsistenter Schätzer der VaR benutzt wird, wird die VaR
-	für zur Berechnung der ES-Vorhersagen misspezifiziert sein, wobei das Ausmass von der Güte des Schätzers und
-	vom Zufall abhängt.
-	Darum schlage ich vor, die Untersuchung nicht in zwei Abschnitte zu unterteilen, d.h. in einen, wo die VaR korrekt und einen, wo die VaR falsch spezifiziert ist, sondern ich schlage vor den zugrundeliegenden Zufall in den VaR-Vorhersagen in das Simulationsexperiment miteinzubauen und zu berücksichtigen.
-	 
-	\subsection{Interaktion zwischen VaR-Signifikanzlevel und ES-Signifikanzlevel}
-	Wenn wir die Verteilung des Prozesses kennen wir die Macht des VaR-Tests und können das Signifikanzlevel entsprechend bestimmen.
-	Wenn wir die Verteilung des Prozesses kennen und VaR als bekannt voraussetzen, sollten wir relativ genau die Macht des ES-Tests bestimmen können.
-	Allerdings ist die multiple Fehlerwahrscheinlichkeit 1. Art (Family-wise error rate (FWER)) nicht bekannt.
-	
-	Naja, da wir die Macht des VaR-Tests kennen und alle Simulationen ablehnen, bei denen schon der VaR-Test fehlschlägt interessiert uns der multiple Fehler gar nicht unbedingt, sondern die Spezifität und Güte des nachfolgenden ES-Tests.
-	
-	Die Güte der der meisten ES-Tests ist nicht berechenbar, sondern muss simuliert werden. Diese Güte basiert aber trotzdem auf einem bestimmten kritischen Wert, der ... 
-	%TODO jetzt ist es nützlich zu verstehen, warum z.b. der kritische Wert von Z3 simuliert aber von Z2 und Z1 berechnet werden kann.
-	
-	
-	\section{Über Tests}
-	\subsection{Expected Shortfall Regression (ESR)}
-	Test von \cite{bayer_regression-based_2022}
-	\cite{spring_backtesting_2021}:
-	There is only one rejection rate that is not labelled in green, however only with a value slightly below 80\%. Moreover, this rejection rate belongs to the intercept ESR backtest in case of T = 1000 backtesting observations. It is also worth mentioning that rejection rates of the intercept ESR backtest decrease given an increase in the backtesting horizon T, which is rather counter-intuitive.
-	
-	In a seminal work Artzner et al. (1999) proposed a set of desirable mathematical properties defining a coherent risk measure.
-	
-	s a result of the Fundamental Review of the Trading Book (Basel Committee on Banking Supervision, 2013) a 10-day ES at the 97.5\% level will be the main measure of risk for setting trading book capital under Basel III (Basel Committee on Banking Supervision, 2016).
-	
-	Gneiting (2011) showed that ES is not an elicitable risk measure, whereas VaR is; see also Bellini and Bignozzi (2015) and Ziegel (2016) on this subject. An elicitable risk measure is a statistic of a PnL distribution that can be represented as the solution of a forecastingerror minimization problem. The concept was introduced by Osband (1985) and Lambert et al. (2008). When a risk measure is elicitable we can use consistent scoring functions to compare series of forecasts obtained by different modelling approaches and obtain objective guidance on the approach that gives the best forecasting performance.
-	
-	It should be noted that ES satisfies more general notions of elicitability, such as conditional elicitability and joint elicitability. Emmer et al. (2015) introduced the concept of conditional elicitability.
+	\bigskip
+	\textbf{\cite{ke_predicting_2020}} find that price responses to news are larger for fresh news and larger for smaller, more volatile stocks.
 	
 	
 	
-	See also Acerbi \& Szekely (2016) who introduce a new concept of “backtestability” satisfied in particular by expected shortfall.
+	\textbf{\cite{liu_intraday_2023}} analyze the predictability of stock returns for different time horizons, ranging from 1-min to 30-min, and market sectors between 2005 and 2016.
+	They find high profitability even after transaction costs.
+	Intraday predictability decreased with higher time horizons
 	
-	\subsection{Combined ES residuals}
-	
-	\subsection{Conditional Calibration}
-	nolde und ziegel 2017...
-	
-	\subsection{Exceedance Residuals (ER)}
-	McNeil and Frey 2000
-	
-	\subsection{Z-Tests}
-	Eine Reihe von 3 sehr beliebten Tests von \cite{acerbi_minimally_2019}, die mit $Z_i, i \in \{1,2,3\}$ notiert werden, den Unconditional Test von Du \& Escanciao, sowie Berkowitz' tail LR test.
-	Die Tests sind einseitig, d.h. lehnen die Nullhypothese nur ab, wenn das Risiko unterschätzt wird.
-	
-	Von zwei Authoren wurden Probleme bezüglich der Grösse des $Z_2$-Test identifiziert:
-	\cite{spring_backtesting_2021} fiel auf, dass der $Z_2$-Test die Nullhypothese in 10\% der Fälle ablehnt, obwohl ein Signifikanzlevel von 5\% gewählt wurde und das diese Rate noch schlechter wird für Große T.
-	Dasselbe Phänomen beobachtete \cite{garcia_performance_2019}, wo die Grösse des Tests für die grössere Stichprobenanzahl (n=500 anstatt n=250) auf über 5\%anstieg.
-	
-	From \cite{berglund_backtesting_2022}:
-	The one major flaw of $Z_2$, which has been mentioned many times throughout this thesis, is its bias towards the prediction of the underlying VaR.
-	That leaves $Z_1$, a backtest that will not be recommended with the backtest settings investigated in this thesis. 
-	However, if the settings of the backtest were to be adjusted so that there are at least a handful of expected VaR exceedances, this backtest has the potential to excel given that the underlying VaR measure has been validated. 
-	In such a setting, this backtest could also be worth considering.
-	
-	$Z_3$ benötigt viel Rechenzeit.
-	
-	\subsection{Multinomial Test}
-	\cite{kratz_multinomial_2016} The idea that our test serves as an implicit backtest of expected shortfall comes naturally from an approximation of ES proposed by Emmer et al. (2015).
-	$ES_\alpha(L) \approx \frac{1}{4}[q(\alpha)+q(0.75 \alpha+0.25)+q(0.5 \alpha+0.5)+q(0.25 \alpha+0.75)]$
-	
-	\subsection{Pareto-Kallsen}
+	\bigskip
+	These results are consistent with the observations of Baker (2007b), who observes that low-capitalisation, young, unprofitable, low-dividend-paying, high-volatility and highgrowth companies are difficult to arbitrage or value according to traditional financial theory and are therefore very sensitive to investor sentiment.
 	
 	
-	% Frage: 
-	
-	\section{Sonstiges}
-	KL distanec
-	berglund
-	real - predicted ES -> (!) 
-	keep var constant and not constant 
-	\\\\
-	Forschungsfragen:
-	- Überprüfen: It is also worth mentioning that rejection rates of the intercept ESR backtest decrease given an increase in the backtesting horizon T, which is rather counter-intuitive. \cite{spring_backtesting_2021}.
-	
-	\section{Vorhersagen von ES}
-	\subsection{Others}
-	Other methods such as “Exponentially Weighted Moving Average” (EWMA)
-	
-	\subsection{Historische Simulation}
-	
-	\subsection{Parametrische Vorhersage}
-	Parametrische Schätzung mit Maximum Likelihood in \cite{garcia_performance_2019}.
-	
-	Thus, a distribution is assumed and the distribution’s parameters are fitted to a set of empirical data.
-	There are two main types of parametric estimation methods, one which assumes constant volatility and one which assumes a stochastic volatility [\cite{edberg_non-parametricbacktesting_2017}].
-	Parametric stochastic volatility model -> GARCH
-	
-	\section{Methodologie}
-	"To objectively evaluate a backtesting method there is a need to know whether the backtest should reject the prediction or not in each case. Thereby there is a need to know what the correct ES of the observed distribution is."
-	
-	
+	\section{Methodology}
+	Because pre-news price movements have shown to correlate with the sentiment of the news, we incorporate this information
+	into our feature set.
 	
 	\bibliographystyle{plainnat}
 	\bibliography{References}
