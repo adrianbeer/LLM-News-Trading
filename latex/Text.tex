@@ -3,6 +3,7 @@
 \usepackage{titling}
 \usepackage[english]{babel}
 \usepackage[round]{natbib}
+\usepackage{amsmath}
 %\usepackage{parskip}
 
 \title{Market Efficiency of News Events}
@@ -33,6 +34,8 @@
 	\end{itemize}
 	
 	\section{Related Work}
+	
+	
 	\textbf{\cite{salbrechter_financial_2021-1}} investigates the impact of financial news on the daily returns of S\&P 500 constituents using a self-fine-tuned BERT model. 
 	Their algorithm produce the CLS Token from FinNewsBert and a Topic vector from Text2Topic and feed these into a standard feed forward NN, which then produces probabilities for the 3 classes.
 	They find that the news is priced in within one day, but not instantaneously.
@@ -51,14 +54,24 @@
 	They find improved classification performance, with the topic vector being used as input.
 	With the Text2Vec algorithm they differentiate between analyst forecasts, earnings reports, monetary policy and business/strategic.
 	
+	
 	\bigskip
-	\textbf{\cite{ke_predicting_2020}} find that price responses to news are larger for fresh news and larger for smaller, more volatile stocks.
+	\textbf{\cite{ke_predicting_2020}} propose a text-mining methodology, named SESTM, to extract sentiment information from text. 
+	They used a bag-of-words representation of news articles.
+	To distinguish fresh from stale news a measure of novelty was constructed based on the cosine similarity of an articles with all other articles about the same firm five trading days prior.
+	$$
+	\text { Novelty }_{i, t}=1-\max _{j \in \chi_{i, t}}\left(\frac{d_{i, t} \cdot d_j}{\left\|d_{i, t}\right\|\left\|d_j\right\|}\right)
+	$$
+	They find that price responses to news are larger for fresh news. 
+	They also found larger price responses for smaller and also for more volatile stocks.
+	Price movements for more volatile stocks last up to three days on average, while news about low volatility stocks are incorporated after just one day of trading.
 	
 	
-	
+	\bigskip
 	\textbf{\cite{liu_intraday_2023}} analyze the predictability of stock returns for different time horizons, ranging from 1-min to 30-min, and market sectors between 2005 and 2016.
 	They find high profitability even after transaction costs.
 	Intraday predictability decreased with higher time horizons
+	
 	
 	\bigskip
 	These results are consistent with the observations of Baker (2007b), who observes that low-capitalisation, young, unprofitable, low-dividend-paying, high-volatility and highgrowth companies are difficult to arbitrage or value according to traditional financial theory and are therefore very sensitive to investor sentiment.
@@ -66,7 +79,7 @@
 	
 	\section{Methodology}
 	Because pre-news price movements have shown to correlate with the sentiment of the news, we incorporate this information
-	into our feature set.
+	into our feature set \cite{ke_predicting_2020}.
 	
 	\bibliographystyle{plainnat}
 	\bibliography{References}
