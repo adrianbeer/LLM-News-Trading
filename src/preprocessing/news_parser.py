@@ -46,6 +46,8 @@ def body_formatter(body):
     h.drop_white_space = True
     return h.handle(new_body)
 
+months_days = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
+               "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 def remove_date_specifics(body, pr_date):
     ## Habe unterschied. Datumsparser getestet: 
@@ -56,9 +58,9 @@ def remove_date_specifics(body, pr_date):
     # ob die Datums von datefinder alle *vernünftig* sind.
     dates = datefinder.find_dates(body, source=True, strict=True)
     sutime = SUTime(mark_time_ranges=True, include_range=True)
-
+    contains_month_or_day = bool(re.search("|".join(months_days), body, flags=re.IGNORECASE))
     for date, text in dates:
-        if len(sutime.parse(text)) != 1:
+        if (len(sutime.parse(text)) != 1) and not contains_month_or_day:
             print(f"SUTime didn't approve as a date: {text}")
             continue
         if pr_date.date() > date.date():
@@ -90,8 +92,8 @@ def remove_contact_info_sentences(body):
     # Remove sentences with links
     # Remove sentences with emails
     ACRONYMS = r'(?:[A-Z]\.)+'
-    LINK_SENTENCE_REGEX = "www\.[a-z]*\.com"
-    EMAIL_SENTENCE_REGEX = "[a-z]*@[a-z]*\.com"
+    LINK_SENTENCE_REGEX = "[a-z]*\.[A-za-z]*\.com"
+    EMAIL_SENTENCE_REGEX = "[A-za-z]*@[A-za-z]*\.com"
     PHONE_NUMBER_REGEX = "(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}"
     HTML_LINK_INDEX = "\.html"
     CONTACT_INFO_REGEX = "|".join([LINK_SENTENCE_REGEX, 
