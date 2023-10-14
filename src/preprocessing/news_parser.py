@@ -16,9 +16,26 @@ import time
 from sutime import SUTime
 
 
+def infer_author(body):
+  for author in ["PRNewswire", "Globe Newswire", "Business Wire", "ACCESSWIRE"]:
+    if re.search(author, body, re.IGNORECASE) is not None:
+      return author
+  return None
+
+
+# Get company name by ticker (longName is always equal to shortName in yf...)
+# This takes a long time, because of the api calls to yf ~30min?
+def yahoo_get_wrapper(x):
+  try:
+    return yf.Ticker(x).info.get("longName")
+  except:
+    return None
+
+
 def get_company_abbreviation(company_name, company_endings):
     f = lambda x: _get_company_abbreviation(x, company_endings=company_endings) if x else x
     return f(f(company_name))
+
 
 def _get_company_abbreviation(company_name, company_endings):
     # Special treatment for double-sided name wrappers

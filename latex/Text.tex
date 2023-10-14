@@ -34,7 +34,7 @@
 	\end{itemize}
 	
 	\section{Related Work}
-	
+	"Following the work of Luss and d’Aspremont (2015), Ding et al. (2015), Xu and Cohen (2018), Ke et al. (2019), we formulate the stock movement prediction as a binary classification task"
 	
 	\textbf{\cite{salbrechter_financial_2021-1}} investigates the impact of financial news on the daily returns of S\&P 500 constituents using a self-fine-tuned BERT model. 
 	Their algorithm produce the CLS Token from FinNewsBert and a Topic vector from Text2Topic and feed these into a standard feed forward NN, which then produces probabilities for the 3 classes.
@@ -80,6 +80,22 @@
 	\section{Methodology}
 	Because pre-news price movements have shown to correlate with the sentiment of the news, we incorporate this information
 	into our feature set \cite{ke_predicting_2020}.
+	
+	\section{Labeling}
+	Adjusting returns to the market is important.
+	\cite{salbrechter_financial_2021-1}:
+	$$
+	I R_{i, t}=R_{i, t}-R_{f, t}-\beta_{i, t} *\left(R_{S \& P 500, t}-R_{f, t}\right)
+	$$
+	\cite{chen_stock_2021}:
+	$$
+	r_{s, t}=\frac{P_{s, t+\Delta t}}{P_{s, t}}-\frac{P_{m, t+\Delta t}}{P_{m, t}}
+	$$
+	
+	
+	Since news can take from 1 day up to 3 days to be fully incorporated in the stock price, ideally we set our label accordingly.
+	However the longer this time horizon, the higher the probability of having a second news event in this period.
+	How big is this problem??
 	
 	\bibliographystyle{plainnat}
 	\bibliography{References}
