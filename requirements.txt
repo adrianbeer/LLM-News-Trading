@@ -7,3 +7,12 @@ nltk
 dateparser
 sutime
 yfinance
+
+% For google cloud
+httplib2
+dask-cloudprovider
+google-api-python-client
+cryptography
+
+% For SSHCluster from dask
+asyncssh
