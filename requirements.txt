@@ -14,5 +14,8 @@ dask-cloudprovider
 google-api-python-client
 cryptography
 
+% google cloud storage
+google-cloud-storage
+
 % For SSHCluster from dask
 asyncssh
