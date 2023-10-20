@@ -1,0 +1,21 @@
+# !sudo apt update
+# !sudo apt install maven
+html2text
+datefinder
+dask[complete]
+nltk
+dateparser
+sutime
+yfinance
+
+% For google cloud
+httplib2
+dask-cloudprovider
+google-api-python-client
+cryptography
+
+% google cloud storage
+google-cloud-storage
+
+% For SSHCluster from dask
+asyncssh
