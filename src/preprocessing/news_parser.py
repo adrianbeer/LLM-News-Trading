@@ -103,6 +103,8 @@ def remove_company_specifics(body, company_name, short_name, ticker):
 
 
 def remove_contact_info_sentences(body):
+    # Note: If we want to remove numbers, make sure to do this last, because e.g. Tickers can contain numbers...
+    
     # Remove links
     # Identify all sentences with links (probably at the end of the document with links to company website with some advertisement...)
     # And remove them
