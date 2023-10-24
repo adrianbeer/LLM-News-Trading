@@ -15,7 +15,7 @@ Big Picture:
 
 3. Ami-Daten bestellen und zusammenführen.
 
-
+4. Cluster based on CLS token
 --------------------------------
 
 4. Sobald wir ein Mapping von Nachrichten zu Kursen haben, können wir versuchen einen KNN Algorithmus basierend auf
