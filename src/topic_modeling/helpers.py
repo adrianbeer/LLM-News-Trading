@@ -6,7 +6,7 @@ import numpy as np
 
 ### Generell -------------------------------
 
-def lemmatize_words(string_list: List[str], wnl: WordNetLemmatizer) -> List(str):
+def lemmatize_words(string_list: List[str], wnl: WordNetLemmatizer) -> List[str]:
   # The try-except-block makes sure that the (lazy) corpus is properly loaded.
   # Sometimes the error `WordNetCorpusReade object has no attribute _LazyCorpusLoader__args`
   # occurrs, which is caught with the try-except-block
@@ -39,8 +39,8 @@ def tokenize(doc):
 ### TF-IDF ---------------------------------------
 
 
-def keyword_filter(tokens, keyword_list):
+def keyword_filter(tokens: np.array, keyword_list: List[str]) -> np.array:
   # Tokens here are assumed to be lemmatized
-  is_keyword_mask = np.vectorize(lambda x: x in keyword_list)(tokens)
-  relevant_tokens = tokens[is_keyword_mask.astype(bool)]
+  is_keyword_mask = [(x in keyword_list) for x in tokens]
+  relevant_tokens = tokens[is_keyword_mask]
   return relevant_tokens

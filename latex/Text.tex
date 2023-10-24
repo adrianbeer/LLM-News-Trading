@@ -76,6 +76,22 @@
 	\bigskip
 	These results are consistent with the observations of Baker (2007b), who observes that low-capitalisation, young, unprofitable, low-dividend-paying, high-volatility and highgrowth companies are difficult to arbitrage or value according to traditional financial theory and are therefore very sensitive to investor sentiment.
 	
+	\bigskip
+	\textbf{\cite{fazlija_using_2022}} also use BERT for directional prediction, however not of individual stocks, but of the S\&P 500 Index itself.
+	Binary Classification task using Random Forest.
+	Using the Financial Phrase Bank for fine-tuning the BERT model. % SMALL
+	Using a dataset of news articles from Bloomberg and Reuters between 2007 and 2016. % VERY OLD 
+	They analyze the usefulness of title- and content sentiment separately.
+	No transactions costs considered.
+	No buy or sell threshold, positive sentiment results in buy, negative sentiment in sell.
+	Using the individual sentiment scores of 58 news articles per day and some technical indicators as features for teh
+	Random Forest, they achieve a marginal outperformance, even though it doesn't seem to have been sustainable and statistically significant.
+	
+	\subsection{Topic Modeling}
+	Salbrechter use Text2Topic, which is based on Word2Vec and cosine similarity.
+	
+	
+	
 	
 	\section{Methodology}
 	Because pre-news price movements have shown to correlate with the sentiment of the news, we incorporate this information
