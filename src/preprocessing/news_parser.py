@@ -92,7 +92,7 @@ def remove_date_specifics(body, pr_date):
 def remove_company_specifics(body, company_name, short_name, ticker):
     # Remove exchange/ticker info in parentheses
     # Doing this first is important if ticker equals short_name
-    body = re.sub(f"\([A-Z ]*:[ ]*{ticker}\)", "", body)
+    body = re.sub(f"\([A-Za-z ]*:[ ]*{ticker}\)", "", body)
     
     # Replace the actual company name with "the company"
     body = re.sub(f"(\*\*)*{company_name}(\*\*)*", " the company ", body)
