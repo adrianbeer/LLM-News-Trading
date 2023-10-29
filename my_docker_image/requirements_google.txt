@@ -1,0 +1,6 @@
+# For google cloud
+httplib2
+dask-cloudprovider
+google-api-python-client
+cryptography
+ipykernel
