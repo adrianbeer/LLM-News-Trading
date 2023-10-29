@@ -1,7 +1,7 @@
 FROM ghcr.io/dask/dask:2023.10.0-py3.10
 
-COPY requirements_clean .
-COPY requirements_google .
+COPY requirements_clean requirements_google setup.py .
+ADD src .
 
 RUN pip install -r requirements_clean.txt && \
     pip install -r requirements_google.txt
@@ -12,3 +12,4 @@ RUN apt update && \
 
 RUN mvn dependency:copy-dependencies -DoutputDirectory=./jars -f $(python3 -c 'import importlib; import pathlib; print(pathlib.Path(importlib.util.find_spec("sutime").origin).parent / "pom.xml")')
 
+RUN pip install .
