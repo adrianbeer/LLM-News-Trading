@@ -2,18 +2,25 @@ import pickle
 import re
 import warnings
 
-import datefinder
 import html2text
 import pandas as pd
 import yfinance as yf
 from bs4 import BeautifulSoup
 from dateutil.parser import UnknownTimezoneWarning
-from nltk.tokenize import sent_tokenize
 
 warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
 import time
 
 from sutime import SUTime
+import datefinder
+from dateparser.search import search_dates
+from dateparser_data.settings import default_parsers
+
+
+# These constants are used in `remove_date_specifics`
+MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+PARSERS = [parser for parser in default_parsers if parser != 'relative-time']
 
 
 def infer_author(body):
@@ -63,29 +70,39 @@ def body_formatter(body):
     h.drop_white_space = True
     return h.handle(new_body)
 
-months_days = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
-               "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-
-def remove_date_specifics(body, pr_date):
+def remove_date_specifics(body, pr_date, logging=False):
     ## Habe unterschied. Datumsparser getestet: 
     # - dateparser, dateutil gefällt mir nicht
     # - datefinder ganz gut, allerdings teilweise zu aggressiv
     # - SUTime hat fast schon zu viel Funktionalität und braucht dementsprechend 
     # auch lange, ist aber als extra check vielleicht ganz gut, um zu überprüfen, 
     # ob die Datums von datefinder alle *vernünftig* sind.
-    dates = datefinder.find_dates(body, source=True, strict=True)
+    datefinder_dates = datefinder.find_dates(body, 
+                                             source=True, 
+                                             strict=True)
+    
+    dateparser_dates = search_dates(body, 
+                                    languages=["en"], 
+                                    settings={"STRICT_PARSING":True,
+                                              "PARSERS": PARSERS})
+    dateparser_dates = [(date, text) for text,date in dateparser_dates]
+    
     sutime = SUTime(mark_time_ranges=True, include_range=True)
-    contains_month_or_day = bool(re.search("|".join(months_days), body, flags=re.IGNORECASE))
-    for date, text in dates:
-        if (len(sutime.parse(text)) != 1) and not contains_month_or_day:
-            print(f"SUTime didn't approve as a date: {text}")
+    contains_month_or_day = lambda x: bool(re.search("|".join(MONTHS + DAYS), x))
+    
+    for date, text in list(datefinder_dates) + dateparser_dates:
+        if (len(sutime.parse(text)) != 1) and not contains_month_or_day(text):
+            if logging: print(f"Not approved as a date: {text}")
             continue
-        if pr_date.date() > date.date():
-            body = body.replace(text, "past date")
-        elif pr_date.date() == date.date():
-            body = body.replace(text, "today")
-        else:
-            body = body.replace(text, "future date")
+        if logging: print(f"Approved as date {text}")
+        
+        body = body.replace(text, "")
+        # if pr_date.date() > date.date():
+        #     body = body.replace(text, "past date")
+        # elif pr_date.date() == date.date():
+        #     body = body.replace(text, "today")
+        # else:
+        #     body = body.replace(text, "future date")
     return body
 
 
@@ -131,7 +148,8 @@ def remove_contact_info_sentences(body):
     return body
 
 
-def filter_body(body, ticker, author, pr_date, company_name, short_name):
+def filter_body(row: pd.Series) -> str:
+    body, ticker, author, pr_date, company_name, short_name = row.body, row.stocks, row.author, row.time, row.company_name, row.short_name
     body = remove_company_specifics(body, company_name, short_name, ticker)
     body = remove_contact_info_sentences(body)
     body = remove_date_specifics(body, pr_date)
