@@ -95,14 +95,7 @@ def remove_date_specifics(body, pr_date, logging=False):
             if logging: print(f"Not approved as a date: {text}")
             continue
         if logging: print(f"Approved as date {text}")
-        
         body = body.replace(text, "")
-        # if pr_date.date() > date.date():
-        #     body = body.replace(text, "past date")
-        # elif pr_date.date() == date.date():
-        #     body = body.replace(text, "today")
-        # else:
-        #     body = body.replace(text, "future date")
     return body
 
 
@@ -148,18 +141,24 @@ def remove_contact_info_sentences(body):
     return body
 
 
-def filter_body(row: pd.Series) -> str:
+def filter_body(row: pd.Series, logging=False) -> str:
     body, ticker, author, pr_date, company_name, short_name = row.body, row.stocks, row.author, row.time, row.company_name, row.short_name
+    
+    # Remove newline symbols which can interfere
+    # with the date detection process
+    body = re.sub("(\n){1,}", " ", body)
+    body = re.sub("( ){2,}", " ", body)
+    
     body = remove_company_specifics(body, company_name, short_name, ticker)
     body = remove_contact_info_sentences(body)
-    body = remove_date_specifics(body, pr_date)
+    body = remove_date_specifics(body, pr_date, logging=logging)
     
     # Remove author (preamble)
     # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
     body = re.sub(f"(\n.*{author})|(^.*{author})", "", body, flags=re.IGNORECASE) 
     
     # Remove (the "Company") parenthesis and other `("different name")`-constructs
-    # body = re.sub('\(.*"(.{1,})".*\)', "", body)
+    body = re.sub('\(.*"(.{1,})".*\)', "", body)
 
     # Remove underscores 
     body = re.sub("_", " ", body)
