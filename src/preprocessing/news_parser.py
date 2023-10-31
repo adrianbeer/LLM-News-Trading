@@ -85,7 +85,9 @@ def remove_date_specifics(body, pr_date, logging=False):
                                     languages=["en"], 
                                     settings={"STRICT_PARSING":True,
                                               "PARSERS": PARSERS})
-    dateparser_dates = [(date, text) for text,date in dateparser_dates]
+    if dateparser_dates is None:
+        dateparser_dates = []
+    dateparser_dates = [(date, text) for text, date in dateparser_dates]
     
     sutime = SUTime(mark_time_ranges=True, include_range=True)
     contains_month_or_day = lambda x: bool(re.search("|".join(MONTHS + DAYS), x))
