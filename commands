@@ -1,0 +1,19 @@
+dask worker tcp://172.18.0.2:8786
+
+docker run --expose=22-49000 -it hermelinkluntjes/thesis:test bash
+
+ssh -i /home/beer/Documents/GithubProjekte/trading_bot/.ssh/id_ed25519 adrianbeerka@<ext ip> 
+ssh -i /workspaces/trading_bot/.ssh/id_ed25519 adrianbeerka@<ext ip>
+
+# Setup SSH
+eval "$(ssh-agent -s)"
+ssh-add /home/beer/Documents/GithubProjekte/trading_bot/.ssh/id_ed25519
+ssh-add /workspaces/trading_bot/.ssh/id_ed25519
+
+
+dask ssh --ssh-private-key /workspaces/trading_bot/.ssh/id_ed25519 <ext ip>
+
+
+Dockerfile TODO: 
+pip install paramiko
+install ssh 
