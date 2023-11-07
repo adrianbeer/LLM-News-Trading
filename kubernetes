@@ -9,7 +9,7 @@ gcloud components install gke-gcloud-auth-plugin
 
 gcloud container clusters create \
   --machine-type n1-standard-4 \
-  --num-nodes 2 \
+  --num-nodes 1 \
   --zone us-central1-a \
   --cluster-version latest \
   coolercluster
@@ -18,10 +18,29 @@ kubectl create clusterrolebinding cluster-admin-binding \
 --clusterrole=cluster-admin \
 --user=adrianbeerka
 
-
-gcloud container clusters resize coolercluster --node-pool POOL_NAME \
-    --num-nodes 0
+# Shut down kubernetes cluster...
+gcloud container node-pools list --cluster=coolercluster --zone=us-central1-a
+gcloud container clusters resize coolercluster --node-pool default-pool --num-nodes 0 --zone=us-central1-a
   
+
+# Scale node pool vertically
+gcloud container node-pools update POOL_NAME \
+    --cluster CLUSTER_NAME \
+    --machine-type MACHINE_TYPE \
+    --disk-type DISK_TYPE \
+    --disk-size DISK_SIZE
+
+Konfigurieren von unterschiedl. machine-types auf unterschiedl. Nodes,
+2 Nodes -> 1 für worker-machine und 1 node für scheduler-machine 
+
+Von https://www.inovex.de/de/blog/data-processing-dask-rapids-kubernetes-cluster-gpu-support-13/:
+gcloud container clusters create gpu-support
+--accelerator type=nvidia-tesla-t4,count=2
+--cluster-version 1.15.11-gke.1
+--machine-type n1-highmem-4
+--num-nodes 2
+--zone europe-west4-b
+
 -------------------------- Helm -------------------------------------
 helm repo add dask https://helm.dask.org/
 helm repo update
