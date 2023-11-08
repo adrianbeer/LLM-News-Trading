@@ -1,19 +1,42 @@
-kubernetes
+# Instructions to get gcloud/kubernetes to run in the hermelinkluntjes:thesis docker container in vscode
+apt install -y curl
+apt-get install -y apt-transport-https ca-certificates gnupg curl sudo
 
-pip install dask-kubernetes --upgrade 
+sudo curl -sSL https://sdk.cloud.google.com | bash
+
+#gcloud
+curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-454.0.0-linux-x86_64.tar.gz
+tar -xf google-cloud-cli-454.0.0-linux-x86_64.tar.gz
+./google-cloud-sdk/install.sh
+# New terminal
+./google-cloud-sdk/bin/gcloud init
 
 gcloud components install gke-gcloud-auth-plugin
 
+pip install dask-kubernetes --upgrade 
+
+#Kubernetes
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 -------------------------- Google K8 Cluster Management -----------------------------
 
 gcloud container clusters create \
-  --machine-type n1-standard-4 \
+  --machine-type n1-standard-2 \
   --num-nodes 1 \
   --zone us-central1-a \
   --cluster-version latest \
   coolercluster
 
+# Name of scheduler nodepool: default-pool
+# Create additional nodeluster with different machine-type
+gcloud container node-pools create workerpool \
+  --machine-type n1-standard-8 \  
+  --num-nodes 0 \  
+  --cluster coolercluster \
+  --zone=us-central1-a
+  
 kubectl create clusterrolebinding cluster-admin-binding \
 --clusterrole=cluster-admin \
 --user=adrianbeerka
@@ -21,7 +44,8 @@ kubectl create clusterrolebinding cluster-admin-binding \
 # Shut down kubernetes cluster...
 gcloud container node-pools list --cluster=coolercluster --zone=us-central1-a
 gcloud container clusters resize coolercluster --node-pool default-pool --num-nodes 0 --zone=us-central1-a
-  
+gcloud container clusters resize coolercluster --node-pool workerpool --num-nodes 0 --zone=us-central1-a
+
 
 # Scale node pool vertically
 gcloud container node-pools update POOL_NAME \
@@ -40,6 +64,10 @@ gcloud container clusters create gpu-support
 --machine-type n1-highmem-4
 --num-nodes 2
 --zone europe-west4-b
+
+gcloud container clusters list
+
+gcloud container clusters delete coolercluster --zone us-central1-a
 
 -------------------------- Helm -------------------------------------
 helm repo add dask https://helm.dask.org/
