@@ -1,0 +1,32 @@
+# highmemworkers.yaml
+apiVersion: kubernetes.dask.org/v1
+kind: DaskWorkerGroup
+metadata:
+  name: simple-highmem
+spec:
+  cluster: simple
+  worker:
+    replicas: 2
+    spec:
+      containers:
+      - name: worker
+        image: "ghcr.io/dask/dask:latest"
+        imagePullPolicy: "IfNotPresent"
+        resources:
+          requests:
+            memory: "32Gi"
+          limits:
+            memory: "32Gi"
+        args:
+          - dask-worker
+          - --name
+          - $(DASK_WORKER_NAME)
+          - --resources
+          - MEMORY=32e9
+          - --dashboard
+          - --dashboard-address
+          - "8788"
+        ports:
+          - name: http-dashboard
+            containerPort: 8788
+            protocol: TCP

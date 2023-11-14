@@ -5,11 +5,11 @@ metadata:
   name: simple
 spec:
   worker:
-    replicas: 2
+    replicas: 0
     spec:
       containers:
       - name: worker
-        image: "ghcr.io/dask/dask:latest"
+        image: "hermelinkluntjes/thesis:test"
         imagePullPolicy: "IfNotPresent"
         args:
           - dask-worker
@@ -22,11 +22,14 @@ spec:
           - name: http-dashboard
             containerPort: 8788
             protocol: TCP
+            nodeSelector:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: workerpool
   scheduler:
     spec:
       containers:
       - name: scheduler
-        image: "ghcr.io/dask/dask:latest"
+        image: "hermelinkluntjes/thesis:test"
         imagePullPolicy: "IfNotPresent"
         args:
           - dask-scheduler
@@ -49,6 +52,8 @@ spec:
             path: /health
           initialDelaySeconds: 15
           periodSeconds: 20
+      nodeSelector:
+        cloud.google.com/gke-nodepool: default-pool
     service:
       type: NodePort
       selector:

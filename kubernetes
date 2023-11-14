@@ -15,37 +15,59 @@ gcloud components install gke-gcloud-auth-plugin
 
 pip install dask-kubernetes --upgrade 
 
-#Kubernetes
+# Kubernetes
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
 echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
 install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
+# Helm
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+
 -------------------------- Google K8 Cluster Management -----------------------------
 
 gcloud container clusters create \
+  --enable-autoscaling \
+  --min-nodes 0 \
+  --max-nodes 10 \
+  --total-max-nodes 10 \
   --machine-type n1-standard-2 \
   --num-nodes 1 \
   --zone us-central1-a \
   --cluster-version latest \
   coolercluster
 
-# Name of scheduler nodepool: default-pool
-# Create additional nodeluster with different machine-type
-gcloud container node-pools create workerpool \
-  --machine-type n1-standard-8 \  
-  --num-nodes 0 \  
-  --cluster coolercluster \
-  --zone=us-central1-a
-  
 kubectl create clusterrolebinding cluster-admin-binding \
 --clusterrole=cluster-admin \
 --user=adrianbeerka
 
+# ?
+kubectl auth reconcile -f my-rbac-rules.yaml
+
+# Name of scheduler nodepool: default-pool
+# Create additional nodeluster with different machine-type
+gcloud container node-pools create workerpool \
+  --enable-autoscaling \
+  --min-nodes 0 \
+  --max-nodes 10 \
+  --total-max-nodes 10 \
+  --machine-type n1-standard-4 \
+  --num-nodes 1 \
+  --cluster coolercluster \
+  --zone us-central1-a
+
+kubectl get nodes [--show-labels]
+gcloud container node-pools list --cluster coolercluster
+gcloud container node-pools describe workerpool --cluster coolercluster
+
 # Shut down kubernetes cluster...
-gcloud container node-pools list --cluster=coolercluster --zone=us-central1-a
 gcloud container clusters resize coolercluster --node-pool default-pool --num-nodes 0 --zone=us-central1-a
 gcloud container clusters resize coolercluster --node-pool workerpool --num-nodes 0 --zone=us-central1-a
 
+gcloud container node-pools delete workerpool \
+    --cluster coolercluster
 
 # Scale node pool vertically
 gcloud container node-pools update POOL_NAME \
@@ -67,14 +89,30 @@ gcloud container clusters create gpu-support
 
 gcloud container clusters list
 
-gcloud container clusters delete coolercluster --zone us-central1-a
+gcloud container clusters delete coolercluster
+
+gcloud container clusters update coolercluster \
+    --enable-autoscaling \
+    --node-pool=workerpool \
+    --min-nodes=0 \
+    --max-nodes=10 \
+
+------------- Trouble shooting -----------------------
+kubectl describe pod mycluster-highmem-worker-ee155c20c8-59cf77dff6-k5m88
 
 -------------------------- Helm -------------------------------------
+# For KubeCluster
 helm repo add dask https://helm.dask.org/
 helm repo update
-helm install --create-namespace -n dask-operator --generate-name dask/dask-kubernetes-operator
+kubectl get namespaces 
+# potentially omit --create-namespace if exists
+helm install dask/dask-kubernetes-operator --create-namespace -n dask-operator --generate-name 
 
-helm list
+#helm install -n my-namespace --generate-name dask/dask-kubernetes-operator --set rbac.cluster=false --set kopfArgs="{--namespace=my-namespace}"
+
+## HelmCluster is deprecated by the way...
+
+helm list [-A]
 helm delete <>
 
 ***HelmCluster is a fixed cluster option, KubeCluster is an ephemeral one.
@@ -108,6 +146,8 @@ kubectl get daskclusters
 
 kubectl get pods -A -l app.kubernetes.io/name=dask-kubernetes-operator
 
+kubectl get nodes --show-labels
+
 kubectl get svc -l dask.org/cluster-name=simple
 kubectl port-forward svc/simple 8786:8786
 
@@ -123,7 +163,6 @@ cluster.scale(5, worker_group="highmem")
 cluster.delete_worker_group(name="highmem")
 
 kubectl get po -l dask.org/cluster-name=simple
-
 
 kubectl delete -f cluster.yaml
 kubectl delete daskcluster simple

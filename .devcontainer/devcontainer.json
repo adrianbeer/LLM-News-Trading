@@ -22,7 +22,18 @@
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8787, 8786, 22],
+	"forwardPorts": [
+		8787,
+		8786,
+		22
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-toolsai.jupyter"
+			]
+		}
+	},
 
 	// Uncomment the next line if you want start specific services in your Docker Compose config.
 	// "runServices": [],
