@@ -50,9 +50,6 @@ kubectl create clusterrolebinding cluster-admin-binding \
 --clusterrole=cluster-admin \
 --user=adrianbeerka
 
-# ?
-kubectl auth reconcile -f my-rbac-rules.yaml
-
 # Name of scheduler nodepool: default-pool
 # Create additional nodeluster with different machine-type
 gcloud container node-pools create workerpool \
@@ -63,6 +60,9 @@ gcloud container node-pools create workerpool \
   --num-nodes 0 \
   --cluster coolercluster \
   --zone us-central1-a
+
+# ?
+kubectl auth reconcile -f my-rbac-rules.yaml
 
 kubectl get nodes [--show-labels]
 gcloud container node-pools list --cluster coolercluster
