@@ -43,8 +43,8 @@ gcloud container clusters create \
   --enable-autoscaling \
   --autoscaling-profile optimize-utilization \
   --min-nodes 0 \
-  --max-nodes 10 \
-  --machine-type n1-standard-2 \
+  --max-nodes 1 \
+  --machine-type n1-standard-4 \
   --num-nodes 1 \
   --zone us-central1-a \
   --cluster-version latest \
@@ -61,11 +61,19 @@ gcloud container node-pools create workerpool \
   --enable-autoscaling \
   --min-nodes 0 \
   --max-nodes 10 \
-  --machine-type n1-standard-4 \
+  --machine-type c2d-standard-8\
   --num-nodes 0 \
   --cluster coolercluster \
   --scopes=storage-rw \
   --zone us-central1-a
+
+# Enable autoprovisioning
+gcloud container clusters update coolercluster \
+    --enable-autoprovisioning \
+    --min-cpu 1 \
+    --min-memory 1 \
+    --max-cpu 60 \
+    --max-memory 300
 
 # ?
 kubectl auth reconcile -f my-rbac-rules.yaml
@@ -100,8 +108,11 @@ gcloud container clusters create gpu-support
 --zone europe-west4-b
 
 gcloud container clusters list
-s
+
 gcloud container clusters delete coolercluster --zone=us-central1-a
+
+kubectl delete service coolercluster
+kubectl delete pods --all
 
 gcloud container clusters update coolercluster \
     --enable-autoscaling \
@@ -117,15 +128,21 @@ kubectl describe pod mycluster-highmem-worker-ee155c20c8-59cf77dff6-k5m88
 helm repo add dask https://helm.dask.org/
 helm repo update
 kubectl get namespaces 
+
+helm install dask/dask-kubernetes-operator --create-namespace -n dask-operator --generate-name -f values.yaml
+
 # potentially omit --create-namespace if exists
-helm install dask/dask-kubernetes-operator --create-namespace -n dask-operator --generate-name 
+helm install dask/dask-kubernetes-operator -n dask-operator --generate-name 
+
+kubectl get pods -A -l app.kubernetes.io/name=dask-kubernetes-operator
 
 #helm install -n my-namespace --generate-name dask/dask-kubernetes-operator --set rbac.cluster=false --set kopfArgs="{--namespace=my-namespace}"
 
 ## HelmCluster is deprecated by the way...
 
-helm list [-A]
+helm list -A
 helm delete <>
+helm install -n default --generate-name dask/dask-kubernetes-operator --set rbac.cluster=false --set kopfArgs="{--namespace=default}"
 
 ***HelmCluster is a fixed cluster option, KubeCluster is an ephemeral one.
   
