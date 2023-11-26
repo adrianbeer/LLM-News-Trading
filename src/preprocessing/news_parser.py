@@ -23,6 +23,18 @@ DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sun
 PARSERS = [parser for parser in default_parsers if parser != 'relative-time']
 
 
+# Used in remove contact info sentences
+ACRONYMS = r'(?:[A-Z]\.)+'
+LINK_SENTENCE_REGEX = "[a-z]*\.[A-za-z]*\.com"
+EMAIL_SENTENCE_REGEX = "[A-za-z]*@[A-za-z]*\.com"
+PHONE_NUMBER_REGEX = "(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}"
+HTML_LINK_INDEX = "\.html"
+CONTACT_INFO_REGEX = "|".join([LINK_SENTENCE_REGEX, 
+                                EMAIL_SENTENCE_REGEX, 
+                                PHONE_NUMBER_REGEX, 
+                                HTML_LINK_INDEX])
+
+
 def infer_author(body):
   for author in ["PRNewswire", "Globe Newswire", "Business Wire", "ACCESSWIRE"]:
     if re.search(author, body, re.IGNORECASE) is not None:
@@ -122,15 +134,7 @@ def remove_contact_info_sentences(body):
     # And remove them
     # Remove sentences with links
     # Remove sentences with emails
-    ACRONYMS = r'(?:[A-Z]\.)+'
-    LINK_SENTENCE_REGEX = "[a-z]*\.[A-za-z]*\.com"
-    EMAIL_SENTENCE_REGEX = "[A-za-z]*@[A-za-z]*\.com"
-    PHONE_NUMBER_REGEX = "(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}"
-    HTML_LINK_INDEX = "\.html"
-    CONTACT_INFO_REGEX = "|".join([LINK_SENTENCE_REGEX, 
-                                   EMAIL_SENTENCE_REGEX, 
-                                   PHONE_NUMBER_REGEX, 
-                                   HTML_LINK_INDEX])
+
     # This way is required, in case of multiple web links in a sentence for example
     body = re.sub(CONTACT_INFO_REGEX, 
                   "REMOVESENTENCE", 

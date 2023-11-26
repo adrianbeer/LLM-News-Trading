@@ -35,9 +35,6 @@ def spin_up_cluster():
     token = os.environ.get("CLOUDSDK_AUTH_ACCESS_TOKEN")
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/workspaces/trading_bot/extreme-lore-398917-ac46de419eb2.json"
 
-    # cluster: KubeCluster = KubeCluster(name="mycluster",
-    #                                 image='hermelinkluntjes/thesis:test',
-    #                                 n_workers=0)
     cluster: KubeCluster = KubeCluster(custom_cluster_spec="cluster.yaml")
     # Always specify requested memory and cpu to be a little bit less...
     # Good for scheduling and also because googles 4cpu is like 3.92 in reality (sub 4).
@@ -47,8 +44,8 @@ def spin_up_cluster():
     "n_workers": 0,
     "resources":{
         "requests": 
-            {"memory": "15Gi",
-            "cpu": "5"}
+            {"memory": "20Gi",
+            "cpu": "20"}
         }
     }
     cluster.add_worker_group(**worker_group_config)
