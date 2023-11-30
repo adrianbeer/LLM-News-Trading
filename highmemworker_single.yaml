@@ -1,0 +1,30 @@
+# highmemworkers.yaml
+apiVersion: kubernetes.dask.org/v1
+kind: DaskWorkerGroup
+metadata:
+  name: example-highmem-single
+spec:
+  cluster: example
+  worker:
+    replicas: 0
+    spec:
+      containers:
+      - name: highmem-single
+        image: "hermelinkluntjes/thesis:test"
+        imagePullPolicy: "IfNotPresent"
+        resources:
+          requests:
+            memory: "10Gi"
+        args:
+          - dask-worker
+          - --name
+          - $(DASK_WORKER_NAME)
+          - --dashboard
+          - --dashboard-address
+          - "8788"
+        ports:
+          - name: http-dashboard
+            containerPort: 8788
+            protocol: TCP
+      nodeSelector:
+        cloud.google.com/gke-nodepool: workerpool

@@ -38,17 +38,19 @@ def spin_up_cluster():
     cluster: KubeCluster = KubeCluster(custom_cluster_spec="cluster.yaml")
     # Always specify requested memory and cpu to be a little bit less...
     # Good for scheduling and also because googles 4cpu is like 3.92 in reality (sub 4).
-    worker_group_config = {
-    "name": "highmem",
-    "image": "hermelinkluntjes/thesis:test",
-    "n_workers": 0,
-    "resources":{
-        "requests": 
-            {"memory": "20Gi",
-            "cpu": "20"}
-        }
-    }
-    cluster.add_worker_group(**worker_group_config)
+    
+    # worker_group_config = {
+    #     "name": "highmem",
+    #     "image": "hermelinkluntjes/thesis:test",
+    #     "n_workers": 0,
+    #     "resources":{
+    #         "requests": 
+    #             {"memory": "20Gi",
+    #             "cpu": "20"}
+    #     },
+    #     "args": ["dask-worker", "--no-dashboard" , '--name', "$(DASK_WORKER_NAME)", '--nprocs', '16', '--nthreads', '2']
+    # }
+    # cluster.add_worker_group(**worker_group_config)
     
     return cluster, token
    

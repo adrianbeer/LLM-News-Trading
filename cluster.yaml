@@ -13,14 +13,11 @@ spec:
       - name: worker
         image: "hermelinkluntjes/thesis:test"
         imagePullPolicy: "IfNotPresent"
-        args: [dask-worker, --nthreads, '2', --no-dashboard, --memory-limit, 6GB, --death-timeout, '60', '--name', $(DASK_WORKER_NAME)]
+        args: [dask-worker, --no-dashboard , '--name', $(DASK_WORKER_NAME)]
         env:
           - name: EXTRA_PIP_PACKAGES
             value: git+https://github.com/dask/distributed
         resources:
-          limits:
-            cpu: "2"
-            memory: 6G
           requests:
             cpu: "2"
             memory: 6G
@@ -51,6 +48,8 @@ spec:
             path: /health
           initialDelaySeconds: 5
           periodSeconds: 20
+      nodeSelector:
+        cloud.google.com/gke-nodepool: default-pool
     service:
       type: ClusterIP
       selector:
