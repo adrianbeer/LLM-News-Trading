@@ -92,7 +92,7 @@ gcloud container node-pools list --cluster coolercluster
 gcloud container node-pools describe workerpool --cluster coolercluster
 
 # Shut down kubernetes cluster...
-gcloud container clusters resize coolercluster --node-pool default-pool --num-nodes 0 --zone=us-central1-a
+gcloud container clusters resize coolercluster --node-pool default-pool --num-nodes 0 --zone=us-central1-a -q
 gcloud container clusters resize coolercluster --node-pool workerpool --num-nodes 0
 
 gcloud container node-pools delete workerpool \

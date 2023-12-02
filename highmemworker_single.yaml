@@ -6,7 +6,7 @@ metadata:
 spec:
   cluster: example
   worker:
-    replicas: 0
+    replicas: 1
     spec:
       containers:
       - name: highmem-single
@@ -14,7 +14,7 @@ spec:
         imagePullPolicy: "IfNotPresent"
         resources:
           requests:
-            memory: "10Gi"
+            memory: "25Gi"
         args:
           - dask-worker
           - --name

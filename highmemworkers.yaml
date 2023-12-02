@@ -6,7 +6,7 @@ metadata:
 spec:
   cluster: example
   worker:
-    replicas: 30
+    replicas: 10
     spec:
       containers:
       - name: highmem

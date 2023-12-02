@@ -2,6 +2,8 @@ FROM ghcr.io/dask/dask:2023.10.0-py3.10
 
 COPY requirements_clean.txt requirements_google.txt ./
 
+COPY dask-config.yaml ~/.config/dask/
+
 RUN pip install -r requirements_clean.txt && \
     pip install -r requirements_google.txt
 

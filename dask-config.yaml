@@ -1,0 +1,14 @@
+
+distributed:
+  comm:
+    retry:
+      count: 10
+    timeouts:
+      connect: 30
+  scheduler:
+    worker-ttl: null
+
+admin:
+  tick:
+    interval: 20ms
+    limit: 30min

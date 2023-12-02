@@ -16,7 +16,7 @@ spec:
         args: [dask-worker, --no-dashboard , '--name', $(DASK_WORKER_NAME)]
         env:
           - name: EXTRA_PIP_PACKAGES
-            value: git+https://github.com/dask/distributed
+            value: git+https://github.com/dask/distributed loky
         resources:
           requests:
             cpu: "2"
