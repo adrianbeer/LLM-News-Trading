@@ -1,6 +1,5 @@
 # Instructions to get gcloud/kubernetes to run in the hermelinkluntjes:thesis docker container in vscode
-apt install -y curl
-apt-get install -y apt-transport-https ca-certificates gnupg curl sudo
+apt-get install -y sudo apt-transport-https ca-certificates gnupg curl sudo
 
 sudo curl -sSL https://sdk.cloud.google.com | bash
 
@@ -11,12 +10,16 @@ tar -xf google-cloud-cli-454.0.0-linux-x86_64.tar.gz
 # New terminal
 ./google-cloud-sdk/bin/gcloud init
 
+# Restart console (otherwise gcloud command won't be found)
+
 gcloud components install gke-gcloud-auth-plugin
 
 pip install dask-kubernetes --upgrade 
 
 # Kubernetes
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+gcloud components install kubectl
+# or
+curl -LO https://dl.k8s.io/release/v1.28.4/bin/linux/amd64/kubectl
 echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
 install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
@@ -26,8 +29,15 @@ chmod 700 get_helm.sh
 ./get_helm.sh
 
 # Setup gcloud authentification so that cluster workers have access to resources
-# gcloud auth application-default login
-# pip install install google-cloud-iam
+gcloud auth application-default login
+pip install install google-cloud-iam
+
+# Make copy
+~Copy extreme-lore-398917-ac46de419eb2.json
+# And move it to
+mv "/workspaces/trading_bot/extreme-lore-398917-ac46de419eb2 copy.json"  /extreme-lore-398917-ac46de419eb2.json 
+
+gcloud components update
 
  ------------------------- STEPS ---------------------------------
 Create cluster
@@ -64,7 +74,7 @@ gcloud container node-pools create workerpool \
   --enable-autoscaling \
   --min-nodes 0 \
   --max-nodes 10 \
-  --machine-type e2-standard-32\
+  --machine-type e2-standard-8\
   --num-nodes 0 \
   --cluster coolercluster \
   --scopes=storage-rw \

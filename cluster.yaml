@@ -30,7 +30,7 @@ spec:
         args: [dask-scheduler]
         env:
           - name: EXTRA_PIP_PACKAGES
-            value: jupyterlab
+            value: jupyterlab jupyter-server-proxy
         ports:
           - name: tcp-comm
             containerPort: 8786

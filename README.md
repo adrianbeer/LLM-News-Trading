@@ -1,5 +1,14 @@
 # PROJECT B U G A T T I
 
+# Location and Backups of Data:
+Onedrive:
+Google Cloud Storage (GCS):
+USB-Stick (v/ describe):
+
+# 
+
+
+# remove below to docker file or somewhere else ... not appropriate here
 ## Installation
 
 !sudo apt update

@@ -1,4 +1,4 @@
-from dask_kubernetes.operator import KubeCluster, make_cluster_spec
+from dask_kubernetes.operator import KubeCluster
 import subprocess
 import os
 import io, tarfile
@@ -33,8 +33,9 @@ def fn_to_targz_string(fn):
 def spin_up_cluster():
     # Google Cloud Authentification
     # this is how the OAuth2 token is available on your cluster
-    # token = os.environ.get("CLOUDSDK_AUTH_ACCESS_TOKEN")
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/extreme-lore-398917-ac46de419eb2.json"
+    
+    # This is already specified in the docker file now
+    # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/extreme-lore-398917-ac46de419eb2.json"
 
     cluster: KubeCluster = KubeCluster(custom_cluster_spec="cluster.yaml")
     # Always specify requested memory and cpu to be a little bit less...
@@ -53,5 +54,4 @@ def spin_up_cluster():
     # }
     # cluster.add_worker_group(**worker_group_config)
     
-    return cluster#, token
-   
+    return cluster
