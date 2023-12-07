@@ -26,8 +26,8 @@ chmod 700 get_helm.sh
 ./get_helm.sh
 
 # Setup gcloud authentification so that cluster workers have access to resources
-gcloud auth application-default login
-pip install install google-cloud-iam
+# gcloud auth application-default login
+# pip install install google-cloud-iam
 
  ------------------------- STEPS ---------------------------------
 Create cluster
@@ -118,7 +118,7 @@ gcloud container clusters create gpu-support
 
 gcloud container clusters list
 
-gcloud container clusters delete coolercluster --zone=us-central1-a
+gcloud container clusters delete coolercluster --zone=us-central1-a -q
 
 kubectl delete service coolercluster
 kubectl delete pods --all

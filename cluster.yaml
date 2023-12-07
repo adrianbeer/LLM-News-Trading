@@ -12,11 +12,11 @@ spec:
       containers:
       - name: worker
         image: "hermelinkluntjes/thesis:test"
-        imagePullPolicy: "IfNotPresent"
+        imagePullPolicy: "Always"
         args: [dask-worker, --no-dashboard , '--name', $(DASK_WORKER_NAME)]
         env:
           - name: EXTRA_PIP_PACKAGES
-            value: git+https://github.com/dask/distributed loky
+            value: git+https://github.com/dask/distributed jupyter-server-proxy
         resources:
           requests:
             cpu: "2"
@@ -26,9 +26,11 @@ spec:
       containers:
       - name: scheduler
         image: "hermelinkluntjes/thesis:test"
-        imagePullPolicy: "IfNotPresent"
-        args:
-          - dask-scheduler
+        imagePullPolicy: "Always"
+        args: [dask-scheduler]
+        env:
+          - name: EXTRA_PIP_PACKAGES
+            value: jupyterlab
         ports:
           - name: tcp-comm
             containerPort: 8786
