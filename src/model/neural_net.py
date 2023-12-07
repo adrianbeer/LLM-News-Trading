@@ -9,11 +9,11 @@ from torch.nn.utils.clip_grad import clip_grad_norm
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 import pandas as pd
-from model.util import create_dataloaders, MyBertModel, train, TRANSFORMER_HF_ID, embed_input, embed_inputs, WeightedSquaredLoss
+from src.model.util import create_dataloaders, MyBertModel, train, TRANSFORMER_HF_ID, embed_input, embed_inputs, WeightedSquaredLoss
 import pickle
 from transformers import BertTokenizer
-from model.util import embed_inputs, create_dataloaders, TRANSFORMER_HF_ID
-from config import TARGET_COL_NAME
+from src.model.util import embed_inputs, create_dataloaders, TRANSFORMER_HF_ID
+from src.config import TARGET_COL_NAME
 
 FROM_SCRATCH = True
 batch_size = 4
