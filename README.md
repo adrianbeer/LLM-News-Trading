@@ -1,26 +1,20 @@
 # PROJECT B U G A T T I
 
 # Location and Backups of Data:
-Onedrive:
+Google Drive (GoogD): 
 Google Cloud Storage (GCS):
 USB-Stick (v/ describe):
 
-# 
+## Location:
+Benzinga Rohe Nachrichten: Intenso/(K) 
+(GoogD) `data/data-shared` für "meta"- oder "utility"-Informationen, die nicht sehr Speicherlastig sind.
 
+Instruktionen
+==============
+1. First execute asset_data_preprocessor (to get relevant list of tickers)
+2. Then news_importer
+3. Then news_parser (here tickers from assert_data_processor are used)
+4. Then data_merger, where price and news data are merged.
+5. Then neural_net.py, where the neural network is trained
+6. Then neural_net_evaluation(.ipynb) where the performance of the neurlal network that was trained in the last step is eavluated
 
-# remove below to docker file or somewhere else ... not appropriate here
-## Installation
-
-!sudo apt update
-!sudo apt install maven;
-
-!pip install html2text
-!pip install datefinder
-!pip install -U dask[complete]
-!pip install nltk
-!pip install dateparser
-!pip install pyngrok
-!pip install sutime;
-
-# This is required for sutime
-!mvn dependency:copy-dependencies -DoutputDirectory=./jars -f $(python3 -c 'import importlib; import pathlib; print(pathlib.Path(importlib.util.find_spec("sutime").origin).parent / "pom.xml")');

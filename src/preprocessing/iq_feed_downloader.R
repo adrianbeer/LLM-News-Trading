@@ -8,6 +8,12 @@ QuantTools_settings_defaults()
 # ) )
 
 
+library(arrow)
+project_directory <- "G:\\Meine Ablage\\NewsTrading\\trading_bot"
+ticker_name_mapper <- paste(project_directory, "\\data_shared\\ticker_name_mapper_reduced.parquet", sep="")
+tickers <- read_parquet(ticker_name_mapper)
+
+
 from = '2022-12-03'
 to   = '2023-10-04'
 symbol = 'TRTN'
