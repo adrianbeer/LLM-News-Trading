@@ -1,5 +1,6 @@
 import pickle
 import re
+from typing import List
 import warnings
 
 import html2text
@@ -147,50 +148,68 @@ def remove_contact_info_sentences(body):
     return body
 
 
+def remove_patterns(patterns: List[str], remove_with: str, text:str, flags=None):
+  mask = bytearray(len(text))
+
+  for pattern in patterns:
+    for match in re.finditer(pattern, text, flags):
+      r = range(match.start(), match.end())
+
+      mask[r] = 'x' * len(r)
+
+  return remove_with.join(character for character, bit in zip(text, mask) if not bit)
+
+
 def filter_body(row: pd.Series, logging=False) -> str:
+    '''
+    TODO: Vor dem parsen sollten wir den Titel noch vorne anfügen, falls dort der Unternehmensname auch vorkommt.
+    Das werden wir ja sowieso tun...
+    '''
     body, ticker, author, pr_date, company_name, short_name = row.body, row.stocks, row.author, row.time, row.company_name, row.short_name
     
     # Remove newline symbols which can interfere
     # with the date detection process
-    body = re.sub("(\n){1,}", " ", body)
-    body = re.sub("( ){2,}", " ", body)
+    body = re.sub("(\n){1,}", 
+                  " ", 
+                  body)
     
     body = remove_company_specifics(body, company_name, short_name, ticker)
     body = remove_contact_info_sentences(body)
     body = remove_date_specifics(body, pr_date, logging=logging)
     
-    # Remove author (preamble)
-    # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
-    body = re.sub(f"(\n.*{author})|(^.*{author})", "", body, flags=re.IGNORECASE) 
     
-    # Remove (the "Company") parenthesis and other `("different name")`-constructs
-    body = re.sub('\(.*"(.{1,})".*\)', "", body)
-
-    # Remove underscores 
-    body = re.sub("_", " ", body)
+    # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
+    body = remove_patterns([f"(.*{author})|(^.*{author})", # Remove author (preamble)
+                            '\(.*"(.{1,})".*\)'], # Remove (the "Company") parenthesis and other `("different name")`-constructs
+                           "", 
+                           body,
+                           flags=re.IGNORECASE)
     
     # Converts itemized lists to sentences.
-    body = re.sub("(\*|•)", ".", body)
+    body = re.sub("(\*|•)", 
+                  ".", 
+                  body)
     
-    # Remove weird symbols at the start of a new line (bullet points)
+    # Remove weird symbol (clusters)
     remover_list = [
         "\*",
         "-",
         "\/",
         "\\\\",
     ]
-    SYMBOLS_REGEX = "|".join(remover_list)
-    body = re.sub(f"\n({SYMBOLS_REGEX})" + "{1,}", " ", body)
-
-    # Remove weird symbol clusters
-    body = re.sub(f"({SYMBOLS_REGEX})" + "{2,}", " ", body)
+    remove_regex1 = "|".join(remover_list) + "{1,}"
 
     # Remove underscors, exccess spaces, newlines and dots 
     remover_list = ["_", 
                     "( ){2,}",
-                    "(\n){1,}",
                     "•"]
-    body = re.sub("|".join(remover_list), " ", body)
+    remove_regex2 = "|".join(remover_list)
+
+    body = remove_patterns([remove_regex1, 
+                            remove_regex2],
+                            " ", 
+                            body)
+
 
     # Remove exccess dots and white space around them
     body = re.sub("(( )*(\.)( )*){1,}", ".", body)

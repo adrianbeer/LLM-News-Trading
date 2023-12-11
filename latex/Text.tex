@@ -97,10 +97,18 @@
 	Because pre-news price movements have shown to correlate with the sentiment of the news, we incorporate this information
 	into our feature set \cite{ke_predicting_2020}.
 	
-	\subsection{Exit-Strategies}
-	Theoretically, different Models could be trained, where the target changes based on the exit-strategy. 
-	However this would require us to fine-tune the model several times.
-	In any case.
+	\subsection{Holding-Period and Exit-Strategies}
+	Our neural network tells us when we should enter, but not necesarilly, for how long we should hold the position, i.e. the exit strategy.
+	An important variable of any signal-based trading strategy is the exit-strategy.
+	Depending on how it is chosen, the characteristics of a trading strategy can vary widely, e.g. regarding the return distribution of trades or how much capital can/should be allocated on average.
+	
+	Theoretically, different models could be trained, where the target output of the model changes based on the exit-strategy, 
+	however this would involve fine-tuning multiple models and could strongly increase the variance of its predictions, e.g. for longer holding-periods, 
+	and distract the model from its intended task which is quantifying the sentiment of
+	a news article.
+	
+	
+	
 	
 	\section{Labeling}
 	Adjusting returns to the market is important.
