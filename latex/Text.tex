@@ -97,18 +97,30 @@
 	Because pre-news price movements have shown to correlate with the sentiment of the news, we incorporate this information
 	into our feature set \cite{ke_predicting_2020}.
 	
-	\subsection{Holding-Period and Exit-Strategies}
+	\subsection{Holding Period and Exit-Strategies}
 	Our neural network tells us when we should enter, but not necesarilly, for how long we should hold the position, i.e. the exit strategy.
 	An important variable of any signal-based trading strategy is the exit-strategy.
 	Depending on how it is chosen, the characteristics of a trading strategy can vary widely, e.g. regarding the return distribution of trades or how much capital can/should be allocated on average.
 	
 	Theoretically, different models could be trained, where the target output of the model changes based on the exit-strategy, 
 	however this would involve fine-tuning multiple models and could strongly increase the variance of its predictions, e.g. for longer holding-periods, 
-	and distract the model from its intended task which is quantifying the sentiment of
-	a news article.
+	and distract the model from its intended task which is quantifying the sentiment of a news article.
 	
+	Hence we will choose one more-or-less arbitrary holding period which is hopefully long enough, so that the price change
+	reflects the change in market sentiment due to the message, but not so long that other events start to contaminate this price response to the news.
+	Considering the analysis of \cite{ke_predicting_2020} we choose a holding period of one to two days.
+	Specifically, for intra-day news the holding period will last until the next day's close or in other words
+	the second closing price which will be observed after receiving the news.
+	For overnight news the holding period lasts until the next observed close.
 	
-	
+	The closing price is a natural choice for the end of the holding period, because it is a single price which reflects the value of the stock. 
+	This is compared to the bid and ask prices that are available during the day and can show significant spreads.
+	One disadvantage of this holding period is that the holding periods differ and so intra-day news which are released
+	early in the day will lead to an observed price reaction which encompasses a longer time frame than for news which were released only later that day.
+	However when choosing a fixed holding period of e.g. 30 minutes we would have to differentiate between intra-day news and overnight news, since there are no observed prices directly after news publishment for a large number of overnight news.
+	So this decision introduces some variance into the recorded price reactions, but it lets us treat intra-day and overnight news the same and reduces complexity w.r.t. the algorithm and analysis.
+	%TODO: At what time are news published on average?
+	%TODO: How often do news reverse 1 hour after to second observed close? 
 	
 	\section{Labeling}
 	Adjusting returns to the market is important.
