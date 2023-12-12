@@ -27,6 +27,7 @@ project_directory <- "G:\\Meine Ablage\\NewsTrading\\trading_bot"
 ticker_name_mapper_path <- file.path(project_directory, "data_shared", "ticker_name_mapper_reduced.parquet")
 tickers <- read_parquet(ticker_name_mapper_path)
 
+
 from = '2022-01-01'
 to   = '2023-01-01'
 symbol = 'TRTN'
