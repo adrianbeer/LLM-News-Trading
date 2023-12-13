@@ -1,5 +1,6 @@
 # !sudo apt update
 # !sudo apt install maven
+
 html2text
 datefinder
 dask[complete]
@@ -9,6 +10,14 @@ sutime
 yfinance
 pandas
 scikit-learn
+
+# For NGROK-Tunnel
+jupyter-server-proxy
+pyngrok
+
+# Google Cloud Storage
+fsspec==2023.4.0
+gcsfs
 
 
 # For neural network

@@ -120,23 +120,47 @@
 	However when choosing a fixed holding period of e.g. 30 minutes we would have to differentiate between intra-day news and overnight news, since there are no observed prices directly after news publishment for a large number of overnight news.
 	So this decision introduces some variance into the recorded price reactions, but it lets us treat intra-day and overnight news the same and reduces complexity w.r.t. the algorithm and analysis.
 	%TODO: At what time are news published on average?
-	%TODO: How often do news reverse 1 hour after to second observed close? 
+	%TODO: How often do news reverse 1 hour after to second observed close? 	
 	
-	\section{Labeling}
+	\subsection{Labeling the Data Set}
 	Adjusting returns to the market is important.
-	\cite{salbrechter_financial_2021-1}:
+	
+	
+	Similar to \cite{salbrechter_financial_2021} we first consider :
 	$$
-	I R_{i, t}=R_{i, t}-R_{f, t}-\beta_{i, t} *\left(R_{S \& P 500, t}-R_{f, t}\right)
+	IR_{i, t}=R_{i, t}-R_{f, t}-\beta_{i, t} *\left(R_{S \& P 500, t}-R_{f, t}\right)
 	$$
+	$$
+	z_{i, t}=\frac{\overline{I R}_{i, t}-\mu_{i, t}}{\sigma_{i, t}}
+	$$
+	
 	\cite{chen_stock_2021}:
 	$$
 	r_{s, t}=\frac{P_{s, t+\Delta t}}{P_{s, t}}-\frac{P_{m, t+\Delta t}}{P_{m, t}}
 	$$
 	
+	Comparing the approaches between Chen and Salbrechter, we see that Chen basically assumes a constant beta of 1 for all stocks. 
+	Beta is notoriously unreliable and changes, depending on the market environment.
+	E.g. all stock betas tend to 1 as the large market returns are observed during a crash.
+	This follows from the CAPM and has been observed empirically.
 	
-	Since news can take from 1 day up to 3 days to be fully incorporated in the stock price, ideally we set our label accordingly.
-	However the longer this time horizon, the higher the probability of having a second news event in this period.
-	How big is this problem??
+	Our main concern are large returns which are caused due to market risk events - not due to idiosynchratic risk events.
+	These would erroneously create labels of large quantity which result in faulty sentiment signals.
+	Hence working with a beta thats too small and is based on an estimation during calm market phases would very quickly result in many false signals during financial crises.
+	
+	On the other hand, using betas of one across the board will create another bias.
+	Namely, ceteris paribus stocks with the same amount of idiosyncratic risk but a lower beta will have exhibit a higher variance in the adjusted returns than stocks with a higher beta.
+	However high $IR_{i,t}(beta=1)$ will occurr more randomly across time.
+	Its hard to make statements about the magnitude...
+	
+	Adjusting the returns by their (estimated) volatility is also necessary, as otherwise for volatile stocks
+	one would observe many large returns, which are just normal price movements for that stock but the same price movement may represent significant changes in sentiment due to news for another low volatility stock.
+	
+	%TODO: How to handle occurrence of multiple news events in the return time frame of the labeling specification?
+	
+	
+	\subsection{Backtesting}
+	
 	
 	\bibliographystyle{plainnat}
 	\bibliography{References}

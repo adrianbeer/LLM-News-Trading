@@ -148,14 +148,12 @@ def remove_contact_info_sentences(body):
     return body
 
 
-def remove_patterns(patterns: List[str], remove_with: str, text:str, flags=None):
+def remove_patterns(patterns: List[str], remove_with: str, text:str, flags=0):
   mask = bytearray(len(text))
 
   for pattern in patterns:
     for match in re.finditer(pattern, text, flags):
-      r = range(match.start(), match.end())
-
-      mask[r] = 'x' * len(r)
+        mask[match.start():match.end()] = [1] * (match.end()-match.start())
 
   return remove_with.join(character for character, bit in zip(text, mask) if not bit)
 

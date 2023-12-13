@@ -56,3 +56,21 @@ def test_ticker_remover():
                                                 short_name=short_name, 
                                                 ticker=ticker)
     assert body == ''
+    
+    
+def test_filter_body():
+    text = 'MAYFIELD VILLAGE, Ohio--(BUSINESS WIRE)--\n\nAccording to digital measurement company comScore, Inc., one in four mobile\nusers now have smart phones and by this time next year, research company\nNielsen estimates the number will be one in two. To meet the growing demand\nfor information on-the-go, the Progressive car insurance group is expanding\nits mobile offerings.\n\nProgressive\'s new "Flo-isms" app includes 48 popular Flo sound bites from\nProgressive\'s commercials. The app, featuring Flo\'s voice, is available on the\niPhone, iPad, iTouch and Google Android(TM) operating system. (Photo: Business\nWire)\n\n“We\'ve improved our core car insurance apps to bring even more useful tools to\ncustomers,”'
+    company_name=None
+    short_name=None
+    ticker="SCOR"
+    row = pd.Series({
+        "body":text,
+        "stocks":ticker, 
+        "author":"BUSINESS WIRE", 
+        "time": pd.Timestamp(year=2000, month=1, day=1), 
+        "company_name":"comScore, Inc.", 
+        "short_name":"comScore"
+    })
+    body = news_parser.filter_body(row)
+    assert body == '“We\'ve improved our core car insurance apps to bring even more useful tools to\ncustomers,”'
+    
