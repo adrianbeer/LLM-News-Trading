@@ -149,13 +149,23 @@ def remove_contact_info_sentences(body):
 
 
 def remove_patterns(patterns: List[str], remove_with: str, text:str, flags=0):
-  mask = bytearray(len(text))
+  mask = [0] * len(text)
 
   for pattern in patterns:
     for match in re.finditer(pattern, text, flags):
-        mask[match.start():match.end()] = [1] * (match.end()-match.start())
+        mask[match.start():match.end()] = [1] + [2] * (match.end()-match.start()-1)
 
-  return remove_with.join(character for character, bit in zip(text, mask) if not bit)
+    def generator(text, mask):
+        for character, bit in zip(text, mask):
+            if bit == 0:
+                yield character
+            if bit == 1: 
+                yield remove_with
+            if bit == 2:
+                yield ""
+
+    text = "".join(generator(text, bytearray(mask)))
+    return text
 
 
 def filter_body(row: pd.Series, logging=False) -> str:

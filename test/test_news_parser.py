@@ -59,7 +59,7 @@ def test_ticker_remover():
     
     
 def test_filter_body():
-    text = 'MAYFIELD VILLAGE, Ohio--(BUSINESS WIRE)--\n\nAccording to digital measurement company comScore, Inc., one in four mobile\nusers now have smart phones and by this time next year, research company\nNielsen estimates the number will be one in two. To meet the growing demand\nfor information on-the-go, the Progressive car insurance group is expanding\nits mobile offerings.\n\nProgressive\'s new "Flo-isms" app includes 48 popular Flo sound bites from\nProgressive\'s commercials. The app, featuring Flo\'s voice, is available on the\niPhone, iPad, iTouch and Google Android(TM) operating system. (Photo: Business\nWire)\n\n“We\'ve improved our core car insurance apps to bring even more useful tools to\ncustomers,”'
+    text = 'MAYFIELD VILLAGE, Ohio--(BUSINESS WIRE)--\n\nAccording to digital measurement company comScore, Inc., one in four mobile\nusers now have smart phones and by this time next year, research company\nNielsen estimates the number will be one in two. To meet the growing demand\nfor information on-the-go, the Progressive car insurance group is expanding\nits mobile offerings.\n\nProgressive\'s new "Flo-isms" app includes 48 popular Flo sound bites from\nProgressive\'s commercials. The app, featuring Flo\'s voice, is available on the\niPhone, iPad, iTouch and Google Android(TM) operating system. (Photo: Business\nWire)\n\n“We\'ve improved our core car insurance apps to bring even more useful tools to'
     company_name=None
     short_name=None
     ticker="SCOR"
@@ -72,5 +72,4 @@ def test_filter_body():
         "short_name":"comScore"
     })
     body = news_parser.filter_body(row)
-    assert body == '“We\'ve improved our core car insurance apps to bring even more useful tools to\ncustomers,”'
-    
+    assert body == '“We\'ve improved our core car insurance apps to bring even more useful tools to'
