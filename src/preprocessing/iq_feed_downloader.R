@@ -28,22 +28,28 @@ ticker_name_mapper_path <- file.path(project_directory, "data_shared", "ticker_n
 tickers <- read_parquet(ticker_name_mapper_path)
 
 
-from = '2022-01-01'
-to   = '2023-01-01'
-symbol = 'TRTN'
+from = '2010-01-01'
+to   = '2023-12-15'
+N <- length(tickers$stocks)
 
-# Daily
-stock <- get_iqfeed_data(symbol, from, to)
+for (symbol in tickers$stocks[17:N]) {
+  print(symbol)
+  skip_to_next <- FALSE
+  # stock_1min <- get_iqfeed_data( symbol, from, to, period = 'minute')
+  tryCatch( 
+    { stock_1min <- get_iqfeed_data( symbol, from, to, period = 'minute') }, 
+    error = function(e) {
+      print(e)
+      skip_to_next <- TRUE
+    }
+  )
+  if (skip_to_next|is.null(stock_1min)) { next }
+  
+  path_pqt = file.path("D:", "IQFeedData", paste(symbol, "_1min", ".parquet", sep=""))
+  # Check "<R_HOME>/share/zoneinfo/zone.tab" for more time zones/info
+  # df$time <- as.POSIXct(df$timestamp,tz="America/New_York")
+  write_parquet(stock_1min, path_pqt, compression="gzip")
+}
 
-# Minutely
-stock_1min <- get_iqfeed_data( symbol, from, to, period = 'minute')
-
-# Compression example
-path = "C:/Users/Adria/Downloads/frd_stock_sample/TSLA_1min_sample.csv"
-path_pqt = "C:/Users/Adria/Downloads/frd_stock_sample/TSLA_1day_sample.parquet"
-df <- read.csv(path)
-# Check "<R_HOME>/share/zoneinfo/zone.tab" for more time zones/info
-df$timestamp <- as.POSIXct(df$timestamp,tz="America/New_York")
-write_parquet(df, path_pqt, compression="gzip")
-
+# system('shutdown -s')
 

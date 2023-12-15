@@ -1,13 +1,7 @@
 # PROJECT B U G A T T I
 
-## Location and Backups of Data:
-Google Drive (GoogD): 
-Google Cloud Storage (GCS):
-USB-Stick (v/ describe):
-
-## Location:
-Benzinga Rohe Nachrichten: Intenso/(K) 
-(GoogD) `data/*` : Description for the files and processing steps can be found in `README_DATA.md`.
+## Data
+Description for the files and processing steps can be found in `README_DATA.md`.
 
 
 ## Instruktionen
