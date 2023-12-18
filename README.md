@@ -3,6 +3,8 @@
 ## Data
 Description for the files and processing steps can be found in `README_DATA.md`.
 
+## Warnings
+- Pylance breaks everything.
 
 ## Instruktionen
 1. First execute asset_data_preprocessor (to get relevant list of tickers)
