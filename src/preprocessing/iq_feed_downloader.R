@@ -32,7 +32,7 @@ from = '2010-01-01'
 to   = '2023-12-15'
 N <- length(tickers$stocks)
 
-for (symbol in tickers$stocks[708:N]) {
+for (symbol in tickers$stocks[1117:N]) {
   print(symbol)
   skip_to_next <- FALSE
   # stock_1min <- get_iqfeed_data( symbol, from, to, period = 'minute')
