@@ -1,19 +1,18 @@
-from transformers import BertTokenizer, get_linear_schedule_with_warmup
-from torch.optim import AdamW
-import torch.nn as nn
-import torch
-from torch.utils.data import TensorDataset, DataLoader
-from sklearn.model_selection import train_test_split
-from transformers import BertModel
-from torch.nn.utils.clip_grad import clip_grad_norm
-import torch
-from torch.utils.data import TensorDataset, DataLoader
+
 import pandas as pd
-from src.model.util import create_dataloaders, MyBertModel, train, TRANSFORMER_HF_ID, embed_input, embed_inputs, WeightedSquaredLoss
-import pickle
-from transformers import BertTokenizer
-from src.model.util import embed_inputs, create_dataloaders, TRANSFORMER_HF_ID
-from src.config import TARGET_COL_NAME
+import torch
+from torch.optim import AdamW
+from transformers import BertTokenizer, get_linear_schedule_with_warmup
+
+from src.config import TARGET_COL_NAME, INPUT_COL_NAME
+from src.model.util import (
+    TRANSFORMER_HF_ID,
+    MyBertModel,
+    WeightedSquaredLoss,
+    create_dataloaders,
+    embed_inputs,
+    train,
+)
 
 FROM_SCRATCH = True
 batch_size = 4
@@ -29,8 +28,8 @@ print(f"train_dat size: {train_dat.shape[0]}")
 
 tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 
-train_texts = train_dat.body.tolist()
-test_texts = test_dat.body.tolist()
+train_texts = train_dat.loc[:, INPUT_COL_NAME].tolist()
+test_texts = test_dat.loc[:, INPUT_COL_NAME].tolist()
 test_labels = test_dat.loc[:, TARGET_COL_NAME].tolist()
 train_labels = train_dat.loc[:, TARGET_COL_NAME].tolist()
 
@@ -39,12 +38,14 @@ test_inputs, test_masks = embed_inputs(test_texts, tokenizer)
 
 train_dataloader = create_dataloaders(train_inputs, train_masks, 
                                       train_labels, batch_size)
+
 validation_dataloader = create_dataloaders(test_inputs, test_masks, 
                                      test_labels, batch_size)
 
 
 model = MyBertModel()
-if not FROM_SCRATCH: model.load_state_dict(torch.load("data/model")) # Use latest iteration of the model for training
+if not FROM_SCRATCH: 
+    model.load_state_dict(torch.load("data/model")) # Use latest iteration of the model for training
 
 if __name__ == "__main__":
     if torch.cuda.is_available():       

@@ -1,15 +1,14 @@
-from transformers import BertTokenizer, AdamW, get_linear_schedule_with_warmup, PretrainedConfig
-import torch.nn as nn
-import torch
-from torch.utils.data import TensorDataset, DataLoader
-from sklearn.model_selection import train_test_split
-from transformers import BertModel
-from torch.nn.utils.clip_grad import clip_grad_norm
-import torch
-from torch.utils.data import TensorDataset, DataLoader
-import time
 import datetime
+import time
+
 import numpy as np
+import torch
+import torch.nn as nn
+from torch import Tensor
+from torch.nn.utils.clip_grad import clip_grad_norm
+from torch.utils.data import DataLoader, TensorDataset
+from transformers import BertModel
+from typing import List
 
 TRANSFORMER_HF_ID = 'yiyanghkust/finbert-fls'
 
@@ -24,7 +23,7 @@ def format_time(elapsed):
     return str(datetime.timedelta(seconds=elapsed_rounded))
 
 
-def create_dataloaders(inputs, masks, labels, batch_size):
+def create_dataloaders(inputs: Tensor, masks: Tensor, labels: List, batch_size: int) -> DataLoader:
     input_tensor = torch.tensor(inputs)
     mask_tensor = torch.tensor(masks)
     labels_tensor = torch.tensor(labels)
@@ -63,7 +62,7 @@ def train(model, optimizer, scheduler, loss_function, epochs, train_dataloader, 
         print('Training...')
         
         total_train_loss = 0
-        best_loss = 1e10
+        # best_loss = 1e10
         model.train()
 
         for step, batch in enumerate(train_dataloader): 
@@ -162,15 +161,15 @@ def embed_input(text, tokenizer):
     return input_ids, attention_masks
 
 
-def embed_inputs(texts, tokenizer):
+def embed_inputs(texts, tokenizer) -> tuple[Tensor, Tensor]:
     input_ids = []
     attention_masks = []
     for text in texts:
         x, y = embed_input(text, tokenizer)
         input_ids.append(x)
         attention_masks.append(y)
-    input_ids = torch.cat(input_ids, dim=0)
-    attention_masks = torch.cat(attention_masks, dim=0)
+    input_ids: Tensor = torch.cat(input_ids, dim=0)
+    attention_masks: Tensor = torch.cat(attention_masks, dim=0)
     return input_ids, attention_masks
     
 
