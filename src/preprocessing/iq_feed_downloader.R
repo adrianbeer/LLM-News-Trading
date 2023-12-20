@@ -28,11 +28,13 @@ ticker_name_mapper_path <- file.path(project_directory, "data_shared", "ticker_n
 tickers <- read_parquet(ticker_name_mapper_path)
 
 
+# Requires minimal changes to download the daily time series...
 from = '2010-01-01'
 to   = '2023-12-15'
 N <- length(tickers$stocks)
+stopped_at = 1591
 
-for (symbol in tickers$stocks[1117:N]) {
+for (symbol in c(tickers$stocks[stopped_at:N], "SPY")) {
   print(symbol)
   skip_to_next <- FALSE
   # stock_1min <- get_iqfeed_data( symbol, from, to, period = 'minute')

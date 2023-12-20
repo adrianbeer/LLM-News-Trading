@@ -161,6 +161,29 @@
 	
 	\subsection{Backtesting}
 	
+	\subsection{Preprocessing of Data}
+	Since the intraday data of IQFeed are not adjusted for splits we have 2 options:
+	Try to write an algorithm to automatically detect and adjust for stock splits or
+	use only the open/close of the adjusted EOD data set.
+	
+	Using only the auctions would introduce some noise to the return, as pre-news returns are incorporated into the
+	target return.
+	On the other hand using the algorithm would also introduce some noise, as its not going to be able to perfectly capture every split and might even identify some price shocks as splits which were created by news events.
+	
+	Since we don't have historical bid and ask prices we will only consider the trading period from 9:30am to 4pm and the closing and opening auctions.
+	Otherwise trades are too intransparent and illiquid.
+	
+%	- Dealing with successive news events and overlapping return period.
+%		- Check return between news1 and news2 (what if we have more than 2?) and compare to after-news return distribution for this period time frame.
+%		- ignore.		
+%	
+%	- We need that algo anyway for evaluation.
+%		- split is always overnight (?)
+%		- use close and next open for slip detection
+%		- check that price is close to adjusted daily price at the end
+	
+	
+	% TODO: Return distribution after news average
 	
 	\bibliographystyle{plainnat}
 	\bibliography{References}
