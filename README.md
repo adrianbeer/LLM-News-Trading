@@ -6,6 +6,12 @@ Description for the files and processing steps can be found in `README_DATA.md`.
 ## Warnings
 - Pylance breaks everything.
 
+
+## Interesting Links:
+- https://stackoverflow.com/questions/25665114/understanding-interactive-brokers-tick-events
+- https://epchan.blogspot.com/2015/04/beware-of-low-frequency-data.html
+
+
 ## Instruktionen
 1. First execute asset_data_preprocessor (to get relevant list of tickers)
 2. Then news_importer

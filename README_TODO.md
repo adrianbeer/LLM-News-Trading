@@ -48,6 +48,7 @@ Z.B. wenn ein bestimmtes Wort vorkommt ist die Varianz/Erwartungswert größer e
 - GD-Richtungsfilter
 - Dividendenerhöhuung
 - Overnight vs Intra-day News
+- Benutze Volumen als Proxy für Marketkapitalisierung
 
 ## Topicextraktion:
 - Können Text2Topic benutzen zum beispiel...
