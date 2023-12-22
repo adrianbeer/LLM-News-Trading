@@ -6,6 +6,7 @@ import pickle
 import numpy as np
 #dataframe_path = f"{path}/dataframe.pkl"
 
+# This is for Tai-Pan Data
 
 def get_name_from_path(file_path):
     if '\\' in file_path:
