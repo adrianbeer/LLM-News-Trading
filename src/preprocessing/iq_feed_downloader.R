@@ -49,7 +49,7 @@ for (symbol in c(tickers$stocks[stopped_at:N], "SPY")) {
   )
   if (skip_to_next|is.null(stock_1min)) { next }
   
-  path_pqt = file.path(config$raw_iq_feed_data_dir, paste(symbol, "_1min", ".parquet", sep=""))
+  path_pqt = file.path(config$data$iqfeed$minute$raw, paste(symbol, "_1min", ".parquet", sep=""))
   # Check "<R_HOME>/share/zoneinfo/zone.tab" for more time zones/info
   # df$time <- as.POSIXct(df$timestamp,tz="America/New_York")
   write_parquet(stock_1min, path_pqt, compression="gzip")

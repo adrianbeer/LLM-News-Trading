@@ -1,11 +1,19 @@
-TARGET_COL_NAME : "r_mkt_adj"
-INPUT_COL_NAME : "body"
+model:
+  data:
+    training: "D:/Data/NN_Training"
+    testing: "D:/Data/NN_Testing"
+    cutoff_date: "2021-01-01"
+  input_col_name: "body"
+  target_col_name: "r_mkt_adj"
 
-TEST_CUTOFF_DATE : "2021-01-01"
+data:
+  iqfeed:
+    minute:
+      raw: "D:/IQFeedData"
+      cleaned: "D:/IQFeedData/cleaned_1min"
+    daily:
+      raw: "D:/IQFeedData/daily"
+  
+  benzinga:
+    raw: 
 
-# List off functions for modifying the return
-raw_iq_feed_data_dir : "D:/IQFeedData"
-# Input-Output-Rows for the neural network training and validation
-train_output_dir : "D:/Data/NN_Training"
-# Input-Rows for testing
-test_output_dir : "D:/Data/NN_Testing"

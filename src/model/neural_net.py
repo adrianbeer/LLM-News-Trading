@@ -4,7 +4,10 @@ import torch
 from torch.optim import AdamW
 from transformers import BertTokenizer, get_linear_schedule_with_warmup
 
-from src.config import TARGET_COL_NAME, INPUT_COL_NAME
+from dotmap import DotMap
+import yaml
+config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
+
 from src.model.util import (
     TRANSFORMER_HF_ID,
     MyBertModel,
@@ -30,8 +33,8 @@ tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 
 train_texts = train_dat.loc[:, INPUT_COL_NAME].tolist()
 test_texts = test_dat.loc[:, INPUT_COL_NAME].tolist()
-test_labels = test_dat.loc[:, TARGET_COL_NAME].tolist()
-train_labels = train_dat.loc[:, TARGET_COL_NAME].tolist()
+test_labels = test_dat.loc[:, config.model.target_col_name].tolist()
+train_labels = train_dat.loc[:, config.model.target_col_name].tolist()
 
 train_inputs, train_masks = embed_inputs(train_texts, tokenizer)
 test_inputs, test_masks = embed_inputs(test_texts, tokenizer)
