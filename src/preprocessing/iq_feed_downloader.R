@@ -1,14 +1,18 @@
 # Speicherung von IQFeed-Daten:
 # ------------------------------
-# `store_iqfeed_data` ist für das Speichern von Tick-Daten. Tickdaten sind viel zu
+# `store_iqfeed_data` ist f?r das Speichern von Tick-Daten. Tickdaten sind viel zu
 # Speicherintensiv momentan, weswegen wir nur 1min-Frequenzdaten betrachten, die wir 
-# normal über get_iqfeed_data(symbol, from, to, period='1min') herunterladen.
+# normal ?ber get_iqfeed_data(symbol, from, to, period='1min') herunterladen.
 
-# Installation
+# Special Installation Instruction
 # - Arrow/Parquet:
 # install.packages("arrow")
-# - tzdb wird benötigt für Zeitzonen von arrow:
+# - tzdb wird ben?tigt f?r Zeitzonen von arrow:
 # install.packages("tzdb")
+
+library(here)
+library(yaml) 
+config <- yaml.load_file(here("src/config.yaml"))
 
 # ?QuantTools_settings
 library(QuantTools)
@@ -22,9 +26,7 @@ QuantTools_settings_defaults()
 library(arrow)
 
 # Download Tickers
-project_directory <- "G:\\Meine Ablage\\NewsTrading\\trading_bot"
-# project_directory <- "~/Documents/GithubProjekte/trading_bot"
-ticker_name_mapper_path <- file.path(project_directory, "data_shared", "ticker_name_mapper_reduced.parquet")
+ticker_name_mapper_path <- here("data_shared", "ticker_name_mapper_reduced.parquet")
 tickers <- read_parquet(ticker_name_mapper_path)
 
 
@@ -47,7 +49,7 @@ for (symbol in c(tickers$stocks[stopped_at:N], "SPY")) {
   )
   if (skip_to_next|is.null(stock_1min)) { next }
   
-  path_pqt = file.path("D:", "IQFeedData", paste(symbol, "_1min", ".parquet", sep=""))
+  path_pqt = file.path(config$raw_iq_feed_data_dir, paste(symbol, "_1min", ".parquet", sep=""))
   # Check "<R_HOME>/share/zoneinfo/zone.tab" for more time zones/info
   # df$time <- as.POSIXct(df$timestamp,tz="America/New_York")
   write_parquet(stock_1min, path_pqt, compression="gzip")

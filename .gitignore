@@ -3,7 +3,7 @@
 .vscode/*
 .ssh/*
 .RData
-.RHistory
+.Rhistory
 
 ## Core latex/pdflatex auxiliary files:
 *.aux

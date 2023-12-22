@@ -1,5 +1,4 @@
-TARGET_COL_NAME = "r_mkt_adj"
-INPUT_COL_NAME = "body"
-
-TEST_CUTOFF_DATE = "2021-01-01"
-
+import yaml
+config = yaml.safe_load(open("src/config.yaml"))
+globals().update(config)
+print(globals)

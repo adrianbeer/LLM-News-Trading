@@ -1,0 +1,11 @@
+TARGET_COL_NAME : "r_mkt_adj"
+INPUT_COL_NAME : "body"
+
+TEST_CUTOFF_DATE : "2021-01-01"
+
+# List off functions for modifying the return
+raw_iq_feed_data_dir : "D:/IQFeedData"
+# Input-Output-Rows for the neural network training and validation
+train_output_dir : "D:/Data/NN_Training"
+# Input-Rows for testing
+test_output_dir : "D:/Data/NN_Testing"
