@@ -194,7 +194,7 @@ def filter_body(row: pd.Series, logging=False) -> str:
                            flags=re.IGNORECASE)
     
     # Converts itemized lists to sentences.
-    body = re.sub("(\*|•)", 
+    body = re.sub("(\*|•){1}", 
                   ".", 
                   body)
     

@@ -10,6 +10,9 @@
 # - tzdb wird ben?tigt f?r Zeitzonen von arrow:
 # install.packages("tzdb")
 
+library(quantmod)
+getSplits("RELIANCE.NS")
+
 library(here)
 library(yaml) 
 config <- yaml.load_file(here("src/config.yaml"))

@@ -20,3 +20,12 @@ Description for the files and processing steps can be found in `README_DATA.md`.
 5. Then neural_net.py, where the neural network is trained
 6. Then neural_net_evaluation(.ipynb) where the performance of the neurlal network that was trained in the last step is eavluated
 
+## Google Colab
+Keep alive by pasting the following in the the developer console:
+```
+function ClickConnect(){
+    console.log("Working");
+    document.querySelector("colab-connect-button").click()
+}
+setInterval(ClickConnect,60000)
+```
