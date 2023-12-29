@@ -4,12 +4,17 @@
 \usepackage[english]{babel}
 \usepackage[round]{natbib}
 \usepackage{amsmath}
+\usepackage[nolist,nohyperlinks]{acronym}
 %\usepackage{parskip}
 
 \title{Market Efficiency of News Events}
 \author{Adrian Beer}
 \date{\vspace{-10ex}}
 \setlength{\droptitle}{-10em}
+
+\acrodef{MSE}{Mean Squared Error}
+\acrodef{MAE}{Mean Absolute Error}
+
 
 \begin{document}
 	\maketitle
@@ -118,13 +123,23 @@
 	One disadvantage of this holding period is that the holding periods differ and so intra-day news which are released
 	early in the day will lead to an observed price reaction which encompasses a longer time frame than for news which were released only later that day.
 	However when choosing a fixed holding period of e.g. 30 minutes we would have to differentiate between intra-day news and overnight news, since there are no observed prices directly after news publishment for a large number of overnight news.
+	
+	%But we need to differentiate between overnight and intraday news anyways...
+	
 	So this decision introduces some variance into the recorded price reactions, but it lets us treat intra-day and overnight news the same and reduces complexity w.r.t. the algorithm and analysis.
 	%TODO: At what time are news published on average?
 	%TODO: How often do news reverse 1 hour after to second observed close? 	
 	
 	\subsection{Labeling the Data Set}
-	Adjusting returns to the market is important.
+	When choosing what we want to choose as the output of the Neural Network we are confronted with various options. 
+	Most stock prediction models using news are labeled in a binary or ternary way, i.e. up/down or up/down/neutral.
+	Aside from this specific approach to predicting stock prices,
+	other approaches usually employ point forecasts, which are then evaluated using the \ac{MSE} or \ac{MAE}.
+	Other approaches exist, but are rare, e.g. \cite{martinez_artificial_2009} forecast the high and low of a stock on a daily basis in order to construct a profitable trading system.
 	
+	
+	\subsubsection{Adjusting Returns}
+	Adjusting returns to the market is important.
 	
 	Similar to \cite{salbrechter_financial_2021} we first consider :
 	$$
