@@ -1,4 +1,4 @@
-environment: local
+environment: colab
 
 model:
   data:
@@ -11,8 +11,8 @@ model:
 data:
   iqfeed:
     minute:
-      raw: "D:/IQFeedData"
-      cleaned: "D:/IQFeedData/cleaned_1min"
+      raw: "extreme-lore-398917-bzg/iqfeed/raw/"
+      cleaned: "extreme-lore-398917-bzg/iqfeed/cleaned/"
     daily:
       raw: "D:/IQFeedData/daily"
   
