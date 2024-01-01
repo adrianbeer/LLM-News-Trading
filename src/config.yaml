@@ -11,8 +11,8 @@ model:
 data:
   iqfeed:
     minute:
-      raw: "D:/IQFeedData"
-      cleaned: "D:/IQFeedData/cleaned_1min"
+      raw: "D:/IQFeedData/minute/raw"
+      cleaned: "D:/IQFeedData/minute/cleaned"
     daily:
       raw: "D:/IQFeedData/daily"
   

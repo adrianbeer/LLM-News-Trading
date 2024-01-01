@@ -11,8 +11,8 @@ model:
 data:
   iqfeed:
     minute:
-      raw: "extreme-lore-398917-bzg/iqfeed/raw/"
-      cleaned: "extreme-lore-398917-bzg/iqfeed/cleaned/"
+      raw: "gs://extreme-lore-398917-bzg/iqfeed/raw"
+      cleaned: "gs://extreme-lore-398917-bzg/iqfeed/cleaned"
     daily:
       raw: "D:/IQFeedData/daily"
   
