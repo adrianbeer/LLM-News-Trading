@@ -141,7 +141,7 @@
 	\subsubsection{Adjusting Returns}
 	Adjusting returns to the market is important.
 	
-	Similar to \cite{salbrechter_financial_2021} we first consider :
+	Compare \cite{salbrechter_financial_2021}:
 	$$
 	IR_{i, t}=R_{i, t}-R_{f, t}-\beta_{i, t} *\left(R_{S \& P 500, t}-R_{f, t}\right)
 	$$
@@ -176,22 +176,34 @@
 	
 	\subsection{Backtesting}
 	
-	\subsection{Preprocessing of Data}
-	IQFeed provides us with 1-minute intraday data that is unadjusted to splits/dividends and daily data that is adjusted. 
-	The 1-minute data is edge labeled on the right, i.e. a candle labeled 16:01 captures the time interval
-	between 16:00:00 and 16:00:59.
+	\subsection{Historical Data}
 	
-	Since the intraday data of IQFeed are not adjusted for splits we have 2 options:
-	Try to write an algorithm to automatically detect and adjust for stock splits or
-	use only the open/close of the adjusted EOD data set.
-	
-	Using only the auctions would introduce some noise to the return, as pre-news returns are incorporated into the
-	target return.
-	On the other hand using the algorithm would also introduce some noise, as its not going to be able to perfectly capture every split and might even identify some price shocks as splits which were created by news events.
-	
+	\subsection{Price Data Set}
+	IQFeed provides us with 1-minute intraday data that is unadjusted to neither splits nor dividends and daily data that is only split adjusted. 
+	The 1-minute data is edge labeled on the right, i.e. a candle labeled 16:01 captures the time interval between 16:00:00 and 16:00:59.
 	Since we don't have historical bid and ask prices we will only consider the trading period from 9:30am to 4pm and the closing and opening auctions.
 	Otherwise trades are too intransparent and illiquid.
 	
+	As we will use the intra-day data from IQFeed that is unadjusted we backwards adjust each stock time series ourselfes using Split and Dividend data that is available from Yahoo Finance via the python library yfinance.
+	Since this requires the stock to be made available by Yahoo Finance, this automatically eliminates all tickers for which Yahoo Finance does not provide data.
+	It is important that we adjust the data, especially for splits, since these can lead to extremely high erroneous one-day returns in the data base, if left unadjusted.
+	
+	%  TODO: Penny stocks
+
+	\subsubsection{News Data Set}
+	We get our news from the Benzinga News API.
+	Each news is tagged with stock tickers, associated to the news.
+	We consider all news which are tagged with exactly one stock ticker.
+	
+	\subsubsection{Ticker Consolidation}
+	In some cases we will have multiple price time series for the same company.
+	E.g. in case of Alphabet (Google) we have two different tickers and two different stock prices for the same underlying company. 
+	Here `GOOG` and `GOOGL` describe two different classes of stock for the same company.
+	
+	I consider it too hard of a problem to differentiate between different classes of stock when automatically assessing news.
+	Hence we will choose one ticker to represent the company.
+	If there is only one price time series available for the company, we simply group together the tickers.
+	We utilize the simple rule which chooses the ticker with the most recent values and the longest price history.
 	
 %	- Dealing with successive news events and overlapping return period.
 %		- Check return between news1 and news2 (what if we have more than 2?) and compare to after-news return distribution for this period time frame.

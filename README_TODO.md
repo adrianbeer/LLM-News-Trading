@@ -9,6 +9,7 @@
 
 -  Topics sollten als scalar nicht als one-hot-variable übergeben werden, um mehr informationen in derselben variable mitgeben zu können.
 
+- Bootstrap trade matrix
 
 # Short-Term:
 -  Sobald wir ein Mapping von Nachrichten zu Kursen haben, können wir versuchen einen KNN Algorithmus basierend auf
