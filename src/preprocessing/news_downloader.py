@@ -18,6 +18,8 @@ def parse_story_to_row(story):
     stocks = [d["name"] for d in story["stocks"]]
 
     if len(stocks) != 1: 
+        # TODO: This was a mistake... dont remove it... 
+        # E.g. maybe two tickers GOOG and GOOGL, refer to the same company in the end.
         return None
     
     ticker = stocks[0] # This is the ticker(s)
