@@ -18,30 +18,34 @@ def get_next_available_candle(prices: pd.DataFrame,
 
 
 def get_appropriate_closing_time(time: pd.Timestamp, tz="US/Eastern") -> pd.Timestamp:
-    if (time.hour < 9) or ((time.hour == 9) and (time.minute < 30)):
-        return pd.Timestamp(year=time.year, month=time.month, day=time.day, hour=16, minute=1, tz=tz)
-    else:
-        valid_days = [x.date() for x in nyse_cal.valid_days(start_date=time.date(), end_date=time.date() + pd.DateOffset(days=10))]
-        i = 1
-        while True:
-            new_time = time + pd.DateOffset(days=i)
-            if new_time.date() in valid_days:
-                return pd.Timestamp(year=new_time.year, month=new_time.month, day=new_time.day, hour=16, minute=1, tz=tz)
-            if i == 7:
-                return ValueError()
-            i += 1
-            
-            
+    close_time = time = pd.Timestamp(year=time.year, month=time.month, day=time.day, hour=16, minute=1, tz=tz)
+    valid_days = [x.date() for x in nyse_cal.valid_days(start_date=time.date(), end_date=time.date() + pd.DateOffset(days=10))]
+
+    if (time.date() in valid_days) and ((time.hour < 9) or ((time.hour == 9) and (time.minute < 30))):
+        return close_time
+    
+    i = 1
+    while True:
+        new_time = close_time + pd.DateOffset(days=i)
+        if new_time.date() in valid_days:
+            return new_time
+        if i == 7:
+            return ValueError()
+        i += 1
+
+
 def get_appropriate_entry_time(time: pd.Timestamp, tz="US/Eastern") -> pd.Timestamp:
-    if (time.hour < 9) or ((time.hour == 9) and (time.minute < 30)):
-        return pd.Timestamp(year=time.year, month=time.month, day=time.day, hour=9, minute=31, tz=tz)
-    elif (time.hour > 16) or ((time.hour == 16) and (time.minute > 31)):
-        valid_days = [x.date() for x in nyse_cal.valid_days(start_date=time.date(), end_date=time.date() + pd.DateOffset(days=10))]
+    open_time = time = pd.Timestamp(year=time.year, month=time.month, day=time.day, hour=9, minute=31, tz=tz)
+    valid_days = [x.date() for x in nyse_cal.valid_days(start_date=time.date(), end_date=time.date() + pd.DateOffset(days=10))]
+    
+    if (time.date() in valid_days) and ((time.hour < 9) or ((time.hour == 9) and (time.minute < 30))):
+        return open_time
+    elif (time.hour >= 16) or (time.date() not in valid_days):
         i = 1
         while True:
-            new_time = time + pd.DateOffset(days=i)
+            new_time = open_time + pd.DateOffset(days=i)
             if new_time.date() in valid_days:
-                return pd.Timestamp(year=new_time.year, month=new_time.month, day=new_time.day, hour=9, minute=31, tz=tz)
+                return new_time
             if i == 7:
                 return ValueError()
             i += 1
