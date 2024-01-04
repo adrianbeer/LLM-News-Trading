@@ -1,44 +1,21 @@
-import datetime
 import time
-from typing import List
 
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 import yaml
 from dotmap import DotMap
 from torch import Tensor
 from torch.nn.utils.clip_grad import clip_grad_norm
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 from transformers import BertModel
-
-from src.evaluation import METRICS_FUNCTION_DICT
+from src.utils.time import timing, format_time
+from src.evaluation.metrics import METRICS_FUNCTION_DICT
 
 config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
 
 TRANSFORMER_HF_ID = 'yiyanghkust/finbert-fls'
 
-def format_time(elapsed):
-    '''
-    Takes a time in seconds and returns a string hh:mm:ss
-    '''
-    # Round to the nearest second.
-    elapsed_rounded = int(round((elapsed)))
-    
-    # Format as hh:mm:ss
-    return str(datetime.timedelta(seconds=elapsed_rounded))
-
-
-def create_dataloaders(inputs: Tensor, masks: Tensor, labels: List, batch_size: int) -> DataLoader:
-    input_tensor = torch.tensor(inputs)
-    mask_tensor = torch.tensor(masks)
-    labels_tensor = torch.tensor(labels)
-    dataset = TensorDataset(input_tensor, mask_tensor, 
-                            labels_tensor)
-    dataloader = DataLoader(dataset, batch_size=batch_size, 
-                            shuffle=True)
-    return dataloader
 
 # class MyNNConfig(PretrainedConfig)
 
@@ -173,24 +150,17 @@ def embed_input(text, tokenizer):
     attention_masks = encoding['attention_mask']
     return input_ids, attention_masks
 
-from functools import wraps
-from time import time
-def timing(f):
-    @wraps(f)
-    def wrap(*args, **kw):
-        ts = time()
-        result = f(*args, **kw)
-        te = time()
-        print('func:%r took: %2.4f sec' % \
-          (f.__name__, te-ts))
-        return result
-    return wrap
+# import multiprocessing
+# from functools import partial
+
+# pool_obj = multiprocessing.Pool()
+# ans = pool_obj.map(partial(embed_input, tokenizer=tokenizer), texts)
 
 @timing
 def embed_inputs(texts: list, tokenizer) -> tuple[Tensor, Tensor]:
     input_ids = []
     attention_masks = []
-    for text in texts:
+    for text in texts[:100]:
         x, y = embed_input(text, tokenizer)
         input_ids.append(x)
         attention_masks.append(y)
@@ -211,13 +181,7 @@ class WeightedSquaredLoss(nn.Module):
         loss = torch.dot(torch.pow(torch.add(torch.abs(flat_output), 1), self.gamma), torch.square(flat_output - flat_target)) / N
         return loss
     
-def get_text_and_labels(dataset: pd.DataFrame, section: str):
-    input_col_name = config.model.input_col_name
-    target_col_name = config.model.target_col_name
-    dat = dataset.loc[dataset.section == section, :]
-    texts = dat.loc[:, input_col_name].tolist()
-    labels = dat.loc[:, target_col_name].tolist()
-    return texts, labels
+
 
 
 

@@ -227,24 +227,3 @@ def filter_body(row: pd.Series, logging=False) -> str:
 
     return body
 
-
-if __name__ == "__main__":
-    with open("data/story_df_raw.pkl", 'rb') as f:
-        story_df = pickle.load(f)
-
-    print(f"Filtered stories: {story_df.shape[0]}")
-
-    start = time.time()
-    story_df.loc[:, "body"] = story_df.apply(lambda x: filter_body(x.body, x.stocks, x.author, x.time), axis=1)
-    end = time.time()
-    print(f"Time elapsed: {end-start}s")
-    print(f"Average seconds required per body: {(end-start)/story_df.shape[0]}s")
-
-    story_df.loc[:, "NewsTimestamp"] = pd.to_datetime(story_df.time)
-    story_df.drop(columns=["time"], inplace=True)
-
-    print(story_df.shape)
-    print(story_df.head(10))
-
-    story_df.to_pickle("data/stories.pkl")
-    story_df.to_csv("data/stories.csv")

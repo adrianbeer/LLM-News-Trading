@@ -5,20 +5,18 @@ import torch.nn as nn
 import yaml
 from dotmap import DotMap
 from torch.optim import AdamW
-from transformers import BertTokenizer, get_linear_schedule_with_warmup
-from time import time
+from transformers import BertTokenizerFast, get_linear_schedule_with_warmup
+from src.model.data_loading import create_dataloaders, get_text_and_labels
 
-config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
-
-from src.model.util import (
+from src.model.neural_network import (
     TRANSFORMER_HF_ID,
     MyBertModel,
     WeightedSquaredLoss,
-    create_dataloaders,
     embed_inputs,
-    get_text_and_labels,
     train,
 )
+
+config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
 
 FROM_SCRATCH = True
 batch_size = 2**12
@@ -27,26 +25,21 @@ loss_confidence_parameter = 1 # Je höher, desto größer ist die Aussagekraft e
 input_col_name = config.model.input_col_name
 target_col_name = config.model.target_col_name
 
-tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 
 # Download dataset
 dataset = pd.read_parquet(config.data.merged, columns=[input_col_name, target_col_name, "section"])
-
 train_texts, train_labels = get_text_and_labels(dataset, "training")
 test_texts, test_labels = get_text_and_labels(dataset, "validation")
 print(f"train_dat size: {len(train_texts)}")
 
-print(time())
+tokenizer = BertTokenizerFast.from_pretrained(TRANSFORMER_HF_ID)
 train_inputs, train_masks = embed_inputs(train_texts, tokenizer)
 test_inputs, test_masks = embed_inputs(test_texts, tokenizer)
 
-print(time())
 train_dataloader = create_dataloaders(train_inputs, train_masks, 
                                       train_labels, batch_size)
-print(time())
 validation_dataloader = create_dataloaders(test_inputs, test_masks, 
                                      test_labels, batch_size)
-print(time())
 
 model: nn.Module = MyBertModel()
 if not FROM_SCRATCH: 

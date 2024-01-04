@@ -33,11 +33,32 @@ ticker_name_mapper_path <- here("data_shared", "ticker_name_mapper_reduced.parqu
 tickers <- read_parquet(ticker_name_mapper_path)
 
 
+
+
+### ------------- Tick
+symbols = tickers$stocks[1:1000]
+path = "D:/IQFeedData/tick"
+start_date = '2023-07-01'
+
+settings = list(
+  iqfeed_storage = path,
+  iqfeed_storage_from = start_date,
+  iqfeed_symbols = symbols
+)
+QuantTools_settings(settings)
+
+store_iqfeed_data()
+
+get_iqfeed_data(symbol = 'AAPL', from = '2023-01-01', to = '2024-01-04', period = 'tick', local = T )
+
+
+### ------------- Minutely 
 # Requires minimal changes to download the daily time series...
-from = '2010-01-01'
-to   = '2023-12-15'
+from = '2023-06-01'
+to   = '2023-12-31'
 N <- length(tickers$stocks)
-stopped_at = 1591
+start_index = 1
+stop_index = 1000
 
 for (symbol in c(tickers$stocks[stopped_at:N], "SPY")) {
   print(symbol)
