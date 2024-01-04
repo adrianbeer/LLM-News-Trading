@@ -1,11 +1,13 @@
 
 import pandas as pd
 import torch
+import torch.nn as nn
+import yaml
+from dotmap import DotMap
 from torch.optim import AdamW
 from transformers import BertTokenizer, get_linear_schedule_with_warmup
+from time import time
 
-from dotmap import DotMap
-import yaml
 config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
 
 from src.model.util import (
@@ -14,39 +16,39 @@ from src.model.util import (
     WeightedSquaredLoss,
     create_dataloaders,
     embed_inputs,
+    get_text_and_labels,
     train,
 )
 
 FROM_SCRATCH = True
-batch_size = 4
+batch_size = 2**12
 loss_confidence_parameter = 1 # Je höher, desto größer ist die Aussagekraft einer hohen Prognose
 
-# Download dataset
-dataset = pd.read_pickle("data/dataset.pkl")
-(train_idx, test_idx) = pd.read_pickle("data/dataset_train_test_idx.pkl")
-
-train_dat = dataset.loc[train_idx, :]
-test_dat = dataset.loc[test_idx, :]
-print(f"train_dat size: {train_dat.shape[0]}")
+input_col_name = config.model.input_col_name
+target_col_name = config.model.target_col_name
 
 tokenizer = BertTokenizer.from_pretrained(TRANSFORMER_HF_ID)
 
-train_texts = train_dat.loc[:, INPUT_COL_NAME].tolist()
-test_texts = test_dat.loc[:, INPUT_COL_NAME].tolist()
-test_labels = test_dat.loc[:, config.model.target_col_name].tolist()
-train_labels = train_dat.loc[:, config.model.target_col_name].tolist()
+# Download dataset
+dataset = pd.read_parquet(config.data.merged, columns=[input_col_name, target_col_name, "section"])
 
+train_texts, train_labels = get_text_and_labels(dataset, "training")
+test_texts, test_labels = get_text_and_labels(dataset, "validation")
+print(f"train_dat size: {len(train_texts)}")
+
+print(time())
 train_inputs, train_masks = embed_inputs(train_texts, tokenizer)
 test_inputs, test_masks = embed_inputs(test_texts, tokenizer)
 
+print(time())
 train_dataloader = create_dataloaders(train_inputs, train_masks, 
                                       train_labels, batch_size)
-
+print(time())
 validation_dataloader = create_dataloaders(test_inputs, test_masks, 
                                      test_labels, batch_size)
+print(time())
 
-
-model = MyBertModel()
+model: nn.Module = MyBertModel()
 if not FROM_SCRATCH: 
     model.load_state_dict(torch.load("data/model")) # Use latest iteration of the model for training
 
@@ -62,7 +64,7 @@ if __name__ == "__main__":
     # Optimizer, scheduler and loss function
     optimizer = AdamW(model.parameters(), lr=5e-5, eps=1e-8)
 
-    epochs = 5
+    epochs = 1
     total_steps = len(train_dataloader) * epochs
     scheduler = get_linear_schedule_with_warmup(optimizer,       
                     num_warmup_steps=0, num_training_steps=total_steps)

@@ -2,10 +2,9 @@ environment: local
 
 model:
   data:
-    training: "D:/Data/NN_Training"
-    testing: "D:/Data/NN_Testing"
-    cutoff_date: "2021-01-01"
-  input_col_name: "body"
+    test_cutoff_date: "2021-01-01"
+    val_cutoff_date: "2022-01-01"
+  input_col_name: "parsed_body"
   target_col_name: "r_mkt_adj"
 
 data:

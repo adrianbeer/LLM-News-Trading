@@ -1,14 +1,21 @@
 import datetime
 import time
+from typing import List
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
+import yaml
+from dotmap import DotMap
 from torch import Tensor
 from torch.nn.utils.clip_grad import clip_grad_norm
 from torch.utils.data import DataLoader, TensorDataset
 from transformers import BertModel
-from typing import List
+
+from src.evaluation import METRICS_FUNCTION_DICT
+
+config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
 
 TRANSFORMER_HF_ID = 'yiyanghkust/finbert-fls'
 
@@ -52,7 +59,7 @@ class MyBertModel(nn.Module):
        return out
 
 
-def train(model, optimizer, scheduler, loss_function, epochs, train_dataloader, validation_dataloader, device, clip_value=2):
+def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_dataloader, validation_dataloader, device, clip_value=2):
     
     training_stats = []
     t0 = time.time()
@@ -89,44 +96,50 @@ def train(model, optimizer, scheduler, loss_function, epochs, train_dataloader, 
         avg_train_loss = total_train_loss / len(train_dataloader)
         training_time = format_time(time.time() - t0)
 
-        val_loss, val_mae = evaluate(model, loss_function, validation_dataloader, device)
-        training_stats.append(
-            {
+        val_loss: float
+        val_metrics: dict
+        val_loss, val_metrics = evaluate(model, loss_function, validation_dataloader, device)
+        
+        epoch_dict = {
                 'epoch': epoch + 1,
                 'Training Loss': avg_train_loss,
-                'Valid. Loss':np.mean(val_loss),
-                'Valid. MAE.': np.mean(val_mae),
+                'Valid. Loss': val_loss,
                 'Training Time': training_time,
-                # 'Validation Time': validation_time
             }
-        )
+        for name in val_metrics:
+            epoch_dict["Valid." + name] = val_metrics[name]
+        
+        training_stats.append(epoch_dict)
 
         print("")
-        print("  Average training loss: {0:.2f}".format(avg_train_loss))
-        print("  Training epoch took: {:}".format(training_time))        
+        print("Average training loss: {0:.2f}".format(avg_train_loss))
+        print("Training epoch took: {:}".format(training_time))        
     return model, training_stats
    
 
-def evaluate(model, loss_function, validation_dataloader, device):
+@torch.no_grad
+def evaluate(model: nn.Module, loss_function, validation_dataloader: DataLoader, device):
     model.eval()
-    test_loss, test_mae = [], []
+    test_loss = []
+    
+    metrics_batched = dict([(name, []) for name in METRICS_FUNCTION_DICT])
+    
     for batch in validation_dataloader:
         batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
-        with torch.no_grad():
-            outputs = model(batch_inputs, batch_masks)
-        loss = loss_function(outputs, batch_labels.unsqueeze(1))
+        outputs = model(batch_inputs, batch_masks)
 
-        outputs = outputs.detach().cpu().numpy()
-        label_ids = batch_labels.to('cpu').numpy()
+        loss: torch.Tensor = loss_function(outputs, batch_labels.unsqueeze(1))
+        outputs: np.ndarray = outputs.to('cpu').numpy()
+        labels: np.ndarray = batch_labels.to('cpu').numpy()
 
         test_loss.append(loss.item())
-        mae = mae_score(outputs, label_ids)
-        test_mae.append(mae.item())
-    return test_loss, test_mae
-
-
-def mae_score(outputs, labels):
-    return np.mean(np.abs(outputs - labels))
+        
+        for metric_name in metrics_batched:
+            metrics_batched[metric_name].append(METRICS_FUNCTION_DICT[metric_name](outputs, labels))
+        
+    test_loss = np.mean(test_loss)
+    metrics = dict([(name, np.mean(metrics_batched[name])) for name in metrics_batched])
+    return test_loss, metrics
 
 
 def predict(model, dataloader, device):
@@ -160,8 +173,21 @@ def embed_input(text, tokenizer):
     attention_masks = encoding['attention_mask']
     return input_ids, attention_masks
 
+from functools import wraps
+from time import time
+def timing(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time()
+        result = f(*args, **kw)
+        te = time()
+        print('func:%r took: %2.4f sec' % \
+          (f.__name__, te-ts))
+        return result
+    return wrap
 
-def embed_inputs(texts, tokenizer) -> tuple[Tensor, Tensor]:
+@timing
+def embed_inputs(texts: list, tokenizer) -> tuple[Tensor, Tensor]:
     input_ids = []
     attention_masks = []
     for text in texts:
@@ -184,3 +210,14 @@ class WeightedSquaredLoss(nn.Module):
         N = len(output)
         loss = torch.dot(torch.pow(torch.add(torch.abs(flat_output), 1), self.gamma), torch.square(flat_output - flat_target)) / N
         return loss
+    
+def get_text_and_labels(dataset: pd.DataFrame, section: str):
+    input_col_name = config.model.input_col_name
+    target_col_name = config.model.target_col_name
+    dat = dataset.loc[dataset.section == section, :]
+    texts = dat.loc[:, input_col_name].tolist()
+    labels = dat.loc[:, target_col_name].tolist()
+    return texts, labels
+
+
+

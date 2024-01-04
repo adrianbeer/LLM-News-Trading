@@ -7,6 +7,7 @@ import pandas as pd
 import time
 import plotly.graph_objects as go
 import plotly.io as pio
+from evaluation import get_metrics
 pio.renderers.default = "vscode"
 
 
@@ -36,13 +37,6 @@ test_dat.loc[:, "Fcst"] = y_pred_scaled
 end = time.time()
 print(f"{start-end:.2f}s")
 
-
-def get_metrics(y, y_hat):
-    mae = np.abs(y_hat - y).mean()
-    rw_mae =  (np.abs(y)).mean()
-    TP = ((y_hat > 0)  & (y > 0)).mean()
-    TN = ((y_hat < 0)  & (y < 0)).mean()
-    return mae, rw_mae, TP, TN
 
 test_labels = test_dat.IntradayReturn.tolist()
 
