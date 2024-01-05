@@ -19,7 +19,7 @@ from src.model.neural_network import (
 config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
 
 FROM_SCRATCH = True
-batch_size = 2**12
+batch_size = 4
 loss_confidence_parameter = 1 # Je höher, desto größer ist die Aussagekraft einer hohen Prognose
 
 input_col_name = config.model.input_col_name
@@ -30,7 +30,8 @@ target_col_name = config.model.target_col_name
 dataset = pd.read_parquet(config.data.merged, columns=[input_col_name, target_col_name, "section"])
 train_texts, train_labels = get_text_and_labels(dataset, "training")
 test_texts, test_labels = get_text_and_labels(dataset, "validation")
-print(f"train_dat size: {len(train_texts)}")
+N_train = len(train_texts)
+print(f"train_dat size: {N_train}")
 
 tokenizer = BertTokenizerFast.from_pretrained(TRANSFORMER_HF_ID)
 train_inputs, train_masks = embed_inputs(train_texts, tokenizer)
@@ -46,6 +47,8 @@ if not FROM_SCRATCH:
     model.load_state_dict(torch.load("data/model")) # Use latest iteration of the model for training
 
 if __name__ == "__main__":
+    torch.cuda.empty_cache()
+    
     if torch.cuda.is_available():       
         device = torch.device("cuda")
         print("Using GPU.")
@@ -59,13 +62,22 @@ if __name__ == "__main__":
 
     epochs = 1
     total_steps = len(train_dataloader) * epochs
-    scheduler = get_linear_schedule_with_warmup(optimizer,       
-                    num_warmup_steps=0, num_training_steps=total_steps)
+    scheduler = get_linear_schedule_with_warmup(optimizer, 
+                                                num_warmup_steps=0, 
+                                                num_training_steps=total_steps)
     loss_function = WeightedSquaredLoss(gamma=loss_confidence_parameter)
 
     # Training
-    model, training_stats = train(model, optimizer, scheduler, loss_function, epochs, 
-                train_dataloader, validation_dataloader, device, clip_value=2)
+    model, training_stats = train(model, 
+                                  optimizer, 
+                                  scheduler, 
+                                  loss_function, 
+                                  epochs, 
+                                  train_dataloader, 
+                                  validation_dataloader, 
+                                  device, 
+                                  clip_value=2,
+                                  N_train=N_train)
 
     df_stats = pd.DataFrame(data=training_stats)
     print(df_stats)

@@ -12,6 +12,10 @@
 - Bootstrap trade matrix
 
 # Short-Term:
+- Pipeline everything!!
+
+- Stratifizierung nach Unternehmen oder so? Google hat viel mehr Nachrichten als z.b. ein kleineres Unternehmen.
+
 -  Sobald wir ein Mapping von Nachrichten zu Kursen haben, können wir versuchen einen KNN Algorithmus basierend auf
 der Word Mover's Distance zu benutzen, bzw. generell Clustering-Algorithmen mit diesem Distanzmass benutzen, siehe
 [Gensim](https://radimrehurek.com/gensim/auto_examples/tutorials/run_wmd.html#sphx-glr-auto-examples-tutorials-run-wmd-py).

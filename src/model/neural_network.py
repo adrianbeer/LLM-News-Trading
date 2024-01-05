@@ -6,11 +6,14 @@ import torch.nn as nn
 import yaml
 from dotmap import DotMap
 from torch import Tensor
-from torch.nn.utils.clip_grad import clip_grad_norm
+from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.utils.data import DataLoader
 from transformers import BertModel
 from src.utils.time import timing, format_time
 from src.evaluation.metrics import METRICS_FUNCTION_DICT
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+import os
 
 config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
 
@@ -36,20 +39,26 @@ class MyBertModel(nn.Module):
        return out
 
 
-def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_dataloader, validation_dataloader, device, clip_value=2):
+def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_dataloader: DataLoader, validation_dataloader, device, clip_value=2, N_train=0):
     
     training_stats = []
     t0 = time.time()
-
+    epoch_time_is_estimated = False
+    
     for epoch in range(epochs):
         print(f'======== Epoch {epoch} / {epochs} ========')
-        print('Training...')
+        print(f'Training... at {format_time(t0)}')
         
         total_train_loss = 0
         # best_loss = 1e10
         model.train()
 
-        for step, batch in enumerate(train_dataloader): 
+        for step, batch in enumerate(train_dataloader):
+            
+            if (step*train_dataloader.batch_size >= 10_000) and epoch_time_is_estimated: 
+                print(f"One epoch takes take approx. {N_train / 10_000 * (t0 - time.time())} seconds")
+                epoch_time_is_estimated = True
+                
             batch_inputs, batch_masks, batch_labels = \
                                tuple(b.to(device) for b in batch)
             # Always clear any previously calculated gradients before performing a
@@ -64,7 +73,7 @@ def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_d
             loss.backward() 
             # Clip the norm of the gradients to 1.0.
             # This is to help prevent the "exploding gradients" problem.
-            clip_grad_norm(model.parameters(), clip_value)
+            clip_grad_norm_(model.parameters(), clip_value)
             # Update parameters
             optimizer.step()
             # Updapte learning rate
@@ -150,20 +159,16 @@ def embed_input(text, tokenizer):
     attention_masks = encoding['attention_mask']
     return input_ids, attention_masks
 
-# import multiprocessing
-# from functools import partial
-
-# pool_obj = multiprocessing.Pool()
-# ans = pool_obj.map(partial(embed_input, tokenizer=tokenizer), texts)
 
 @timing
 def embed_inputs(texts: list, tokenizer) -> tuple[Tensor, Tensor]:
     input_ids = []
     attention_masks = []
-    for text in texts[:100]:
-        x, y = embed_input(text, tokenizer)
-        input_ids.append(x)
-        attention_masks.append(y)
+    
+    pool_obj = ThreadPoolExecutor(max_workers=os.cpu_count())
+    ans = pool_obj.map(partial(embed_input, tokenizer=tokenizer), texts)
+    input_ids, attention_masks = list(zip(*ans))
+
     input_ids: Tensor = torch.cat(input_ids, dim=0)
     attention_masks: Tensor = torch.cat(attention_masks, dim=0)
     return input_ids, attention_masks
