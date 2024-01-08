@@ -14,8 +14,7 @@ from src.evaluation.metrics import METRICS_FUNCTION_DICT
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import os
-
-config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
+from src.config import config
 
 TRANSFORMER_HF_ID = 'yiyanghkust/finbert-fls'
 
@@ -55,8 +54,8 @@ def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_d
 
         for step, batch in enumerate(train_dataloader):
             
-            if (step*train_dataloader.batch_size >= 10_000) and epoch_time_is_estimated: 
-                print(f"One epoch takes take approx. {N_train / 10_000 * (t0 - time.time())} seconds")
+            if (step*train_dataloader.batch_size >= 10_000) and not epoch_time_is_estimated: 
+                print(f"One epoch takes take approx. {N_train / 10_000 * (time.time() - t0)/(60*60)} hours")
                 epoch_time_is_estimated = True
                 
             batch_inputs, batch_masks, batch_labels = \

@@ -6,7 +6,7 @@ import yaml
 from dotmap import DotMap
 from torch.optim import AdamW
 from transformers import BertTokenizerFast, get_linear_schedule_with_warmup
-from src.model.data_loading import create_dataloaders, get_text_and_labels
+from src.model.data_loading import create_dataloaders, get_text_and_labels, get_data_loader_from_dataset
 
 from src.model.neural_network import (
     TRANSFORMER_HF_ID,
@@ -17,34 +17,36 @@ from src.model.neural_network import (
 )
 
 config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
-
-FROM_SCRATCH = True
-batch_size = 4
-loss_confidence_parameter = 1 # Je höher, desto größer ist die Aussagekraft einer hohen Prognose
-
 input_col_name = config.model.input_col_name
 target_col_name = config.model.target_col_name
+
+# Settings
+FROM_SCRATCH = True
+batch_size = 4
+tokenizer = BertTokenizerFast.from_pretrained(TRANSFORMER_HF_ID)
 
 
 # Download dataset
 dataset = pd.read_parquet(config.data.merged, columns=[input_col_name, target_col_name, "section"])
-train_texts, train_labels = get_text_and_labels(dataset, "training")
-test_texts, test_labels = get_text_and_labels(dataset, "validation")
-N_train = len(train_texts)
+
+N_train = dataset[dataset["split"] == "training"].shape[0]
 print(f"train_dat size: {N_train}")
 
-tokenizer = BertTokenizerFast.from_pretrained(TRANSFORMER_HF_ID)
-train_inputs, train_masks = embed_inputs(train_texts, tokenizer)
+test_texts, test_labels = get_text_and_labels(dataset, "validation")
 test_inputs, test_masks = embed_inputs(test_texts, tokenizer)
-
-train_dataloader = create_dataloaders(train_inputs, train_masks, 
-                                      train_labels, batch_size)
 validation_dataloader = create_dataloaders(test_inputs, test_masks, 
                                      test_labels, batch_size)
+
+train_dataloader = get_data_loader_from_dataset(dataset=dataset, 
+                                                split="training", 
+                                                tokenizer=tokenizer, 
+                                                batch_size=batch_size)
+
 
 model: nn.Module = MyBertModel()
 if not FROM_SCRATCH: 
     model.load_state_dict(torch.load("data/model")) # Use latest iteration of the model for training
+model = torch.compile(model)
 
 if __name__ == "__main__":
     torch.cuda.empty_cache()
@@ -65,8 +67,9 @@ if __name__ == "__main__":
     scheduler = get_linear_schedule_with_warmup(optimizer, 
                                                 num_warmup_steps=0, 
                                                 num_training_steps=total_steps)
-    loss_function = WeightedSquaredLoss(gamma=loss_confidence_parameter)
-
+    
+    loss_function = nn.MSELoss()
+    
     # Training
     model, training_stats = train(model, 
                                   optimizer, 

@@ -19,5 +19,5 @@ data:
     raw: 
     cleaned: "G:/Meine Ablage/NewsTrading/trading_bot/data/processed_news" 
 
-  merged: "D:/Data/Merged/news.parquet"
+  merged: "/content/drive/MyDrive/NewsTrading/trading_bot/data/news.parquet"
 
