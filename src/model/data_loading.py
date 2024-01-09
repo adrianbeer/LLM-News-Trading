@@ -3,10 +3,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, TensorDataset
 from src.config import config
-from src.model.neural_network import (
-    TRANSFORMER_HF_ID,
-    embed_inputs,
-)
+from src.model.neural_network import embed_inputs
 from typing import List
 
 

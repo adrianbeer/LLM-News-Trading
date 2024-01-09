@@ -46,6 +46,8 @@ train_dataloader = get_data_loader_from_dataset(dataset=dataset,
 model: nn.Module = MyBertModel()
 if not FROM_SCRATCH: 
     model.load_state_dict(torch.load("data/model")) # Use latest iteration of the model for training
+    
+# .compile currently isn't supported for Windows
 model = torch.compile(model)
 
 if __name__ == "__main__":

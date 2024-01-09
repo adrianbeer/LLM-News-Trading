@@ -58,15 +58,15 @@ def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_d
                 print(f"One epoch takes take approx. {N_train / 10_000 * (time.time() - t0)/(60*60)} hours")
                 epoch_time_is_estimated = True
                 
-            batch_inputs, batch_masks, batch_labels = \
-                               tuple(b.to(device) for b in batch)
+            batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
+            inputs = (batch_inputs, batch_masks)
             # Always clear any previously calculated gradients before performing a
             # backward pass. PyTorch doesn't do this automatically because 
             # accumulating the gradients is "convenient while training RNNs".
             model.zero_grad()
-            outputs = model(batch_inputs, batch_masks)           
+            outputs = model(*inputs)           
             loss = loss_function(outputs.squeeze(), 
-                             batch_labels.squeeze())
+                                 batch_labels.squeeze())
             total_train_loss += loss.item()
             # Calculate gradients
             loss.backward() 
@@ -127,15 +127,12 @@ def evaluate(model: nn.Module, loss_function, validation_dataloader: DataLoader,
     return test_loss, metrics
 
 
-def predict(model, dataloader, device):
+@torch.no_grad
+def predict(model, inputs, device):
     model.eval()
     output = []
-    for batch in dataloader:
-        batch_inputs, batch_masks, _ = \
-                                  tuple(b.to(device) for b in batch)
-        with torch.no_grad():
-            output += model(batch_inputs, 
-                            batch_masks).view(1,-1).tolist()[0]
+    inputs = tuple(b.to(device) for b in inputs)
+    output += model(*inputs).view(1,-1).tolist()[0]
     return np.array(output)
 
 

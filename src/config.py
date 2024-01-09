@@ -1,6 +1,7 @@
 import yaml
 from dotmap import DotMap
 import os 
+import logging
 
 # Default location/file
 config_path = "src/config.yaml"
@@ -13,3 +14,5 @@ except KeyError:
 
 config = DotMap(yaml.safe_load(open(config_path)), _dynamic=False)
 
+# logging
+logging.basicConfig(filename='logs/logs.log', level=logging.INFO)
