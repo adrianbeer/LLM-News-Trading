@@ -13,7 +13,8 @@ data:
       raw: "D:/IQFeedData/minute/raw"
       cleaned: "D:/IQFeedData/minute/cleaned"
     daily:
-      raw: "D:/IQFeedData/daily"
+      raw: ""
+      cleaned: "D:/IQFeedData/daily/cleaned"
   
   benzinga:
     raw: 
