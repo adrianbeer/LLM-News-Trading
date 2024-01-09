@@ -7,21 +7,35 @@ from src.model.neural_network import embed_inputs
 from typing import List
 
 
-def get_data_loader_from_dataset(dataset:pd. DataFrame, split, tokenizer, batch_size):
+def get_data_loader_from_dataset(dataset: pd. DataFrame, 
+                                 split: str, 
+                                 tokenizer, 
+                                 batch_size: int, 
+                                 data_loader_kwargs: dict = dict()):
     texts, labels = get_text_and_labels(dataset, split)
     inputs, masks = embed_inputs(texts, tokenizer)
-    dataloader: DataLoader = create_dataloaders(inputs, masks, labels, batch_size)
+    dataloader: DataLoader = create_dataloaders(inputs, 
+                                                masks, 
+                                                labels, 
+                                                batch_size, 
+                                                data_loader_kwargs)
     return dataloader
 
 
-def create_dataloaders(inputs: Tensor, masks: Tensor, labels: List, batch_size: int) -> DataLoader:
+def create_dataloaders(inputs: Tensor, 
+                       masks: Tensor, 
+                       labels: List, 
+                       batch_size: int, 
+                       data_loader_kwargs: dict = dict()) -> DataLoader:
     input_tensor = torch.tensor(inputs)
     mask_tensor = torch.tensor(masks)
     labels_tensor = torch.tensor(labels)
-    dataset = TensorDataset(input_tensor, mask_tensor,
+    dataset = TensorDataset(input_tensor, 
+                            mask_tensor,
                             labels_tensor)
-    dataloader = DataLoader(dataset, batch_size=batch_size,
-                            shuffle=True)
+    dataloader = DataLoader(dataset, 
+                            batch_size=batch_size,
+                            **data_loader_kwargs)
     return dataloader
 
 

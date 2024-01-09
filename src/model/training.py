@@ -29,18 +29,17 @@ tokenizer = BertTokenizerFast.from_pretrained(TRANSFORMER_HF_ID)
 # Download dataset
 dataset = pd.read_parquet(config.data.merged, columns=[input_col_name, target_col_name, "section"])
 
-N_train = dataset[dataset["split"] == "training"].shape[0]
-print(f"train_dat size: {N_train}")
-
-test_texts, test_labels = get_text_and_labels(dataset, "validation")
-test_inputs, test_masks = embed_inputs(test_texts, tokenizer)
-validation_dataloader = create_dataloaders(test_inputs, test_masks, 
-                                     test_labels, batch_size)
+validation_dataloader = get_data_loader_from_dataset(dataset=dataset, 
+                                                split="validation", 
+                                                tokenizer=tokenizer, 
+                                                batch_size=batch_size,
+                                                data_loader_kwargs={})
 
 train_dataloader = get_data_loader_from_dataset(dataset=dataset, 
                                                 split="training", 
                                                 tokenizer=tokenizer, 
-                                                batch_size=batch_size)
+                                                batch_size=batch_size,
+                                                data_loader_kwargs={})
 
 
 model: nn.Module = MyBertModel()
@@ -81,8 +80,7 @@ if __name__ == "__main__":
                                   train_dataloader, 
                                   validation_dataloader, 
                                   device, 
-                                  clip_value=2,
-                                  N_train=N_train)
+                                  clip_value=2)
 
     df_stats = pd.DataFrame(data=training_stats)
     print(df_stats)

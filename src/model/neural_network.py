@@ -3,8 +3,6 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
-import yaml
-from dotmap import DotMap
 from torch import Tensor
 from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.utils.data import DataLoader
@@ -14,7 +12,7 @@ from src.evaluation.metrics import METRICS_FUNCTION_DICT
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import os
-from src.config import config
+
 
 TRANSFORMER_HF_ID = 'yiyanghkust/finbert-fls'
 
@@ -29,7 +27,13 @@ class MyBertModel(nn.Module):
        D_in, D_out = self.bert.config.hidden_size, 1
        self.regr = nn.Sequential(
            nn.Dropout(0.2),
-           nn.Linear(D_in, D_out)
+           nn.Linear(D_in, 20),
+           nn.ReLU(),
+           nn.Dropout(0.2),
+           nn.Linear(20, 20),
+           nn.ReLU(),
+           nn.Dropout(0.2),
+           nn.Linear(20, D_out)
            )
 
    def forward(self, input_ids, attention_masks):
@@ -38,47 +42,61 @@ class MyBertModel(nn.Module):
        return out
 
 
-def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_dataloader: DataLoader, validation_dataloader, device, clip_value=2, N_train=0):
+def train_one_epoch(model, train_dataloader, device, loss_function, clip_value, optimizer, scheduler, t0):
+    running_loss = 0
+    # best_loss = 1e10
+    model.train()
+    batch_size = train_dataloader.batch_size
+    for step, batch in enumerate(train_dataloader):
+        
+        epoch_time_is_estimated = False
+        if (step*batch_size >= 10_000) and not epoch_time_is_estimated: 
+            print(f"One epoch takes take approx. {len(train_dataloader)*batch_size / 10_000 * (time.time() - t0)/(60*60)} hours")
+            epoch_time_is_estimated = True
+            
+        batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
+        inputs = (batch_inputs, batch_masks)
+        
+        # Always clear any previously calculated gradients before performing a
+        # backward pass. PyTorch doesn't do this automatically because 
+        # accumulating the gradients is "convenient while training RNNs".
+        model.zero_grad()
+        
+        outputs = model(*inputs)     
+            
+        loss = loss_function(outputs.squeeze(), 
+                            batch_labels.squeeze())
+        running_loss += loss.item()
+        
+        # Calculate gradients
+        loss.backward() 
+        
+        # Clip the norm of the gradients to 1.0.
+        # This is to help prevent the "exploding gradients" problem.
+        clip_grad_norm_(model.parameters(), clip_value)
+        
+        # Update parameters
+        optimizer.step()
+        
+        # Updapte learning rate
+        scheduler.step()
+        
+        if step % 1000 == 999:
+            last_loss = running_loss / (step+1) # loss per batch
+            print('batch {} loss: {}'.format(step + 1, last_loss))
+            
+        return running_loss
+
+
+def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_dataloader: DataLoader, validation_dataloader, device, clip_value=2):
     
     training_stats = []
     t0 = time.time()
-    epoch_time_is_estimated = False
     
     for epoch in range(epochs):
-        print(f'======== Epoch {epoch} / {epochs} ========')
-        print(f'Training... at {format_time(t0)}')
-        
-        total_train_loss = 0
-        # best_loss = 1e10
-        model.train()
+        running_loss = train_one_epoch(model, train_dataloader, device, loss_function, clip_value, optimizer, scheduler, t0)
 
-        for step, batch in enumerate(train_dataloader):
-            
-            if (step*train_dataloader.batch_size >= 10_000) and not epoch_time_is_estimated: 
-                print(f"One epoch takes take approx. {N_train / 10_000 * (time.time() - t0)/(60*60)} hours")
-                epoch_time_is_estimated = True
-                
-            batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
-            inputs = (batch_inputs, batch_masks)
-            # Always clear any previously calculated gradients before performing a
-            # backward pass. PyTorch doesn't do this automatically because 
-            # accumulating the gradients is "convenient while training RNNs".
-            model.zero_grad()
-            outputs = model(*inputs)           
-            loss = loss_function(outputs.squeeze(), 
-                                 batch_labels.squeeze())
-            total_train_loss += loss.item()
-            # Calculate gradients
-            loss.backward() 
-            # Clip the norm of the gradients to 1.0.
-            # This is to help prevent the "exploding gradients" problem.
-            clip_grad_norm_(model.parameters(), clip_value)
-            # Update parameters
-            optimizer.step()
-            # Updapte learning rate
-            scheduler.step()
-
-        avg_train_loss = total_train_loss / len(train_dataloader)
+        avg_train_loss = running_loss / len(train_dataloader)
         training_time = format_time(time.time() - t0)
 
         val_loss: float
@@ -128,11 +146,12 @@ def evaluate(model: nn.Module, loss_function, validation_dataloader: DataLoader,
 
 
 @torch.no_grad
-def predict(model, inputs, device):
+def predict(model, dataloader, device):
     model.eval()
     output = []
-    inputs = tuple(b.to(device) for b in inputs)
-    output += model(*inputs).view(1,-1).tolist()[0]
+    for batch in dataloader:
+        batch_inputs, batch_masks, _ = tuple(b.to(device) for b in batch)
+        output += model(batch_inputs, batch_masks).view(1,-1).tolist()[0]
     return np.array(output)
 
 
