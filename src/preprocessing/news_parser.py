@@ -1,4 +1,3 @@
-import pickle
 import re
 from typing import List
 import warnings
@@ -10,7 +9,6 @@ from bs4 import BeautifulSoup
 from dateutil.parser import UnknownTimezoneWarning
 
 warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
-import time
 
 from sutime import SUTime
 import datefinder

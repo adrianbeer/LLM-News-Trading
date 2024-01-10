@@ -39,7 +39,7 @@ def create_dataloaders(inputs: Tensor,
     return dataloader
 
 
-def get_text_and_labels(dataset: pd.DataFrame, split: str):
+def get_text_and_labels(dataset: pd.DataFrame, split: str) -> tuple[List, List]:
     input_col_name = config.model.input_col_name
     target_col_name = config.model.target_col_name
     dat = dataset.loc[dataset["split"] == split, :]

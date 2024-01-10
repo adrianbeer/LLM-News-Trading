@@ -29,6 +29,9 @@ tokenizer = BertTokenizerFast.from_pretrained(TRANSFORMER_HF_ID)
 # Download dataset
 dataset = pd.read_parquet(config.data.merged, columns=[input_col_name, target_col_name, "section"])
 
+# Filter out penny stocks
+print("stop")
+
 validation_dataloader = get_data_loader_from_dataset(dataset=dataset, 
                                                 split="validation", 
                                                 tokenizer=tokenizer, 
