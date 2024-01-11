@@ -6,6 +6,8 @@ import torch.nn as nn
 from torch import Tensor
 from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.utils.data import DataLoader
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LambdaLR
 from transformers import BertModel
 from src.utils.time import timing, format_time
 from src.evaluation.metrics import METRICS_FUNCTION_DICT
@@ -42,13 +44,14 @@ class MyBertModel(nn.Module):
        return out
 
 
-def train_one_epoch(model, train_dataloader, device, loss_function, clip_value, optimizer, scheduler, t0):
-    running_loss = 0
-    # best_loss = 1e10
-    model.train()
+def train_one_epoch(model: nn.Module, train_dataloader, device, loss_function, clip_value, optimizer: Optimizer, scheduler: LambdaLR, t0):
+    epoch_loss = 0
     batch_size = train_dataloader.batch_size
+
+    model.train()
+
     for step, batch in enumerate(train_dataloader):
-        
+
         epoch_time_is_estimated = False
         if (step*batch_size >= 10_000) and not epoch_time_is_estimated: 
             print(f"One epoch takes take approx. {len(train_dataloader)*batch_size / 10_000 * (time.time() - t0)/(60*60)} hours")
@@ -64,14 +67,14 @@ def train_one_epoch(model, train_dataloader, device, loss_function, clip_value, 
         
         outputs = model(*inputs)     
             
-        loss = loss_function(outputs.squeeze(), 
+        batch_loss = loss_function(outputs.squeeze(), 
                             batch_labels.squeeze())
-        running_loss += loss.item()
+        epoch_loss += batch_loss.item()
         
         # Calculate gradients
-        loss.backward() 
+        batch_loss.backward() 
         
-        # Clip the norm of the gradients to 1.0.
+        # Clip the norm of the gradients.
         # This is to help prevent the "exploding gradients" problem.
         clip_grad_norm_(model.parameters(), clip_value)
         
@@ -82,21 +85,21 @@ def train_one_epoch(model, train_dataloader, device, loss_function, clip_value, 
         scheduler.step()
         
         if step % 1000 == 999:
-            last_loss = running_loss / (step+1) # loss per batch
+            last_loss = epoch_loss / (step+1) # loss per batch
             print('batch {} loss: {}'.format(step + 1, last_loss))
             
-        return running_loss
+        return epoch_loss
 
 
-def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_dataloader: DataLoader, validation_dataloader, device, clip_value=2):
+def train(model: nn.Module, optimizer: Optimizer, scheduler: LambdaLR, loss_function, epochs, train_dataloader: DataLoader, validation_dataloader, device, clip_value=2):
     
     training_stats = []
     t0 = time.time()
     
     for epoch in range(epochs):
-        running_loss = train_one_epoch(model, train_dataloader, device, loss_function, clip_value, optimizer, scheduler, t0)
+        epoch_loss = train_one_epoch(model, train_dataloader, device, loss_function, clip_value, optimizer, scheduler, t0)
 
-        avg_train_loss = running_loss / len(train_dataloader)
+        avg_train_loss = epoch_loss / len(train_dataloader)
         training_time = format_time(time.time() - t0)
 
         val_loss: float
@@ -115,7 +118,7 @@ def train(model: nn.Module, optimizer, scheduler, loss_function, epochs, train_d
         training_stats.append(epoch_dict)
 
         print("")
-        print("Average training loss: {0:.2f}".format(avg_train_loss))
+        print("Average training loss: {0:.5f}".format(avg_train_loss))
         print("Training epoch took: {:}".format(training_time))        
     return model, training_stats
    
