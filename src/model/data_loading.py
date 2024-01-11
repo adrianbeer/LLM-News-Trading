@@ -11,9 +11,15 @@ def get_data_loader_from_dataset(dataset: pd. DataFrame,
                                  split: str, 
                                  tokenizer, 
                                  batch_size: int, 
-                                 data_loader_kwargs: dict = dict()):
-    texts, labels = get_text_and_labels(dataset, split)
-    inputs, masks = embed_inputs(texts, tokenizer)
+                                 data_loader_kwargs: dict = dict(),
+                                 text_col: str = None,
+                                 label_col: str = None):
+    texts, labels = get_text_and_labels(dat=dataset, 
+                                        split=split, 
+                                        text_col=text_col, 
+                                        label_col=label_col)
+    inputs, masks = embed_inputs(texts, 
+                                 tokenizer)
     dataloader: DataLoader = create_dataloaders(inputs, 
                                                 masks, 
                                                 labels, 
@@ -39,11 +45,16 @@ def create_dataloaders(inputs: Tensor,
     return dataloader
 
 
-def get_text_and_labels(dat: pd.DataFrame, split: str = None) -> tuple[List, List]:
-    input_col_name = config.model.input_col_name
-    target_col_name = config.model.target_col_name
+def get_text_and_labels(dat: pd.DataFrame, 
+                        split: str = None,
+                        text_col: str = None,
+                        label_col: str = None) -> tuple[List, List]:
+    if not text_col:
+        text_col = config.model.input_col_name
+    if not label_col:
+        label_col = config.model.target_col_name
     if split:
         dat = dat.loc[dat["split"] == split, :] 
-    texts = dat.loc[:, input_col_name].tolist()
-    labels = dat.loc[:, target_col_name].tolist()
+    texts = dat.loc[:, text_col].tolist()
+    labels = dat.loc[:, label_col].tolist()
     return texts, labels

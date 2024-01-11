@@ -19,8 +19,6 @@ import os
 TRANSFORMER_HF_ID = 'yiyanghkust/finbert-fls'
 
 
-# class MyNNConfig(PretrainedConfig)
-
 class MyBertModel(nn.Module):
    
    def __init__(self):
@@ -40,19 +38,22 @@ class MyBertModel(nn.Module):
 
    def forward(self, input_ids, attention_masks):
        output = self.bert(input_ids, attention_mask=attention_masks)
-       out = self.regr(output.last_hidden_state[:,0,:])
+       cls_tokens = output.last_hidden_state[:,0,:]
+       out = self.regr(cls_tokens)
        return out
 
 
 def train_one_epoch(model: nn.Module, train_dataloader, device, loss_function, clip_value, optimizer: Optimizer, scheduler: LambdaLR, t0):
+
     epoch_loss = 0
     batch_size = train_dataloader.batch_size
-
+    epoch_time_is_estimated = False
+    
     model.train()
 
     for step, batch in enumerate(train_dataloader):
 
-        epoch_time_is_estimated = False
+        
         if (step*batch_size >= 10_000) and not epoch_time_is_estimated: 
             print(f"One epoch takes take approx. {len(train_dataloader)*batch_size / 10_000 * (time.time() - t0)/(60*60)} hours")
             epoch_time_is_estimated = True
@@ -85,10 +86,10 @@ def train_one_epoch(model: nn.Module, train_dataloader, device, loss_function, c
         scheduler.step()
         
         if step % 1000 == 999:
-            last_loss = epoch_loss / (step+1) # loss per batch
+            last_loss = epoch_loss / (step+1) 
             print('batch {} loss: {}'.format(step + 1, last_loss))
             
-        return epoch_loss
+    return epoch_loss
 
 
 def train(model: nn.Module, optimizer: Optimizer, scheduler: LambdaLR, loss_function, epochs, train_dataloader: DataLoader, validation_dataloader, device, clip_value=2):
@@ -146,6 +147,21 @@ def evaluate(model: nn.Module, loss_function, validation_dataloader: DataLoader,
     test_loss = np.mean(test_loss)
     metrics = dict([(name, np.mean(metrics_batched[name])) for name in metrics_batched])
     return test_loss, metrics
+
+
+@torch.no_grad
+def predict_cls(model, dataloader, device):
+    model.eval()
+    outputs = None
+    for batch in dataloader:
+        batch_inputs, batch_masks, _ = tuple(b.to(device) for b in batch)
+        output = model(batch_inputs, attention_mask=batch_masks)
+        cls_tokens = np.array(output.last_hidden_state[:,0,:].tolist())
+        if outputs is None:
+            outputs = cls_tokens
+        else:
+            outputs = np.concatenate([outputs, cls_tokens])
+    return outputs
 
 
 @torch.no_grad
