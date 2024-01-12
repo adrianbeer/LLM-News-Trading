@@ -12,6 +12,8 @@
 - Bootstrap trade matrix
 
 # Short-Term:
+- news parser -> about company block wegbekommen... und firstcall...
+
 - Pipeline everything!!
 
 - Stratifizierung nach Unternehmen oder so? Google hat viel mehr Nachrichten als z.b. ein kleineres Unternehmen.
