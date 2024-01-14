@@ -1,4 +1,4 @@
-from src.config import config
+from src.config import config, MODEL_CONFIG
 from os import listdir
 from os.path import isfile, join
 import numpy as np

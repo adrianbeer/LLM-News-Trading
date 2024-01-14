@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, TensorDataset
-from src.config import config
+from src.config import config, MODEL_CONFIG
 from src.model.neural_network import embed_inputs
 from typing import List
 
@@ -50,9 +50,9 @@ def get_text_and_labels(dat: pd.DataFrame,
                         text_col: str = None,
                         label_col: str = None) -> tuple[List, List]:
     if not text_col:
-        text_col = config.model.input_col_name
+        text_col = MODEL_CONFIG.input_col_name
     if not label_col:
-        label_col = config.model.target_col_name
+        label_col = MODEL_CONFIG.target_col_name
     if split:
         dat = dat.loc[dat["split"] == split, :] 
     texts = dat.loc[:, text_col].tolist()

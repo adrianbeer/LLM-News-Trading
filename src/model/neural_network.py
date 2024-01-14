@@ -16,7 +16,9 @@ from functools import partial
 import os
 
 
+
 class BERTClassifier(nn.Module):
+    
     def __init__(self, bert_model_name, num_classes):
         super(BERTClassifier, self).__init__()
         self.bert = BertModel.from_pretrained(bert_model_name)
@@ -31,10 +33,10 @@ def forward(self, input_ids, attention_mask):
         return logits
 
 
-class MyBertModel(nn.Module):
+class BERTRegressor(nn.Module):
    
    def __init__(self, bert_model_name):
-       super(MyBertModel, self).__init__()
+       super(BERTRegressor, self).__init__()
        self.bert = BertModel.from_pretrained(bert_model_name)
        D_in, D_out = self.bert.config.hidden_size, 1
        self.regr = nn.Sequential(
