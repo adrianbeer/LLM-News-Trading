@@ -17,7 +17,7 @@ data:
   
   benzinga:
     raw: 
-    cleaned: "G:/Meine Ablage/NewsTrading/trading_bot/data/bzg/processed_news" 
+    cleaned: "/content/drive/MyDrive/NewsTrading/trading_bot/data//bzg/processed_news" 
 
   merged: "/content/drive/MyDrive/NewsTrading/trading_bot/data/news.parquet"
 
