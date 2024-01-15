@@ -24,7 +24,7 @@ MODEL_CONFIG = {
         "test_cutoff_date":"2021-01-01",
         "val_cutoff_date": "2022-01-01"
     },
-    "BertClass": BERTRegressor,
+    "BertClass": BERTRegressor, 
     "input_col_name": "parsed_body",
     "target_col_name": "r_mkt_adj",
     "transformer_hugface_id": 'yiyanghkust/finbert-fls'
