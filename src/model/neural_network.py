@@ -16,30 +16,38 @@ from functools import partial
 import os
 
 
+class MyBertModule(nn.Module):
+    
+    def __init__(self, bert_model_name):
+        self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
+        self.ff_layer: nn.Module = None
+        
+    def deactivate_learning_for_layer(layer: nn.Module):
+        for param in layer.parameters():
+            param.requires_grad = False
+            
 
-class BERTClassifier(nn.Module):
+class BERTClassifier(MyBertModule):
     
     def __init__(self, bert_model_name, num_classes):
-        super(BERTClassifier, self).__init__()
-        self.bert = BertModel.from_pretrained(bert_model_name)
+        super().__init__(bert_model_name)
         self.dropout = nn.Dropout(0.1)
-        self.fc = nn.Linear(self.bert.config.hidden_size, num_classes)
+        self.ff_layer = nn.Linear(self.bert.config.hidden_size, num_classes)
 
     def forward(self, input_ids, attention_mask):
             outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
             pooled_output = outputs.pooler_output
             x = self.dropout(pooled_output)
-            logits = self.fc(x)
+            logits = self.ff_layer(x)
             return logits
 
 
-class BERTRegressor(nn.Module):
+class BERTRegressor(MyBertModule):
    
    def __init__(self, bert_model_name):
-       super(BERTRegressor, self).__init__()
-       self.bert = BertModel.from_pretrained(bert_model_name)
+       super().__init__(bert_model_name)
        D_in, D_out = self.bert.config.hidden_size, 1
-       self.regr = nn.Sequential(
+       self.ff_layer: nn.Module = nn.Sequential(
            nn.Dropout(0.2),
            nn.Linear(D_in, 20),
            nn.ReLU(),
@@ -53,7 +61,7 @@ class BERTRegressor(nn.Module):
    def forward(self, input_ids, attention_masks):
        output = self.bert(input_ids, attention_mask=attention_masks)
        cls_tokens = output.last_hidden_state[:,0,:]
-       out = self.regr(cls_tokens)
+       out = self.ff_layer(cls_tokens)
        return out
 
 
