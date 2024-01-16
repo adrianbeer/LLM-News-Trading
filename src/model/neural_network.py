@@ -25,12 +25,12 @@ class BERTClassifier(nn.Module):
         self.dropout = nn.Dropout(0.1)
         self.fc = nn.Linear(self.bert.config.hidden_size, num_classes)
 
-def forward(self, input_ids, attention_mask):
-        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        pooled_output = outputs.pooler_output
-        x = self.dropout(pooled_output)
-        logits = self.fc(x)
-        return logits
+    def forward(self, input_ids, attention_mask):
+            outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+            pooled_output = outputs.pooler_output
+            x = self.dropout(pooled_output)
+            logits = self.fc(x)
+            return logits
 
 
 class BERTRegressor(nn.Module):
@@ -221,20 +221,6 @@ def embed_inputs(texts: list, tokenizer) -> tuple[Tensor, Tensor]:
     attention_masks: Tensor = torch.cat(attention_masks, dim=0)
     return input_ids, attention_masks
     
-
-class WeightedSquaredLoss(nn.Module):
-    def __init__(self, gamma):
-        super(WeightedSquaredLoss, self).__init__()
-        self.gamma = gamma
-
-    def forward(self, output, target):
-        flat_output = torch.flatten(output)
-        flat_target = torch.flatten(target)
-        N = len(output)
-        loss = torch.dot(torch.pow(torch.add(torch.abs(flat_output), 1), self.gamma), torch.square(flat_output - flat_target)) / N
-        return loss
-    
-
 
 
 

@@ -58,28 +58,3 @@ def get_text_and_labels(dat: pd.DataFrame,
     texts = dat.loc[:, text_col].tolist()
     labels = dat.loc[:, label_col].tolist()
     return texts, labels
-
-
-def add_splits(dat: pd.DataFrame, how: str) -> pd.DataFrame:
-    if how == "date":
-        dat["split"] = "training"
-        dat.loc[dat.time >= MODEL_CONFIG.data.val_cutoff_date, "split"] = "validation"
-        dat.loc[dat.time >= MODEL_CONFIG.data.test_cutoff_date, "split"] = "testing"
-        dat["split"] = dat["split"].astype("category")
-    elif how == "ratio":
-        N = dat.shape[0]
-        dat["split"] = "training"
-        dat.iloc[int(N * 0.7):, : ].loc[:, "split"] = "validation"
-        dat.iloc[int(N * 0.9):, : ].loc[:, "split"] = "testing"
-        dat["split"] = dat["split"].astype("category")
-    else: 
-        return ValueError()
-    
-    train_N = dat[dat["split"] == "training"].shape[0]
-    valid_N = dat[dat["split"] == "validation"].shape[0]
-    test_N = dat[dat["split"] == "testing"].shape[0]
-    print(f"{train_N} samples in training set."
-        f"\n {valid_N} samples in validation set."
-        f"\n {test_N} samples in testing set.")
-    
-    return dat
