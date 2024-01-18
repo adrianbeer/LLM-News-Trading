@@ -8,6 +8,7 @@ yfinance
 pandas
 scikit-learn
 pandas_market_calendars
+pandas 
 
 # Plotting
 plotly

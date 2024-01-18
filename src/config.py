@@ -31,8 +31,7 @@ class ModelConfig:
     
     
 MODEL_CONFIG: ModelConfig = ModelConfig(
-    splitter = DateSplitter(test_cutoff_date = "2021-01-01", 
-                            val_cutoff_date = "2022-01-01"),
+    splitter = RatioSplitter(0.7, 0.2),
     BertClass = BERTClassifier,
     transformer_hugface_id = 'yiyanghkust/finbert-fls',
     loss_function = nn.CrossEntropyLoss,

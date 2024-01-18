@@ -3,7 +3,6 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
-from torch import Tensor
 from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer
@@ -11,8 +10,6 @@ from torch.optim.lr_scheduler import LambdaLR
 from transformers import BertModel
 from src.utils.time import timing, format_time
 from src.evaluation.metrics import METRICS_FUNCTION_DICT
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 import os
 
 
@@ -194,41 +191,3 @@ def predict(model, dataloader, device):
         batch_inputs, batch_masks, _ = tuple(b.to(device) for b in batch)
         output += model(batch_inputs, batch_masks).view(1,-1).tolist()[0]
     return np.array(output)
-
-
-def embed_input(text, tokenizer):
-    # Truncation = True as bert can only take inputs of max 512 tokens.
-    # return_tensors = "pt" makes the funciton return PyTorch tensors
-    # tokenizer.encode_plus specifically returns a dictionary of values instead of just a list of values
-    encoding = tokenizer(
-        text, 
-        add_special_tokens = True, 
-        truncation = True, 
-        padding = "max_length", 
-        max_length = 512,
-        return_attention_mask = True, 
-        return_tensors = "pt"
-    )
-    # input_ids: mapping the words to tokens
-    # attention masks: idicates if index is word or padding
-    input_ids = encoding['input_ids']
-    attention_masks = encoding['attention_mask']
-    return input_ids, attention_masks
-
-
-@timing
-def embed_inputs(texts: list, tokenizer) -> tuple[Tensor, Tensor]:
-    input_ids = []
-    attention_masks = []
-    
-    pool_obj = ThreadPoolExecutor(max_workers=os.cpu_count())
-    ans = pool_obj.map(partial(embed_input, tokenizer=tokenizer), texts)
-    input_ids, attention_masks = list(zip(*ans))
-
-    input_ids: Tensor = torch.cat(input_ids, dim=0)
-    attention_masks: Tensor = torch.cat(attention_masks, dim=0)
-    return input_ids, attention_masks
-    
-
-
-
