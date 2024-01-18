@@ -10,8 +10,9 @@ data:
   
   benzinga:
     raw: 
-    cleaned: "/content/drive/MyDrive/NewsTrading/trading_bot/data/bzg/processed_news.parquet" 
-    encoding_matrix: "D:/Data/Merged/encoding_matrix.npy"
+    cleaned: "data/bzg/processed_news.parquet" 
+    input_ids: "data/bzg/input_ids.parquet" 
+    masks: "data/bzg/masks.parquet" 
 
   merged: "/content/drive/MyDrive/NewsTrading/trading_bot/data/news.parquet"
 

@@ -28,6 +28,8 @@ class ModelConfig:
     loss_function: Any
     input_col_name: str
     target_col_name: str
+    input_params_path: str
+    output_params_path: str
     
     
 MODEL_CONFIG: ModelConfig = ModelConfig(
@@ -37,6 +39,8 @@ MODEL_CONFIG: ModelConfig = ModelConfig(
     loss_function = nn.CrossEntropyLoss,
     input_col_name =  "parsed_body",
     target_col_name = "z_score_class",
+    input_params_path = None,
+    output_params_path ="data/model_state_dict.pt"
 )
 
     
