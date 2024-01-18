@@ -13,7 +13,7 @@ class Splitter:
     def _split(self, dat: pd.DataFrame) -> pd.DataFrame:
         raise NotImplementedError
     
-    def print_data_split_info(dat: pd.DataFrame) -> None:
+    def print_data_split_info(self, dat: pd.DataFrame) -> None:
         train_N = dat[dat["split"] == "training"].shape[0]
         valid_N = dat[dat["split"] == "validation"].shape[0]
         test_N = dat[dat["split"] == "testing"].shape[0]

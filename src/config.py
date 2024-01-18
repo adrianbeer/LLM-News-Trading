@@ -23,7 +23,7 @@ config = DotMap(yaml.safe_load(open(config_path)), _dynamic=False)
 @dataclass(frozen=True)
 class ModelConfig:
     splitter: Splitter
-    BertClass: nn.Module
+    neural_net: nn.Module
     transformer_hugface_id: str
     loss_function: Any
     input_col_name: str
@@ -34,7 +34,7 @@ class ModelConfig:
     
 MODEL_CONFIG: ModelConfig = ModelConfig(
     splitter = RatioSplitter(0.7, 0.2),
-    BertClass = BERTClassifier,
+    neural_net = BERTClassifier,
     transformer_hugface_id = 'yiyanghkust/finbert-fls',
     loss_function = nn.CrossEntropyLoss,
     input_col_name =  "parsed_body",

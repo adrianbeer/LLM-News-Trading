@@ -12,7 +12,7 @@ data:
   benzinga:
     raw: 
     cleaned: "G:/Meine Ablage/NewsTrading/trading_bot/data/bzg/processed_news.parquet" 
-    input_ids: "D:/Data/Merged/input_ids.parquet"
-    masks: "D:/Data/Merged/masks.parquet"
+    input_ids: "D:/Data/bzg/input_ids.parquet"
+    masks: "D:/Data/bzg/masks.parquet"
 
   merged: "D:/Data/Merged/news.parquet"

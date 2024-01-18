@@ -3,10 +3,9 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader, TensorDataset
 from typing import List
-
+from src.config import config
 
 def get_data_loader_from_dataset(dataset: pd. DataFrame, 
-                                 encoding_matrix_path: str,
                                  split: str, 
                                  batch_size: int, 
                                  label_col: str,
@@ -14,15 +13,22 @@ def get_data_loader_from_dataset(dataset: pd. DataFrame,
     if split:
         indices = dataset.loc[dataset["split"] == split, :].index
     
-    dat_indices = dataset.index
-    enc_indices, input_ids, masks = get_encoding(encoding_matrix_path)
+    input_ids = pd.read_parquet(config.data.benzinga.input_ids)
+    masks = pd.read_parquet(config.data.benzinga.masks)
+    labels = dataset[label_col]
+    print(f"{dataset.index.name=}")
 
-    labels: pd.Series = dataset[label_col]
-    dataloader: DataLoader = create_dataloader([input_ids, 
-                                                masks, 
-                                                labels], 
-                                                batch_size, 
-                                                data_loader_kwargs)
+    tensors = []
+    for item in input_ids, masks, labels:
+        x = item.loc[indices]
+        x = torch.from_numpy(item.to_numpy())
+        tensors.append(x)
+    
+    # TODO: if classification: torch.nn.functional.one_hot(labels)
+    
+    dataloader = create_dataloader(tensors=tensors, 
+                                   batch_size=batch_size, 
+                                   data_loader_kwargs=dict(shuffle=False))
     return dataloader
 
 
