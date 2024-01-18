@@ -11,8 +11,7 @@ data:
   
   benzinga:
     raw: 
-    cleaned: "G:/Meine Ablage/NewsTrading/trading_bot/data/bzg/processed_news" 
-    encoding_matrix: "data/encoding_matrix.npy"
-
+    cleaned: "G:/Meine Ablage/NewsTrading/trading_bot/data/bzg/processed_news.parquet" 
+    encoding_matrix: "D:/Data/Merged/encoding_matrix.npy"
 
   merged: "D:/Data/Merged/news.parquet"
