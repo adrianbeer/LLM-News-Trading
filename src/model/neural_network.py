@@ -173,7 +173,7 @@ def predict_cls(model, dataloader, device):
     model.eval()
     outputs = None
     for batch in dataloader:
-        batch_inputs, batch_masks, _ = tuple(b.to(device) for b in batch)
+        batch_inputs, batch_masks = tuple(b.to(device) for b in batch)
         output = model(batch_inputs, attention_mask=batch_masks)
         cls_tokens = np.array(output.last_hidden_state[:,0,:].tolist())
         if outputs is None:

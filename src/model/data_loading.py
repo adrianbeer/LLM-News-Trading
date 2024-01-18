@@ -12,34 +12,25 @@ def get_data_loader_from_dataset(dataset: pd. DataFrame,
                                  label_col: str,
                                  data_loader_kwargs: dict = dict()):
     if split:
-        dataset = dataset.loc[dataset["split"] == split, :] 
+        indices = dataset.loc[dataset["split"] == split, :].index
     
     dat_indices = dataset.index
     enc_indices, input_ids, masks = get_encoding(encoding_matrix_path)
-    
-    
-    
+
     labels: pd.Series = dataset[label_col]
-    dataloader: DataLoader = create_dataloaders(input_ids, 
+    dataloader: DataLoader = create_dataloader([input_ids, 
                                                 masks, 
-                                                labels, 
+                                                labels], 
                                                 batch_size, 
                                                 data_loader_kwargs)
     return dataloader
 
 
 
-def create_dataloaders(inputs: Tensor, 
-                       masks: Tensor, 
-                       labels: List, 
-                       batch_size: int, 
-                       data_loader_kwargs: dict = dict()) -> DataLoader:
-    input_tensor = torch.tensor(inputs)
-    mask_tensor = torch.tensor(masks)
-    labels_tensor = torch.tensor(labels)
-    dataset = TensorDataset(input_tensor, 
-                            mask_tensor,
-                            labels_tensor)
+def create_dataloader(tensors: List[Tensor], 
+                      batch_size: int, 
+                      data_loader_kwargs: dict = dict()) -> DataLoader:
+    dataset = TensorDataset(*tensors)
     dataloader = DataLoader(dataset, 
                             batch_size=batch_size,
                             **data_loader_kwargs)
