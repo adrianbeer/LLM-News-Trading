@@ -10,6 +10,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR
 from transformers import BertModel
 from src.utils.time import format_time
+import pandas as pd
 
 class MyBertModule(nn.Module):
     
@@ -28,8 +29,17 @@ class BERTClassifier(MyBertModule):
     def __init__(self, bert_model_name, num_classes):
         super().__init__(bert_model_name)
         self.dropout = nn.Dropout(0.1)
-        self.ff_layer = nn.Linear(self.bert.config.hidden_size, num_classes)
-
+        self.ff_layer: nn.Module = nn.Sequential(
+            nn.Dropout(0.2),
+            nn.Linear(self.bert.config.hidden_size, 20),
+            nn.LeakyReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(20, 20),
+            nn.LeakyReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(20, num_classes)
+        )
+        
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         pooled_output = outputs.pooler_output
@@ -46,10 +56,10 @@ class BERTRegressor(MyBertModule):
        self.ff_layer: nn.Module = nn.Sequential(
            nn.Dropout(0.2),
            nn.Linear(D_in, 20),
-           nn.ReLU(),
+           nn.LeakyReLU(),
            nn.Dropout(0.2),
            nn.Linear(20, 20),
-           nn.ReLU(),
+           nn.LeakyReLU(),
            nn.Dropout(0.2),
            nn.Linear(20, D_out)
            )
@@ -64,17 +74,9 @@ class BERTRegressor(MyBertModule):
 def train_one_epoch(model: nn.Module, train_dataloader, device, loss_function, clip_value, optimizer: Optimizer, scheduler: LambdaLR, t0):
 
     epoch_loss = 0
-    batch_size = train_dataloader.batch_size
-    epoch_time_is_estimated = False
-    
     model.train()
 
     for step, batch in enumerate(train_dataloader):
-
-        
-        if (step*batch_size >= 10_000) and not epoch_time_is_estimated: 
-            print(f"One epoch takes take approx. {len(train_dataloader)*batch_size / 10_000 * (time.time() - t0)/(60*60)} hours")
-            epoch_time_is_estimated = True
             
         batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
         inputs = (batch_inputs, batch_masks)
@@ -90,18 +92,15 @@ def train_one_epoch(model: nn.Module, train_dataloader, device, loss_function, c
                                    batch_labels.squeeze())
         epoch_loss += batch_loss.item()
         
-        # Calculate gradients
-        batch_loss.backward() 
+        batch_loss.backward() # Calculate gradients
         
         # Clip the norm of the gradients.
         # This is to help prevent the "exploding gradients" problem.
         clip_grad_norm_(model.parameters(), clip_value)
         
-        # Update parameters
-        optimizer.step()
+        optimizer.step() # Update parameters
         
-        # Updapte learning rate
-        scheduler.step()
+        scheduler.step() # Updapte learning rate
         
         if step % 1000 == 999:
             last_loss = epoch_loss / (step+1) 
@@ -131,10 +130,10 @@ def train(model: nn.Module,
 
         val_metrics: dict
         avg_val_loss, val_metrics = evaluate(model, 
-                               loss_function, 
-                               validation_dataloader, 
-                               device, 
-                               tracking_metrics)
+                                             loss_function, 
+                                             validation_dataloader, 
+                                             device, 
+                                             tracking_metrics)
         
         epoch_dict = {
                 'epoch': epoch + 1,
@@ -148,8 +147,8 @@ def train(model: nn.Module,
         training_stats.append(epoch_dict)
 
         print("")
-        print("Average training loss: {0:.5f}".format(avg_train_loss))
-        print("Training epoch took: {:}".format(training_time))        
+        print(pd.Series(epoch_dict))
+        
     return model, training_stats
    
 
@@ -173,7 +172,8 @@ def evaluate(model: nn.Module,
         loss: Tensor = loss_function(outputs, batch_labels)
         test_loss.append(loss.item())
         
-        if is_classification: _, outputs = torch.max(outputs, dim=1)
+        if is_classification: 
+            _, outputs = torch.max(outputs, dim=1)
         
         outputs: np.ndarray = outputs.to('cpu').numpy()
         labels: np.ndarray = batch_labels.to('cpu').numpy()
@@ -181,7 +181,6 @@ def evaluate(model: nn.Module,
         for metric in tracking_metrics:
             metrics_batched[metric.__name__].append(metric(labels, outputs))
 
-        
     test_loss = np.mean(test_loss)
     metrics = dict([(name, np.mean(metrics_batched[name])) for name in metrics_batched])
     return test_loss, metrics
