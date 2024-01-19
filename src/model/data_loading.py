@@ -4,27 +4,27 @@ from torch import Tensor
 from torch.utils.data import DataLoader, TensorDataset
 from typing import List
 from src.config import config
+from pandas.api.types import is_string_dtype
 
 def get_data_loader_from_dataset(dataset: pd. DataFrame, 
                                  split: str, 
                                  batch_size: int, 
                                  label_col: str,
-                                 data_loader_kwargs: dict = dict()):
+                                 data_loader_kwargs: dict = dict(),
+                                 ):
     if split:
         indices = dataset.loc[dataset["split"] == split, :].index
     
-    input_ids = pd.read_parquet(config.data.benzinga.input_ids)
-    masks = pd.read_parquet(config.data.benzinga.masks)
+    input_ids: pd.DataFrame = pd.read_parquet(config.data.benzinga.input_ids)
+    masks: pd.DataFrame = pd.read_parquet(config.data.benzinga.masks)
     labels = dataset[label_col]
     print(f"{dataset.index.name=}")
 
     tensors = []
     for item in input_ids, masks, labels:
         x = item.loc[indices]
-        x = torch.from_numpy(item.to_numpy())
+        x = torch.from_numpy(x.to_numpy())
         tensors.append(x)
-    
-    # TODO: if classification: torch.nn.functional.one_hot(labels)
     
     dataloader = create_dataloader(tensors=tensors, 
                                    batch_size=batch_size, 
