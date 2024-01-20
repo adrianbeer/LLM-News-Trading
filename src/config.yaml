@@ -16,3 +16,4 @@ data:
     masks: "D:/Data/bzg/masks.parquet"
 
   merged: "D:/Data/Merged/news.parquet"
+  learning_dataset: "D:/Data/Merged/learning_dataset.parquet"

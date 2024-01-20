@@ -5,7 +5,7 @@ from torch import Tensor
 from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.utils.data import DataLoader
 from transformers import BertModel
-import pytorch_lightning as pl
+import lightning as pl
 from torch.nn import functional as F
 import torchmetrics
 
@@ -21,6 +21,7 @@ class BERTClassifier(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.learning_rate = learning_rate
+        
         class_weights = torch.Tensor(class_weights, device=self.device)
         self.register_buffer("class_weights", class_weights)
         
@@ -62,7 +63,9 @@ class BERTClassifier(pl.LightningModule):
         return F.cross_entropy(logits, labels, weight=weights)
 
     def training_step(self, train_batch, batch_idx):
-        x, x2, y = train_batch
+        x = train_batch["input_id"]
+        x2 = train_batch["mask"]
+        y = train_batch["target"]
         logits = self.forward(x, x2)
         preds = logits.softmax(dim=1)
         
@@ -79,7 +82,9 @@ class BERTClassifier(pl.LightningModule):
         return weighted_loss
     
     def validation_step(self, val_batch, batch_idx):
-        x, x2, y = val_batch
+        x = val_batch["input_id"]
+        x2 = val_batch["mask"]
+        y = val_batch["target"]
         logits = self.forward(x, x2)
         preds = logits.softmax(dim=1)
         
