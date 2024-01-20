@@ -7,15 +7,30 @@ from torch.utils.data import DataLoader
 from transformers import BertModel
 import pytorch_lightning as pl
 from torch.nn import functional as F
-from sklearn.metrics import accuracy_score, balanced_accuracy_score
+import torchmetrics
 
 
 class BERTClassifier(pl.LightningModule):
     
-    def __init__(self, bert_model_name, num_classes, deactivate_bert_learning):
+    def __init__(self, 
+                 bert_model_name, 
+                 num_classes, 
+                 deactivate_bert_learning, 
+                 learning_rate,
+                 class_weights):
         super().__init__()
-        self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
+        self.save_hyperparameters()
+        self.learning_rate = learning_rate
+        class_weights = torch.Tensor(class_weights, device=self.device)
+        self.register_buffer("class_weights", class_weights)
         
+        average = "weighted"
+        self.train_accuracy = torchmetrics.classification.Accuracy(task="multiclass", num_classes=num_classes, average=average)
+        self.val_accuracy = torchmetrics.classification.Accuracy(task="multiclass", num_classes=num_classes, average=average)
+        self.train_f1_score = torchmetrics.classification.F1Score(task="multiclass", num_classes=num_classes, average=average)
+        self.val_f1_score = torchmetrics.classification.F1Score(task="multiclass", num_classes=num_classes, average=average)
+        
+        self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
         if deactivate_bert_learning:
             for param in self.bert.parameters():
                 param.requires_grad = False
@@ -40,29 +55,41 @@ class BERTClassifier(pl.LightningModule):
         return logits
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         return optimizer
 
-    def cross_entropy_loss(self, logits, labels):
-        return F.nll_loss(logits,labels)
+    def cross_entropy_loss(self, logits, labels, weights=None):
+        return F.cross_entropy(logits, labels, weight=weights)
 
     def training_step(self, train_batch, batch_idx):
         x, x2, y = train_batch
         logits = self.forward(x, x2)
-        loss = self.cross_entropy_loss(logits, y)
-        self.log('train_loss', loss, prog_bar=True)
-        return loss
+        preds = logits.softmax(dim=1)
+        
+        weighted_loss = self.cross_entropy_loss(logits, y, self.class_weights)
+        unweighted_loss = self.cross_entropy_loss(logits, y)
+        self.train_accuracy(preds, y)
+        self.train_f1_score(preds, y)
+    
+        self.log_dict({'train_loss (weighted)': weighted_loss,
+                       'train_loss': unweighted_loss,
+                       "train_f1_score": self.train_f1_score,
+                       "train_accuracy": self.train_accuracy}, 
+                      on_step=True, on_epoch=True, prog_bar=True)
+        return weighted_loss
     
     def validation_step(self, val_batch, batch_idx):
         x, x2, y = val_batch
         logits = self.forward(x, x2)
-        loss = self.cross_entropy_loss(logits, y)
+        preds = logits.softmax(dim=1)
         
-        _, pred_y = torch.max(logits, dim=1)
-        for metric_f in [accuracy_score, balanced_accuracy_score]:
-            self.log(metric_f.__name__, metric_f(y, pred_y))
-        
-        self.log('val_loss', loss)
+        loss = self.cross_entropy_loss(logits, y)        
+        self.val_accuracy(preds, y)
+        self.val_f1_score(preds, y)
+    
+        self.log_dict({'val_loss': loss,
+                       "val_f1_score": self.val_f1_score,
+                       "val_accuracy": self.val_accuracy})
         return loss
     
 

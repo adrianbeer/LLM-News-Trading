@@ -8,9 +8,6 @@ from src.model.splits import Splitter, DateSplitter, RatioSplitter
 from dataclasses import dataclass
 from typing import Any
 
-# logging
-logging.basicConfig(filename='logs/logs.log', level=logging.INFO)
-
 # Default location/file
 config_path = "src/config.yaml"
 try:
