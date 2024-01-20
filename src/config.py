@@ -26,7 +26,6 @@ class ModelConfig:
     splitter: Splitter
     neural_net: nn.Module
     transformer_hugface_id: str
-    loss: Any
     input_col_name: str
     target_col_name: str
     input_params_path: str
@@ -38,7 +37,6 @@ MODEL_CONFIG: ModelConfig = ModelConfig(
     splitter = RatioSplitter(0.7, 0.2),
     neural_net = BERTClassifier,
     transformer_hugface_id = 'yiyanghkust/finbert-fls',
-    loss = nn.CrossEntropyLoss(),
     input_col_name =  "parsed_body",
     target_col_name = "z_score_class",
     input_params_path = "data/model_state_dict.pt",

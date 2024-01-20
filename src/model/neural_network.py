@@ -11,24 +11,20 @@ from torch.optim.lr_scheduler import LambdaLR
 from transformers import BertModel
 from src.utils.time import format_time
 import pandas as pd
+import pytorch_lightning as pl
+from torch.nn import functional as F
 
-class MyBertModule(nn.Module):
+
+class BERTClassifier(pl.LightningModule):
     
-    def __init__(self, bert_model_name):
+    def __init__(self, bert_model_name, num_classes, deactivate_bert_learning):
         super().__init__()
         self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
-        self.ff_layer: nn.Module = None
         
-    def deactivate_learning_for_layer(layer: nn.Module):
-        for param in layer.parameters():
-            param.requires_grad = False
-            
-
-class BERTClassifier(MyBertModule):
-    
-    def __init__(self, bert_model_name, num_classes):
-        super().__init__(bert_model_name)
-        self.dropout = nn.Dropout(0.1)
+        if deactivate_bert_learning:
+            for param in self.bert.parameters():
+                param.requires_grad = False
+                
         self.ff_layer: nn.Module = nn.Sequential(
             nn.Dropout(0.2),
             nn.Linear(self.bert.config.hidden_size, 20),
@@ -47,110 +43,27 @@ class BERTClassifier(MyBertModule):
         logits = self.ff_layer(x)
         return logits
 
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        return optimizer
 
-class BERTRegressor(MyBertModule):
-   
-   def __init__(self, bert_model_name):
-       super().__init__(bert_model_name)
-       D_in, D_out = self.bert.config.hidden_size, 1
-       self.ff_layer: nn.Module = nn.Sequential(
-           nn.Dropout(0.2),
-           nn.Linear(D_in, 20),
-           nn.LeakyReLU(),
-           nn.Dropout(0.2),
-           nn.Linear(20, 20),
-           nn.LeakyReLU(),
-           nn.Dropout(0.2),
-           nn.Linear(20, D_out)
-           )
+    def cross_entropy_loss(self, logits, labels):
+        return F.nll_loss(logits,labels)
 
-   def forward(self, input_ids, attention_masks):
-       output = self.bert(input_ids, attention_mask=attention_masks)
-       cls_tokens = output.last_hidden_state[:,0,:]
-       out = self.ff_layer(cls_tokens)
-       return out
-
-
-def train_one_epoch(model: nn.Module, train_dataloader, device, loss_function, clip_value, optimizer: Optimizer, scheduler: LambdaLR, t0):
-
-    epoch_loss = 0
-    model.train()
-
-    for step, batch in enumerate(train_dataloader):
-            
-        batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
-        inputs = (batch_inputs, batch_masks)
-        
-        # Always clear any previously calculated gradients before performing a
-        # backward pass. PyTorch doesn't do this automatically because 
-        # accumulating the gradients is "convenient while training RNNs".
-        model.zero_grad()
-        
-        outputs = model(*inputs)     
-            
-        batch_loss = loss_function(outputs.squeeze(), 
-                                   batch_labels.squeeze())
-        epoch_loss += batch_loss.item()
-        
-        batch_loss.backward() # Calculate gradients
-        
-        # Clip the norm of the gradients.
-        # This is to help prevent the "exploding gradients" problem.
-        clip_grad_norm_(model.parameters(), clip_value)
-        
-        optimizer.step() # Update parameters
-        
-        scheduler.step() # Updapte learning rate
-        
-        if step % 1000 == 999:
-            last_loss = epoch_loss / (step+1) 
-            print('batch {} loss: {}'.format(step + 1, last_loss))
-            
-    return epoch_loss
-
-
-def train(model: nn.Module, 
-          optimizer: Optimizer, 
-          scheduler: LambdaLR, 
-          loss_function, epochs, 
-          train_dataloader: DataLoader, 
-          validation_dataloader, 
-          device, 
-          clip_value = 2,
-          tracking_metrics: dict = dict()):
+    def training_step(self, train_batch, batch_idx):
+        x, x2, y = train_batch
+        logits = self.forward(x, x2)
+        loss = self.cross_entropy_loss(logits, y)
+        self.log('train_loss', loss)
+        return loss
     
-    training_stats = []
-    t0 = time.time()
+    def validation_step(self, val_batch, batch_idx):
+        x, y = val_batch
+        logits = self.forward(x, x2)
+        loss = self.cross_entropy_loss(logits, y)
+        self.log('val_loss', loss)
+        return loss
     
-    for epoch in range(epochs):
-        epoch_loss = train_one_epoch(model, train_dataloader, device, loss_function, clip_value, optimizer, scheduler, t0)
-
-        avg_train_loss = epoch_loss / len(train_dataloader)
-        training_time = format_time(time.time() - t0)
-
-        val_metrics: dict
-        avg_val_loss, val_metrics = evaluate(model, 
-                                             loss_function, 
-                                             validation_dataloader, 
-                                             device, 
-                                             tracking_metrics)
-        
-        epoch_dict = {
-                'epoch': epoch + 1,
-                'Validation Loss': avg_val_loss,
-                'Training Loss': avg_train_loss,
-                'Training Time': training_time,
-            }
-        for name in val_metrics:
-            epoch_dict["Valid." + name] = val_metrics[name]
-        
-        training_stats.append(epoch_dict)
-
-        print("")
-        print(pd.Series(epoch_dict))
-        
-    return model, training_stats
-   
 
 @torch.no_grad
 def evaluate(model: nn.Module, 

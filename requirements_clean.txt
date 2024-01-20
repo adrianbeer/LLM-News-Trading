@@ -9,6 +9,7 @@ pandas
 scikit-learn
 pandas_market_calendars
 pandas 
+lightning
 
 # Plotting
 plotly
