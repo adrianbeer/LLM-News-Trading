@@ -11,6 +11,7 @@ pandas_market_calendars
 pandas 
 lightning
 torchmetrics
+matplotlib
 
 # Plotting
 plotly
