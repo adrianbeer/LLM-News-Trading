@@ -78,13 +78,13 @@ class CustomDataModule(pl.LightningDataModule):
         return self.train_dataset.class_weights
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
         
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
     def predict_dataloader(self):
         pass
