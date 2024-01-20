@@ -4,7 +4,6 @@ from torch import Tensor
 from torch.utils.data import DataLoader, TensorDataset
 from typing import List
 from src.config import config
-from pandas.api.types import is_string_dtype
 
 def get_data_loader_from_dataset(dataset: pd. DataFrame, 
                                  split: str, 

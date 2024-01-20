@@ -2,7 +2,7 @@ import yaml
 from dotmap import DotMap
 import os 
 import logging
-from src.model.neural_network import BERTClassifier, BERTRegressor
+from src.model.neural_network import BERTClassifier
 import torch.nn as nn
 from src.model.splits import Splitter, DateSplitter, RatioSplitter
 from dataclasses import dataclass

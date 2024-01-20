@@ -14,5 +14,5 @@ data:
     input_ids: "data/bzg/input_ids.parquet" 
     masks: "data/bzg/masks.parquet" 
 
-  merged: "/content/drive/MyDrive/NewsTrading/trading_bot/data/news.parquet"
+  merged: "data/news.parquet"
 

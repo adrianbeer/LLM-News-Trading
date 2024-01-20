@@ -1,18 +1,13 @@
-import time
-
 import numpy as np
 import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.utils.data import DataLoader
-from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LambdaLR
 from transformers import BertModel
-from src.utils.time import format_time
-import pandas as pd
 import pytorch_lightning as pl
 from torch.nn import functional as F
+from sklearn.metrics import accuracy_score, balanced_accuracy_score
 
 
 class BERTClassifier(pl.LightningModule):
@@ -25,6 +20,7 @@ class BERTClassifier(pl.LightningModule):
             for param in self.bert.parameters():
                 param.requires_grad = False
                 
+        self.dropout = nn.Dropout(0.2)
         self.ff_layer: nn.Module = nn.Sequential(
             nn.Dropout(0.2),
             nn.Linear(self.bert.config.hidden_size, 20),
@@ -54,13 +50,18 @@ class BERTClassifier(pl.LightningModule):
         x, x2, y = train_batch
         logits = self.forward(x, x2)
         loss = self.cross_entropy_loss(logits, y)
-        self.log('train_loss', loss)
+        self.log('train_loss', loss, prog_bar=True)
         return loss
     
     def validation_step(self, val_batch, batch_idx):
-        x, y = val_batch
+        x, x2, y = val_batch
         logits = self.forward(x, x2)
         loss = self.cross_entropy_loss(logits, y)
+        
+        _, pred_y = torch.max(logits, dim=1)
+        for metric_f in [accuracy_score, balanced_accuracy_score]:
+            self.log(metric_f.__name__, metric_f(y, pred_y))
+        
         self.log('val_loss', loss)
         return loss
     
