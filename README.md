@@ -29,3 +29,16 @@ function ClickConnect(){
 }
 setInterval(ClickConnect,60000)
 ```
+
+Add to the start of notebook for correct configuration
+```
+google_colab = True
+if google_colab:
+    from google.colab import drive
+    import os
+    drive.mount('/content/drive')
+    cwd="/content/drive/MyDrive/NewsTrading/trading_bot"
+    %cd /content/drive/MyDrive/NewsTrading/trading_bot
+    %pip install -r requirements_clean.txt
+    os.environ["TRADING_BOT_CONFIG_PATH"] = "src/config_gcs.yaml"
+```

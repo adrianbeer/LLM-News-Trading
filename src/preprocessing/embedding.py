@@ -1,6 +1,6 @@
 
 import pandas as pd
-from src.config import config
+from src.config import config, MODEL_CONFIG
 import numpy as np
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
@@ -9,6 +9,9 @@ import torch
 import os
 from torch import Tensor
 from src.utils.time import timing
+from transformers import BertTokenizerFast
+from tqdm import tqdm
+
 
 MAX_ENCODING_LENGTH = 512
 DATASET_PATH = config.data.benzinga.cleaned
@@ -38,8 +41,10 @@ def embed_inputs(texts: list, tokenizer) -> tuple[Tensor, Tensor]:
     input_ids = []
     attention_masks = []
     
-    pool_obj = ThreadPoolExecutor(max_workers=os.cpu_count())
-    ans = pool_obj.map(partial(embed_input, tokenizer=tokenizer), texts)
+    print("Start embedding inputs...")
+    executor = ThreadPoolExecutor(max_workers=os.cpu_count())
+    ans = tqdm(executor.map(partial(embed_input, tokenizer=tokenizer), texts),
+               total=len(texts))
     input_ids, attention_masks = list(zip(*ans))
 
     input_ids: Tensor = torch.cat(input_ids, dim=0)
@@ -61,3 +66,25 @@ def get_encoding(encoding_matrix_path: str):
     input_ids = encoding_matrix[:, 1:(MAX_ENCODING_LENGTH+1)]
     masks = encoding_matrix[:, (MAX_ENCODING_LENGTH+1):]
     return index, input_ids, masks
+
+
+if __name__ == "__main__":
+    tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.transformer_hugface_id)
+    dataset = pd.read_parquet(DATASET_PATH)
+
+    # Dummy column
+    dataset["text_length"] = dataset["parsed_body"].map(lambda x: len(x))
+
+    texts, labels = get_text_and_labels(dat=dataset, 
+                                        text_col="parsed_body", 
+                                        label_col="text_length")
+    input_ids, masks = embed_inputs(texts, tokenizer)
+
+    input_ids = pd.DataFrame(data=Tensor.numpy(input_ids), index=dataset.index)
+    masks = pd.DataFrame(data=Tensor.numpy(masks), index=dataset.index)
+
+    input_ids.columns = [str(x) for x in input_ids.columns]
+    masks.columns = [str(x) for x in masks.columns]
+
+    input_ids.to_parquet(config.data.benzinga.input_ids)
+    masks.to_parquet(config.data.benzinga.masks)
