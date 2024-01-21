@@ -98,39 +98,6 @@ class BERTClassifier(pl.LightningModule):
         return loss
     
 
-@torch.no_grad
-def evaluate(model: nn.Module, 
-             loss_function, 
-             validation_dataloader: DataLoader, 
-             device,
-             tracking_metrics: list,
-             is_classification: bool = True):
-    model.eval()
-    test_loss = []
-    
-    metrics_batched = dict([(metric.__name__, []) for metric in tracking_metrics])
-    
-    for batch in validation_dataloader:
-        batch_inputs, batch_masks, batch_labels = tuple(b.to(device) for b in batch)
-        outputs: Tensor = model(batch_inputs, batch_masks)
-
-        # May have to unsqueeze(1) for regression tasks?
-        loss: Tensor = loss_function(outputs, batch_labels)
-        test_loss.append(loss.item())
-        
-        if is_classification: 
-            _, outputs = torch.max(outputs, dim=1)
-        
-        outputs: np.ndarray = outputs.to('cpu').numpy()
-        labels: np.ndarray = batch_labels.to('cpu').numpy()
-        
-        for metric in tracking_metrics:
-            metrics_batched[metric.__name__].append(metric(labels, outputs))
-
-    test_loss = np.mean(test_loss)
-    metrics = dict([(name, np.mean(metrics_batched[name])) for name in metrics_batched])
-    return test_loss, metrics
-
 
 @torch.no_grad
 def predict_cls(model, dataloader, device):
