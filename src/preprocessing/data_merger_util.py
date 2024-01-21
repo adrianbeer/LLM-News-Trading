@@ -49,26 +49,6 @@ def get_appropriate_entry_time(time: pd.Timestamp, tz="US/Eastern") -> pd.Timest
     else:
         return time.ceil("min")  + pd.Timedelta(minutes=1)
     
-    
-def get_time_interval(ticker):
-    try:
-        price : pd.DataFrame = pd.read_parquet(path=f"{config.data.iqfeed.minute.cleaned}/{ticker}_1min.parquet")
-    except FileNotFoundError:
-        return (np.NaN, np.NaN)
-    time_interval = price.index.min(), price.index.max()
-    return time_interval
-
-
-def consolidate_tickers(df: pd.DataFrame) -> pd.DataFrame:
-    # We want only one ticker per company name
-    # Choose the one that has the most recent values
-    df = df.sort_values(["last_date", "first_date"], ascending=[False, True])
-    if df.at[df.index[0], "first_date"] == df.at[df.index[0], "first_date"]:
-        # Tie. What to do now?
-        logging.info(f"We have a tie for tickers {df.stocks}")
-    df.loc[df.index[0], "is_primary_ticker"] = True
-    return df
-
 
 def get_primary_ticker(ticker, mapper):
     company_name = mapper.loc[mapper["stocks"] == ticker, "company_name"]
