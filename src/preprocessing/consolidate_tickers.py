@@ -38,7 +38,7 @@ def get_time_interval(ticker):
 def consolidate_tickers(df: pd.DataFrame) -> pd.DataFrame:
     # We want only one ticker per company name
     # Choose the one that has the most recent values
-    df = df.sort_values("total_historical_dollar_volume", descending=True)
+    df = df.sort_values("total_historical_dollar_volume", ascending=False)
     df.loc[df.index[0], "is_primary_ticker"] = True
     return df
 
@@ -60,6 +60,6 @@ if __name__ == "__main__":
     ticker_mapper_consolidated["is_primary_ticker"] = False
     ticker_mapper_consolidated = ticker_mapper_consolidated.groupby("company_name", as_index=False).apply(consolidate_tickers)
     
-    print(f"{ticker_mapper_consolidated.shape[0]} entries before consolidation. {ticker_mapper_consolidated[ticker_mapper_consolidated.is_primary_ticker].shape} entries after.")
+    print(f"{ticker_mapper_consolidated.shape[0]} entries before consolidation. {ticker_mapper_consolidated[ticker_mapper_consolidated.is_primary_ticker].shape[0]} entries after.")
     
     ticker_mapper_consolidated.to_parquet("data_shared/ticker_name_mapper_consolidated.parquet")
