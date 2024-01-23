@@ -7,10 +7,11 @@ import pandas as pd
 import yfinance as yf
 from bs4 import BeautifulSoup
 from dateutil.parser import UnknownTimezoneWarning
-
+import dateutil
 warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
+import datetime
 
-from sutime import SUTime
+# from sutime import SUTime
 import datefinder
 from dateparser.search import search_dates
 from dateparser_data.settings import default_parsers
@@ -81,17 +82,27 @@ def body_formatter(body):
     h.drop_white_space = True
     return h.handle(new_body)
 
+
+feasible_future_date_threshold = datetime.datetime(year=1999, month=1, day=1)
+feasible_past_date_threshold = datetime.datetime(year=1999, month=1, day=1)
+is_feasible_date = lambda d: (d >= feasible_past_date_threshold) and (d <= feasible_future_date_threshold)
+
 def remove_date_specifics(body, pr_date, logging=False):
     ## Habe unterschied. Datumsparser getestet: 
     # - dateparser, dateutil gefällt mir nicht
+    # - dateutil ?
     # - datefinder ganz gut, allerdings teilweise zu aggressiv
     # - SUTime hat fast schon zu viel Funktionalität und braucht dementsprechend 
     # auch lange, ist aber als extra check vielleicht ganz gut, um zu überprüfen, 
     # ob die Datums von datefinder alle *vernünftig* sind.
+    
+    #1. datefinder
     datefinder_dates = datefinder.find_dates(body, 
                                              source=True, 
                                              strict=True)
+    datefinder_dates = list(datefinder_dates)
     
+    #2. dateparser
     dateparser_dates = search_dates(body, 
                                     languages=["en"], 
                                     settings={"STRICT_PARSING":True,
@@ -100,16 +111,23 @@ def remove_date_specifics(body, pr_date, logging=False):
         dateparser_dates = []
     dateparser_dates = [(date, text) for text, date in dateparser_dates]
     
-    sutime = SUTime(mark_time_ranges=True, include_range=True)
+    #3. dateutil
+    dateutil_dates = dateutil.parser.parse(body, fuzzy_with_tokens=True)
+    
+    # sutime = SUTime(mark_time_ranges=True, include_range=True)
     contains_month_or_day = lambda x: bool(re.search("|".join(MONTHS + DAYS), x))
     
-    for date, text in list(datefinder_dates) + dateparser_dates:
-        if (len(sutime.parse(text)) != 1) and not contains_month_or_day(text):
-            if logging: print(f"Not approved as a date: {text}")
-            continue
-        if logging: print(f"Approved as date {text}")
-        body = body.replace(text, "")
-    return body
+    for date_identification_list in datefinder_dates + dateparser_dates + dateutil_dates
+        for date, text in date_identification_list:
+            assert type(date) == datetime.datetime
+            if not is_feasible_date(date):
+                continue
+            if contains_month_or_day(text):
+                if logging: print(f"Not approved as a date: {text}")
+                continue
+            if logging: print(f"Approved as date {text}")
+            
+        return body
 
 
 def remove_company_specifics(body, company_name, short_name, ticker):
