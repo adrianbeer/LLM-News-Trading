@@ -15,13 +15,15 @@ import datetime
 import datefinder
 from dateparser.search import search_dates
 from dateparser_data.settings import default_parsers
-
+import logging
 
 # These constants are used in `remove_date_specifics`
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 PARSERS = [parser for parser in default_parsers if parser != 'relative-time']
 
+FUTURE_FEASIBLE_DATE_THRESHOLD = datetime.datetime(year=2040, month=1, day=1)
+PAST_FEASIBLE_DATE_THRESHOLD = datetime.datetime(year=1999, month=1, day=1)
 
 # Used in remove contact info sentences
 ACRONYMS = r'(?:[A-Z]\.)+'
@@ -83,11 +85,16 @@ def body_formatter(body):
     return h.handle(new_body)
 
 
-feasible_future_date_threshold = datetime.datetime(year=1999, month=1, day=1)
-feasible_past_date_threshold = datetime.datetime(year=1999, month=1, day=1)
-is_feasible_date = lambda d: (d >= feasible_past_date_threshold) and (d <= feasible_future_date_threshold)
+def is_feasible_date(d):
+    try:
+        b = (d >= PAST_FEASIBLE_DATE_THRESHOLD) and (d <= FUTURE_FEASIBLE_DATE_THRESHOLD)
+    except TypeError as e:
+        logging.info(e)
+        return True
+    return b
+contains_month_or_day = lambda x: bool(re.search("|".join(MONTHS + DAYS), x))
 
-def remove_date_specifics(body, pr_date, logging=False):
+def remove_date_specifics(body, pr_date):
     ## Habe unterschied. Datumsparser getestet: 
     # - dateparser, dateutil gefällt mir nicht
     # - dateutil ?
@@ -95,38 +102,31 @@ def remove_date_specifics(body, pr_date, logging=False):
     # - SUTime hat fast schon zu viel Funktionalität und braucht dementsprechend 
     # auch lange, ist aber als extra check vielleicht ganz gut, um zu überprüfen, 
     # ob die Datums von datefinder alle *vernünftig* sind.
-    
-    #1. datefinder
-    datefinder_dates = datefinder.find_dates(body, 
+    logging.info(f"Remove dates for body at date {pr_date}...")
+
+    datefinder_dates = list(datefinder.find_dates(body, 
                                              source=True, 
-                                             strict=True)
-    datefinder_dates = list(datefinder_dates)
+                                             strict=True))
     
-    #2. dateparser
     dateparser_dates = search_dates(body, 
                                     languages=["en"], 
                                     settings={"STRICT_PARSING":True,
                                               "PARSERS": PARSERS})
-    if dateparser_dates is None:
-        dateparser_dates = []
-    dateparser_dates = [(date, text) for text, date in dateparser_dates]
+    dateparser_dates = [(date, text) for text, date in dateparser_dates] if dateparser_dates else []
     
-    #3. dateutil
-    dateutil_dates = dateutil.parser.parse(body, fuzzy_with_tokens=True)
+    # dateutil_dates = dateutil.parser.parse(body, fuzzy_with_tokens=True)
     
     # sutime = SUTime(mark_time_ranges=True, include_range=True)
-    contains_month_or_day = lambda x: bool(re.search("|".join(MONTHS + DAYS), x))
     
-    for date_identification_list in datefinder_dates + dateparser_dates + dateutil_dates
+    for library, date_identification_list in [("datefinder", datefinder_dates), ("dateparser", dateparser_dates)]:
         for date, text in date_identification_list:
             assert type(date) == datetime.datetime
             if not is_feasible_date(date):
+                logging.info(f"{library}: False date: {text}")
                 continue
             if contains_month_or_day(text):
-                if logging: print(f"Not approved as a date: {text}")
-                continue
-            if logging: print(f"Approved as date {text}")
-            
+                logging.info(f"{library}: Date detected: {text}")
+                body = body.replace(text, "")
         return body
 
 
@@ -184,7 +184,7 @@ def remove_patterns(patterns: List[str], remove_with: str, text:str, flags=0):
     return text
 
 
-def filter_body(row: pd.Series, logging=False) -> str:
+def filter_body(row: pd.Series) -> str:
     '''
     TODO: Vor dem parsen sollten wir den Titel noch vorne anfügen, falls dort der Unternehmensname auch vorkommt.
     Das werden wir ja sowieso tun...
@@ -199,7 +199,7 @@ def filter_body(row: pd.Series, logging=False) -> str:
     
     body = remove_company_specifics(body, company_name, short_name, ticker)
     body = remove_contact_info_sentences(body)
-    body = remove_date_specifics(body, pr_date, logging=logging)
+    body = remove_date_specifics(body, pr_date)
     
     
     # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
