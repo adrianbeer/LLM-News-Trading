@@ -10,7 +10,8 @@ data:
       cleaned: "D:/IQFeedData/daily/cleaned"
   
   benzinga:
-    raw: 
+    raw: data/bzg/raw
+    raw_html_parsed: data/bzg/html_parsed.parquet
     cleaned: "data/bzg/processed_news.parquet" 
     input_ids: "D:/Data/bzg/input_ids.parquet"
     masks: "D:/Data/bzg/masks.parquet"
