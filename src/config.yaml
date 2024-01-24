@@ -11,11 +11,11 @@ data:
   
   benzinga:
     raw: 
-    cleaned: "G:/Meine Ablage/NewsTrading/trading_bot/data/bzg/processed_news.parquet" 
+    cleaned: "data/bzg/processed_news.parquet" 
     input_ids: "D:/Data/bzg/input_ids.parquet"
     masks: "D:/Data/bzg/masks.parquet"
     ticker_name_mapper: "data_shared/ticker_name_mapper.parquet"
     corporation_endings: "data_shared/corporation_endings.txt"
 
-  merged: "D:/Data/Merged/news.parquet"
-  learning_dataset: "D:/Data/Merged/learning_dataset.parquet"
+  merged: "data/merged/news.parquet"
+  learning_dataset: "data/learning_dataset.parquet"

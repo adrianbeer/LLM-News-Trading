@@ -164,23 +164,21 @@ def remove_contact_info_sentences(body):
     return body
 
 
+def generator(text, mask, remove_with):
+    for character, bit in zip(text, mask):
+        if bit == 0:
+            yield character
+        if bit == 1: 
+            yield remove_with
+        if bit == 2:
+            yield ""
+
 def remove_patterns(patterns: List[str], remove_with: str, text:str, flags=0):
-  mask = [0] * len(text)
-
-  for pattern in patterns:
-    for match in re.finditer(pattern, text, flags):
-        mask[match.start():match.end()] = [1] + [2] * (match.end()-match.start()-1)
-
-    def generator(text, mask):
-        for character, bit in zip(text, mask):
-            if bit == 0:
-                yield character
-            if bit == 1: 
-                yield remove_with
-            if bit == 2:
-                yield ""
-
-    text = "".join(generator(text, bytearray(mask)))
+    mask = [0] * len(text)
+    for pattern in patterns:
+        for match in re.finditer(pattern, text, flags):
+            mask[match.start():match.end()] = [1] + [2] * (match.end()-match.start()-1)
+    text = "".join(generator(text, bytearray(mask), remove_with))
     return text
 
 
@@ -204,10 +202,10 @@ def filter_body(row: pd.Series) -> str:
     
     # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
     body = remove_patterns([f"(.*{author})|(^.*{author})", # Remove author (preamble)
-                            '\(.*"(.{1,})".*\)'], # Remove (the "Company") parenthesis and other `("different name")`-constructs
-                           "", 
-                           body,
-                           flags=re.IGNORECASE)
+                            "\([^\)]*\"[^\)]*\"[^\)]*\)"], # Remove (the "Company") parenthesis and other `("different name")`-constructs
+                            "", 
+                            body,
+                            flags=re.IGNORECASE)
     
     # Converts itemized lists to sentences.
     body = re.sub("(\*|•){1}", 
