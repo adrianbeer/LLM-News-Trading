@@ -76,11 +76,14 @@ def body_formatter(body):
         t.decompose()
 
     new_body = str(soup)
+    
     h = html2text.HTML2Text()
     h.ignore_links = True
     h.ignore_images = True
     # h.bypass_tables = True
     # h.ignore_emphasis = True
+    h.dash_unordered_list = True
+    h.body_width = 0
     h.drop_white_space = True
     return h.handle(new_body)
 
