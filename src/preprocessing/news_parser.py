@@ -70,22 +70,29 @@ def _get_company_abbreviation(company_name, company_endings):
     return company_abbrev.strip(" ")
 
 
-def body_formatter(body):
-    soup = BeautifulSoup(body, features="html.parser")
-    for t in soup.find_all('table'):
-        t.decompose()
+h = html2text.HTML2Text()
+h.ignore_links = True
+h.ignore_images = True
+h.ignore_emphasis = True
+h.dash_unordered_list = True
+h.body_width = 0
+h.drop_white_space = True
 
-    new_body = str(soup)
+def body_formatter(body):
+    # Remove any segments at the end of a press release about the company
+    # TODO: Maybe also tag news where there exists such a postable,
+    # May be more reliable news than others ? 
+    body = re.sub(f"(<b>About|for more information)((.|\n)*)+", "", body, re.IGNORECASE)
     
-    h = html2text.HTML2Text()
-    h.ignore_links = True
-    h.ignore_images = True
-    # h.bypass_tables = True
-    # h.ignore_emphasis = True
-    h.dash_unordered_list = True
-    h.body_width = 0
-    h.drop_white_space = True
-    return h.handle(new_body)
+    soup = BeautifulSoup(body, features='html.parser')
+    for t in soup.find_all('pre'):
+        # Sometimes tables are inside a <pre> tag instead of a <table> tag
+        t.extract()
+    for t in soup.find_all('table'):
+        t.extract()
+    new_body = str(soup)
+    new_body =  h.handle(new_body)
+    return new_body
 
 
 def is_feasible_date(d):
