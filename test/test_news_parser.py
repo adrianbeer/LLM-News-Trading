@@ -1,3 +1,4 @@
+from datetime import timedelta
 import pandas as pd
 import pytest
 from src.preprocessing import news_parser
@@ -73,3 +74,7 @@ def test_filter_body():
     })
     body = news_parser.filter_body(row)
     assert body == '“We\'ve improved our core car insurance apps to bring even more useful tools to'
+
+def test_is_feasible_date():
+    d = timedelta(hours=1)
+    assert news_parser.is_feasible_date(d) is False 

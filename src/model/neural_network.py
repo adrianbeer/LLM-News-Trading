@@ -1,12 +1,9 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from torch import Tensor
-from torch.nn.utils.clip_grad import clip_grad_norm_
-from torch.utils.data import DataLoader
+from torch.nn import functional as F
 from transformers import BertModel
 import lightning as pl
-from torch.nn import functional as F
 import torchmetrics
 from tqdm import tqdm
 
@@ -97,7 +94,8 @@ class BERTClassifier(pl.LightningModule):
                        "val_accuracy": self.val_accuracy})
         return loss
     
-
+    def predict_step(self, batch, batch_idx, dataloader_idx=0):
+        return self(batch)
 
 @torch.no_grad
 def predict_cls(model, dataloader, device):

@@ -96,12 +96,21 @@ def body_formatter(body):
 
 
 def is_feasible_date(d):
+    if not isinstance(d, datetime.datetime):
+        return False
+    
+    if d.tzinfo:
+        # Contains timezone info, so probably a proper date
+        return True
+    
     try:
         b = (d >= PAST_FEASIBLE_DATE_THRESHOLD) and (d <= FUTURE_FEASIBLE_DATE_THRESHOLD)
-    except TypeError as e:
-        logging.info(e)
-        return True
+    except Exception as e:
+        # Not sure when this happens
+        logging.warning(f"for input {d} error msg: {e}")
+        return False
     return b
+
 contains_month_or_day = lambda x: bool(re.search("|".join(MONTHS + DAYS), x))
 
 def remove_date_specifics(body, pr_date):
