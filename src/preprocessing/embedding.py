@@ -3,7 +3,7 @@ import pandas as pd
 from src.config import config, MODEL_CONFIG
 import numpy as np
 from typing import List
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing.pool import ThreadPool
 from functools import partial
 import torch
 import os
@@ -42,8 +42,10 @@ def embed_inputs(texts: list, tokenizer) -> tuple[Tensor, Tensor]:
     attention_masks = []
     
     print("Start embedding inputs...")
-    executor = ThreadPoolExecutor(max_workers=os.cpu_count())
-    ans = tqdm(executor.map(partial(embed_input, tokenizer=tokenizer), texts),
+    executor = ThreadPool(processes=os.cpu_count())
+    ans = tqdm(executor.imap(partial(embed_input, 
+                                    tokenizer=tokenizer), 
+                            texts),
                total=len(texts))
     input_ids, attention_masks = list(zip(*ans))
 

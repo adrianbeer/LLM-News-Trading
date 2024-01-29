@@ -3,24 +3,25 @@ environment: local
 data:
   iqfeed:
     minute:
-      raw: "D:/IQFeedData/minute/raw"
-      cleaned: "D:/IQFeedData/minute/cleaned"
+      raw: "data/iqfeed/minute/raw"
+      cleaned: "data/iqfeed/minute/cleaned"
     daily:
       raw: ""
-      cleaned: "D:/IQFeedData/daily/cleaned"
+      cleaned: "data/iqfeed/daily/cleaned"
   
   benzinga:
     raw: "data/bzg/raw_bzg"
     raw_html_parsed: "data/bzg/html_parsed"
     cleaned: "data/bzg/processed_news.parquet" 
-    input_ids: "D:/Data/bzg/input_ids.parquet"
-    masks: "D:/Data/bzg/masks.parquet"
+    input_ids: "data/bzg/input_ids.parquet"
+    masks: "data/bzg/masks.parquet"
     ticker_name_mapper: "data_shared/ticker_name_mapper.parquet"
     corporation_endings: "data_shared/corporation_endings.txt"
 
   shared:
     ticker_name_mapper: "data_shared/ticker_name_mapper.parquet"
     ticker_name_mapper_reduced: "data_shared/ticker_name_mapper_reduced.parquet"
+    ticker_name_mapper_consolidated: "data_shared/ticker_name_mapper_consolidated.parquet"
 
-  merged: "data/merged/news.parquet"
+  merged: "data/merged_dataset.parquet"
   learning_dataset: "data/learning_dataset.parquet"
