@@ -45,8 +45,8 @@ class BERTClassifier(pl.LightningModule):
             nn.Linear(20, num_classes)
         )
         
-    def forward(self, input_ids, attention_mask):
-        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+    def forward(self, bert_args):
+        outputs = self.bert(input_ids=bert_args[0], attention_mask=bert_args[1])
         pooled_output = outputs.pooler_output
         x = self.dropout(pooled_output)
         logits = self.ff_layer(x)
@@ -60,10 +60,9 @@ class BERTClassifier(pl.LightningModule):
         return F.cross_entropy(logits, labels, weight=weights)
 
     def training_step(self, train_batch, batch_idx):
-        x = train_batch["input_id"]
-        x2 = train_batch["mask"]
+        bert_args = (train_batch["input_id"], train_batch["mask"])
         y = train_batch["target"]
-        logits = self.forward(x, x2)
+        logits = self.forward(bert_args)
         preds = logits.softmax(dim=1)
         
         weighted_loss = self.cross_entropy_loss(logits, y, self.class_weights)
@@ -79,10 +78,9 @@ class BERTClassifier(pl.LightningModule):
         return weighted_loss
     
     def validation_step(self, val_batch, batch_idx):
-        x = val_batch["input_id"]
-        x2 = val_batch["mask"]
+        bert_args = (val_batch["input_id"], val_batch["mask"])
         y = val_batch["target"]
-        logits = self.forward(x, x2)
+        logits = self.forward(bert_args)
         preds = logits.softmax(dim=1)
         
         loss = self.cross_entropy_loss(logits, y)        
