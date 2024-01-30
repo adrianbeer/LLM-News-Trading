@@ -99,7 +99,7 @@ class BERTClassifier(pl.LightningModule):
 def predict_cls(model, dataloader, device):
     model.eval()
     outputs = None
-    for batch in tqdm(dataloader):
+    for batch in tqdm(dataloader, desc="predict_cls"):
         batch_inputs, batch_masks = tuple(b.to(device) for b in batch)
         output = model(batch_inputs, attention_mask=batch_masks)
         cls_tokens = np.array(output.last_hidden_state[:,0,:].tolist())
