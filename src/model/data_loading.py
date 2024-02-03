@@ -10,7 +10,12 @@ import lightning as pl
 
 class CustomDataset(Dataset):
     
-    def __init__(self, news_data_path, input_ids_path, masks_path, stage, target_col_name, news_data_idx=None):
+    def __init__(self, news_data_path, 
+                 input_ids_path, 
+                 masks_path, 
+                 stage, 
+                 target_col_name, 
+                 news_data_idx=None):
         self.news_data = pd.read_parquet(news_data_path)
         # For the test modules where only some indices are selected for unit testing
         if news_data_idx: 
@@ -18,7 +23,10 @@ class CustomDataset(Dataset):
             
         self.stage = stage
         
-        self.news_data = self.news_data.loc[self.news_data.split == stage, target_col_name]
+        self.news_data = self.news_data.loc[:, target_col_name]
+        if self.stage:
+            self.news_data = self.news_data[self.news_data.split == stage]
+        
         self.class_weights = (self.news_data.shape[0] / self.news_data.value_counts()).values
         
         self.input_ids = pd.read_parquet(input_ids_path)
@@ -47,8 +55,14 @@ class CustomDataset(Dataset):
         
         return sample
 
+
 class CustomDataModule(pl.LightningDataModule):
-    def __init__(self, news_data_path, input_ids_path, masks_path, batch_size, target_col_name, news_data_idx=None):
+    def __init__(self, news_data_path: str, 
+                 input_ids_path: str, 
+                 masks_path: str, 
+                 batch_size: int, 
+                 target_col_name: str, 
+                 news_data_idx = None):
         super().__init__()
         self.news_data_path = news_data_path
         self.input_ids_path = input_ids_path 
@@ -80,7 +94,12 @@ class CustomDataModule(pl.LightningDataModule):
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
         if stage == "predict":
-            pass
+            self.predict_dataset = CustomDataset(news_data_path=self.news_data_path, 
+                                                input_ids_path=self.input_ids_path, 
+                                                masks_path=self.masks_path,
+                                                stage=None,
+                                                target_col_name=self.target_col_name,
+                                                news_data_idx=self.news_data_idx)
 
     def get_weights(self):
         return self.train_dataset.class_weights
@@ -95,7 +114,7 @@ class CustomDataModule(pl.LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
     def predict_dataloader(self):
-        pass
+        return DataLoader(self.predict_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
 
 
 def get_data_loader_from_dataset(dataset: pd. DataFrame, 

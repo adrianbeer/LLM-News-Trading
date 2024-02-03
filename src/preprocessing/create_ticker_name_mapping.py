@@ -5,7 +5,7 @@ from tqdm import tqdm
 tqdm.pandas()
 
 
-INPUT_DF_PATH = 'data/bzg/unraw2_bzg/'
+INPUT_DF_PATH = config.data.benzinga.raw_html_parsed
 CORPORATION_ENDINGS_FILE = config.data.benzinga.corporation_endings
 OUTPUT_DF_PATH = config.data.benzinga.ticker_name_mapper
 
