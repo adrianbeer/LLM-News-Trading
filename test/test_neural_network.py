@@ -22,23 +22,23 @@ def test_single_label_training_accuracy():
     dm = CustomDataModule(news_data_path=config.data.learning_dataset, 
                           input_ids_path=config.data.benzinga.input_ids, 
                           masks_path=config.data.benzinga.masks, 
-                          batch_size=4,
+                          batch_size=len(news_data_idx),
                           target_col_name=target_col_name,
                           news_data_idx=news_data_idx)
     
     trainer = pl.Trainer(num_sanity_val_steps=2,
-                     max_epochs=10,
+                     max_epochs=30,
                      gradient_clip_val=1,
                      callbacks=[StochasticWeightAveraging(swa_lrs=1e-2)],
-                     accumulate_grad_batches=5,
+                     accumulate_grad_batches=1,
                      precision=16,
                      # Avoid logging in testing module
                      logger=False)
     
     trainer.fit(model, dm)
     logit_preds = trainer.predict(model, dm.train_dataloader())
-    binary_preds = np.apply_along_axis(func1d=np.argmax, arr=logit_preds[0], axis=1)
-    assert binary_preds == [0, 0, 1, 1, 2, 2]
+    binary_preds = np.apply_along_axis(func1d=np.argmax, arr=logit_preds[0].numpy(), axis=1)
+    assert (binary_preds == np.array([0, 0, 1, 1, 2, 2])).all()
 
 
 def test_multi_label_training_accuracy():
