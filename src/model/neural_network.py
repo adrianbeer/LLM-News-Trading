@@ -45,8 +45,8 @@ class BERTClassifier(pl.LightningModule):
             nn.Linear(20, num_classes)
         )
         
-    def forward(self, bert_args):
-        outputs = self.bert(input_ids=bert_args[0], attention_mask=bert_args[1])
+    def forward(self, input_ids, masks):
+        outputs = self.bert(input_ids=input_ids, attention_mask=masks)
         pooled_output = outputs.pooler_output
         x = self.dropout(pooled_output)
         logits = self.ff_layer(x)
@@ -60,9 +60,8 @@ class BERTClassifier(pl.LightningModule):
         return F.cross_entropy(logits, labels, weight=weights)
 
     def training_step(self, train_batch, batch_idx):
-        bert_args = (train_batch["input_id"], train_batch["mask"])
         y = train_batch["target"]
-        logits = self.forward(bert_args)
+        logits = self.forward(train_batch["input_id"], train_batch["mask"])
         preds = logits.softmax(dim=1)
         
         weighted_loss = self.cross_entropy_loss(logits, y, self.class_weights)
@@ -78,9 +77,8 @@ class BERTClassifier(pl.LightningModule):
         return weighted_loss
     
     def validation_step(self, val_batch, batch_idx):
-        bert_args = (val_batch["input_id"], val_batch["mask"])
         y = val_batch["target"]
-        logits = self.forward(bert_args)
+        logits = self.forward(val_batch["input_id"], val_batch["mask"])
         preds = logits.softmax(dim=1)
         
         loss = self.cross_entropy_loss(logits, y)        
@@ -93,7 +91,16 @@ class BERTClassifier(pl.LightningModule):
         return loss
     
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        return self(batch)
+        return self(batch["input_id"], batch["mask"])
+
+
+def initialize_final_layer_bias_with_class_weights(model, weights):
+    for name, param in model.ff_layer.named_parameters():
+        if name == "7.bias":
+            param.data[0] = weights.loc[0]
+            param.data[1] = weights.loc[1]
+            param.data[2] = weights.loc[2]
+
 
 @torch.no_grad
 def predict_cls(model, dataloader, device):

@@ -20,17 +20,20 @@ if __name__ == '__main__':
     batch_size = int(args.batchsize)
     
     # Use baseline bert model to avoid look-ahead bias 
-    model = BertModel.from_pretrained(MODEL_CONFIG.transformer_hugface_id)
+    model = BertModel.from_pretrained(MODEL_CONFIG.pretrained_network)
     model.eval()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
     model.to(device)
+    
     dataset = pd.read_parquet(config.data.benzinga.cleaned)
     input_ids = pd.read_parquet(config.data.benzinga.input_ids)
     masks = pd.read_parquet(config.data.benzinga.masks)
+    
     if not dataset.index.name: 
         dataset.index.name = "index"
+        
     original_index_name = dataset.index.name
     print(f"{original_index_name=}")
 
@@ -82,11 +85,4 @@ if __name__ == '__main__':
         
     print(n_of_sametime_news)
     dataset.to_parquet(config.data.benzinga.cleaned)
-
-
-    # # Distribution of staleness factors
-    # import plotly.express as px 
-    # px.histogram(dataset.loc[dataset["staleness"]!=0, "staleness"])
-    # from google.colab import runtime
-    # runtime.unassign()
 

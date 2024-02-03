@@ -10,8 +10,12 @@ import lightning as pl
 
 class CustomDataset(Dataset):
     
-    def __init__(self, news_data_path, input_ids_path, masks_path, stage, target_col_name):
+    def __init__(self, news_data_path, input_ids_path, masks_path, stage, target_col_name, news_data_idx=None):
         self.news_data = pd.read_parquet(news_data_path)
+        # For the test modules where only some indices are selected for unit testing
+        if news_data_idx: 
+            self.news_data = self.news_data.loc[news_data_idx, :]
+            
         self.stage = stage
         
         self.news_data = self.news_data.loc[self.news_data.split == stage, target_col_name]
@@ -44,13 +48,14 @@ class CustomDataset(Dataset):
         return sample
 
 class CustomDataModule(pl.LightningDataModule):
-    def __init__(self, news_data_path, input_ids_path, masks_path, batch_size, target_col_name):
+    def __init__(self, news_data_path, input_ids_path, masks_path, batch_size, target_col_name, news_data_idx=None):
         super().__init__()
         self.news_data_path = news_data_path
         self.input_ids_path = input_ids_path 
         self.masks_path = masks_path
         self.batch_size = batch_size
         self.target_col_name = target_col_name
+        self.news_data_idx = news_data_idx
 
     def setup(self, stage: str):
         # Assign train/val datasets for use in dataloaders
@@ -59,18 +64,21 @@ class CustomDataModule(pl.LightningDataModule):
                                                 input_ids_path=self.input_ids_path, 
                                                 masks_path=self.masks_path,
                                                 stage="training",
-                                                target_col_name=self.target_col_name)
+                                                target_col_name=self.target_col_name,
+                                                news_data_idx=self.news_data_idx)
             self.val_dataset = CustomDataset(news_data_path=self.news_data_path, 
                                                 input_ids_path=self.input_ids_path, 
                                                 masks_path=self.masks_path,
                                                 stage="validation",
-                                                target_col_name=self.target_col_name)
+                                                target_col_name=self.target_col_name,
+                                                news_data_idx=self.news_data_idx)
         if stage == "test":
             self.test_dataset = CustomDataset(news_data_path=self.news_data_path, 
                                                 input_ids_path=self.input_ids_path, 
                                                 masks_path=self.masks_path,
                                                 stage="testing",
-                                                target_col_name=self.target_col_name)
+                                                target_col_name=self.target_col_name,
+                                                news_data_idx=self.news_data_idx)
         if stage == "predict":
             pass
 

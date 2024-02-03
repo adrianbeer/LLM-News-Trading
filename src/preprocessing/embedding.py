@@ -71,7 +71,7 @@ def get_encoding(encoding_matrix_path: str):
 
 
 if __name__ == "__main__":
-    tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.transformer_hugface_id)
+    tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.pretrained_network)
     dataset = pd.read_parquet(DATASET_PATH)
 
     # Dummy column
