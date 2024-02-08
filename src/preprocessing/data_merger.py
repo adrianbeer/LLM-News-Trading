@@ -1,23 +1,23 @@
-import pandas as pd 
 import numpy as np
+import pandas as pd
 from tqdm.notebook import tqdm
+
 tqdm.pandas()
-import dask.dataframe as dd
 import pytz
+
 eastern = pytz.timezone('US/Eastern')
+import concurrent.futures
+import os
+import sys
 from functools import partial
 
-from src.config import config, MODEL_CONFIG
+from src.config import config
 from src.preprocessing.data_merger_util import (get_appropriate_closing_time,
-                                                get_appropriate_entry_time, 
+                                                get_appropriate_entry_time,
                                                 get_primary_ticker,
                                                 merge_ticker_news_with_prices)
-from src.utils.dataframes import parallelize_dataframe, block_apply_factory
-import os
-import concurrent.futures
-from functools import partial
-import sys
-from src.utils.tickers import get_tickers
+from src.utils.dataframes import block_apply_factory, parallelize_dataframe
+
 
 def consolidate_tickers(tickers: pd.Series, ticker_mapper):
     func_ = partial(get_primary_ticker, mapper=ticker_mapper)
@@ -88,19 +88,17 @@ def merge_news_with_price_ts(prices_path,
     news = news[~is_too_far_apart]
 
     print(f"Filtered rows: {is_too_far_apart.sum()}")
-
     print(f"{news.shape[0]} news before, {news.dropna().shape[0]} news after dropping NaNs.\n"
         f"NaNs should occurr, when we don't have a price time series when news occurred.")
-    news.dropna(inplace=True)
 
-    # Save to Disk
+    news.dropna(inplace=True)
     news.to_parquet(config.data.merged)
 
 
 def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
-    tickers = get_tickers(daily_ts_dir_path)
     dataset = pd.read_parquet(path=merged_path)
-
+    tickers = dataset.stocks.unique()
+    
     indicators = ["std_252", "dollar_volume", 'r_intra_(t-1)', 'unadj_open', 'cond_vola']
     dataset[indicators] = np.NaN
 
@@ -123,7 +121,7 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
 
 
 if __name__ == "__main__":
-    cmd = sys.argv[0]
+    cmd = sys.argv[1]
     
     if cmd == "initial_merge":
         news = import_and_preprocess_news(input_path=config.data.benzinga.cleaned)
