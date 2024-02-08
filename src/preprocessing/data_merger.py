@@ -16,12 +16,19 @@ from src.utils.dataframes import parallelize_dataframe, block_apply_factory
 import os
 import concurrent.futures
 from functools import partial
+import sys
 from src.utils.tickers import get_tickers
 
-## ------------------------------Import and Preprocess News 
+def consolidate_tickers(tickers: pd.Series, ticker_mapper):
+    func_ = partial(get_primary_ticker, mapper=ticker_mapper)
+    # Overwrite tickers with consolidated ticker, i.e. the ticker of the time series we use to construct input-output pairs
+    return parallelize_dataframe(tickers, 
+                                 block_apply_factory(func_), 
+                                 os.cpu_count())
 
-def import_and_preprocess_news():
-    news = pd.read_parquet(path=config.data.benzinga.cleaned, columns=["time", "stocks", "parsed_body", "staleness"])
+
+def import_and_preprocess_news(input_path):
+    news = pd.read_parquet(path=input_path, columns=["time", "stocks", "parsed_body", "staleness"])
 
     # (old comment?) Necessary to get `us` units, otherwise pandas will always convert back to `ns` for some reason.
     news["time"] = news.time.dt.tz_convert(eastern).astype('datetime64[ns, US/Eastern]')
@@ -37,28 +44,18 @@ def import_and_preprocess_news():
                                                 block_apply_factory(get_appropriate_closing_time), 
                                                 os.cpu_count())
 
-    ##------------------------------ Consolidate Tickers
 
-    ticker_mapper_consolidated = pd.read_parquet("data_shared/ticker_name_mapper_consolidated.parquet")
+    ticker_mapper_consolidated = pd.read_parquet(config.data.shared.ticker_name_mapper_consolidated)
+    news["stocks"] = consolidate_tickers(news["stocks"], ticker_mapper_consolidated)
+    news.dropna(inplace=True)  # Some tickers don't exist, they will be converted to NaNs
 
-    # Overwrite tickers with consolidated ticker, i.e. the ticker of the time series we use to construct input-output pairs
-    # news["stocks"] = news.stocks.progress_map(lambda ticker: get_primary_ticker(ticker, mapper=ticker_mapper_consolidated))
-
-    func_ = partial(get_primary_ticker, mapper=ticker_mapper_consolidated)
-    news["stocks"] = parallelize_dataframe(news["stocks"], 
-                                        block_apply_factory(func_), 
-                                        os.cpu_count())
-
-    # Some tickers don't exist, they will be converted to NaNs
-    news.dropna(inplace=True)
-
-    news.to_pickle("data/temporary_news_df.pkl")
+    return news
 
 
-def merge_news_with_price_ts():
-    news = pd.read_pickle("data/temporary_news_df.pkl")
+def merge_news_with_price_ts(prices_path,
+                             news: pd.DataFrame):
 
-    spy: pd.DataFrame = pd.read_parquet(path=f"{config.data.iqfeed.minute.cleaned}/SPY_1min.parquet")
+    spy: pd.DataFrame = pd.read_parquet(path=f"{prices_path}/SPY_1min.parquet")
     spy.columns = [x.strip("adj_") for x in spy.columns]
     spy.columns = [f"SPY_{x}" for x in spy.columns]
 
@@ -87,12 +84,12 @@ def merge_news_with_price_ts():
                 pbar.update(1)
     news = pd.concat(dfs)
 
-    mask = (news["entry_is_too_far_apart"] | news["exit_is_too_far_apart"])
-    news = news[~(news["entry_is_too_far_apart"]|news["exit_is_too_far_apart"])]
+    is_too_far_apart = (news["entry_is_too_far_apart"] | news["exit_is_too_far_apart"])
+    news = news[~is_too_far_apart]
 
-    print(f"Filtered rows: {mask.sum()}")
+    print(f"Filtered rows: {is_too_far_apart.sum()}")
 
-    print(f"{news.shape[0]} news before. {news.dropna().shape[0]} news after dropping NaNs."
+    print(f"{news.shape[0]} news before, {news.dropna().shape[0]} news after dropping NaNs.\n"
         f"NaNs should occurr, when we don't have a price time series when news occurred.")
     news.dropna(inplace=True)
 
@@ -100,16 +97,17 @@ def merge_news_with_price_ts():
     news.to_parquet(config.data.merged)
 
 
-def merge_with_daily_indicators():
-    tickers = get_tickers(config.data.iqfeed.daily.cleaned)
-    dataset = pd.read_parquet(path=config.data.merged)
+def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
+    tickers = get_tickers(daily_ts_dir_path)
+    dataset = pd.read_parquet(path=merged_path)
 
-    dataset[["std_252", "dollar_volume", 'r_intra_(t-1)', 'unadj_open']] = np.NaN
-    indicators = ["std_252", "dollar_volume", 'r_intra_(t-1)', 'unadj_open']
+    indicators = ["std_252", "dollar_volume", 'r_intra_(t-1)', 'unadj_open', 'cond_vola']
+    dataset[indicators] = np.NaN
 
     for ticker in tqdm(tickers):
-        prices = pd.read_parquet(path=f"{config.data.iqfeed.daily.cleaned}/{ticker}_daily.parquet")
+        prices = pd.read_parquet(path=f"{daily_ts_dir_path}/{ticker}_daily.parquet")
         prices.index = prices.index.tz_localize("US/Eastern")
+        
         ticker_dat = (dataset.loc[dataset.stocks == ticker, :]
                             .reset_index()
                             .drop(columns=indicators)
@@ -123,11 +121,19 @@ def merge_with_daily_indicators():
         dataset.loc[merged.index, indicators] = merged[indicators]
     dataset.to_parquet(path=config.data.merged)
 
-if __name__ == "__main__":
-    import_and_preprocess_news()
-    merge_news_with_price_ts()
-    merge_with_daily_indicators()
 
+if __name__ == "__main__":
+    cmd = sys.argv[0]
+    
+    if cmd == "initial_merge":
+        news = import_and_preprocess_news(input_path=config.data.benzinga.cleaned)
+        merge_news_with_price_ts(prices_path=config.data.iqfeed.minute.cleaned,
+                                news=news)
+    elif cmd == "merge_daily_indicators":
+        merge_with_daily_indicators(daily_ts_dir_path=config.data.iqfeed.daily.cleaned,
+                                    merged_path=config.data.merged)
+    else:
+        raise ValueError(f"Invalid input argument: {cmd}")
 
 
 # ------------ Inspecting staleness
