@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
 tqdm.pandas()
 import pytz
@@ -12,10 +12,12 @@ import sys
 from functools import partial
 
 from src.config import config
-from src.preprocessing.data_merger_util import (get_appropriate_closing_time,
-                                                get_appropriate_entry_time,
-                                                get_primary_ticker,
-                                                merge_ticker_news_with_prices)
+from src.preprocessing.data_merger_util import (
+    get_appropriate_closing_time,
+    get_appropriate_entry_time,
+    get_primary_ticker,
+    merge_ticker_news_with_prices,
+)
 from src.utils.dataframes import block_apply_factory, parallelize_dataframe
 
 
@@ -97,11 +99,11 @@ def merge_news_with_price_ts(prices_path,
 
 def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
     dataset = pd.read_parquet(path=merged_path)
-    tickers = dataset.stocks.unique()
     
     indicators = ["std_252", "dollar_volume", 'r_intra_(t-1)', 'unadj_open', 'cond_vola']
     dataset[indicators] = np.NaN
 
+    tickers = dataset.stocks.unique()
     for ticker in tqdm(tickers):
         prices = pd.read_parquet(path=f"{daily_ts_dir_path}/{ticker}_daily.parquet")
         if prices.empty:
@@ -118,10 +120,15 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
                             left_on="est_entry_time", 
                             right_on="date", 
                             direction="backward")
-        # TODO: Check that date and est_entry_time are not too far apart
+        
+        # If the most recent indicators refer to a time that is too old,
+        # we don't use the indicators and leave them as NaNs
+        time_discrepancy_filter = (merged.est_entry_time - merged.date) >= pd.Timedelta(days=2)
+        merged.loc[time_discrepancy_filter, indicators] = np.nan
+        
         merged.set_index("index", inplace=True)
         dataset.loc[merged.index, indicators] = merged[indicators]
-    dataset.to_parquet(path=config.data.merged)
+    dataset.to_parquet(path=merged_path)
 
 
 if __name__ == "__main__":
@@ -130,7 +137,7 @@ if __name__ == "__main__":
     if cmd == "initial_merge":
         news = import_and_preprocess_news(input_path=config.data.benzinga.cleaned)
         merge_news_with_price_ts(prices_path=config.data.iqfeed.minute.cleaned,
-                                news=news)
+                                 news=news)
     elif cmd == "merge_daily_indicators":
         merge_with_daily_indicators(daily_ts_dir_path=config.data.iqfeed.daily.cleaned,
                                     merged_path=config.data.merged)
