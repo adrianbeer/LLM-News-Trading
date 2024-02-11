@@ -86,9 +86,6 @@ def add_indicators(prices):
     
     return prices
 
-ticker = "BAOS"
-prices = write_indicators(ticker)
-print(prices.head())
 
 if __name__ == '__main__':
     

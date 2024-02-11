@@ -104,6 +104,9 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
 
     for ticker in tqdm(tickers):
         prices = pd.read_parquet(path=f"{daily_ts_dir_path}/{ticker}_daily.parquet")
+        if prices.empty:
+            continue
+        
         prices.index = prices.index.tz_localize("US/Eastern")
         
         ticker_dat = (dataset.loc[dataset.stocks == ticker, :]
@@ -115,6 +118,7 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
                             left_on="est_entry_time", 
                             right_on="date", 
                             direction="backward")
+        # TODO: Check that date and est_entry_time are not too far apart
         merged.set_index("index", inplace=True)
         dataset.loc[merged.index, indicators] = merged[indicators]
     dataset.to_parquet(path=config.data.merged)
