@@ -8,10 +8,8 @@ def main():
     dat 
     # TODO: overnight news tag
     dat.loc[:, "r_mkt_adj"] =  dat["r"] - dat["r_spy"]
-    # std_252 is annualized, but returns arent...
-    # TODO: Dont annualize in indicator_applicator! or make it clear by naming properly
     #TODO: This needs to be of r_mkt_adj, not of wahtever else std_252 is or?
-    dat.loc[:, "z_score"] = dat["r_mkt_adj"] / (dat["std_252"]/(252**0.5)) 
+    dat.loc[:, "z_score"] = dat["r_mkt_adj"] / dat["std_252"]
 
     # TODO: Calculate based on training set split
     upper_z_quantile = 0.27

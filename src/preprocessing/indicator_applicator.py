@@ -18,6 +18,8 @@ from src.utils.tickers import get_tickers
 
 
 def get_insample_conditional_volatilies(ts: pd.Series):
+    if ts.shape[0] < 30:
+        return np.nan
     model = (arch_model(100 * ts, 
                         mean = 'Constant', 
                         vol = 'GARCH', 
@@ -36,7 +38,7 @@ def write_indicators(ticker):
     prices = pd.read_parquet(path=daily_price_path)
     prices = add_indicators(prices)
     prices.to_parquet(path=daily_price_path)
-
+    return prices
 
 indicators = ["std_252", "dollar_volume", 'r_intra_(t-1)', 'cond_vola']
 
@@ -48,7 +50,7 @@ def add_indicators(prices):
         return prices
     
     # If there are large holes in the time series we apply add_indicators recursively to each connected block 
-    timedeltas = prices.index.diff()
+    timedeltas = prices.index.to_series().diff()
     timedelta_mask = timedeltas >= pd.Timedelta("14 days")
 
     # If unadjosted close is close to 0 we also split the time series, i.e. if there is a period where
@@ -56,7 +58,13 @@ def add_indicators(prices):
     prices["unadj_open"] = prices["adj_open"] / prices["cum_split_ratio"]
     zero_price_mask = prices["unadj_open"] < 0.5
     
-    mask = timedelta_mask | zero_price_mask
+    # Periods where the standard deviation is 0, i.e. the price is a constant
+    # This can lead to zero variance and division by 0 errors...
+    std_30 = prices["adj_close"].pct_change(fill_method=None).rolling(30, min_periods=30).std()
+    constant_price_mask = std_30 < 1e-8
+    
+    mask = timedelta_mask | zero_price_mask | constant_price_mask
+    
     
     if mask.any():
         groupers = mask.cumsum()
@@ -65,7 +73,7 @@ def add_indicators(prices):
 
     # TODO: train_test split... prevent forward looking bias!
     # Requires train test split before using this module...  
-    prices["std_252"] = prices["adj_close"].pct_change(fill_method=None).rolling(252, min_periods=252).std()*(252**0.5)
+    prices["std_252"] = prices["adj_close"].pct_change(fill_method=None).rolling(252, min_periods=252).std()
     prices["r"] = prices["adj_close"] / prices["adj_close"].shift(-1) - 1 
 
     mask = ~prices["r"].isna()
