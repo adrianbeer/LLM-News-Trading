@@ -45,7 +45,7 @@ indicators = ["std_252", "dollar_volume", 'r_intra_(t-1)', 'cond_vola']
 def add_indicators(prices):
     
     if prices.shape[0] == 1:
-        # Return empty DataFFrame
+        # Return empty DataFrame
         prices.loc[:, indicators] = np.nan
         return prices
     
@@ -101,8 +101,11 @@ if __name__ == '__main__':
         with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
             futures = {executor.submit(write_indicators, ticker): ticker for ticker in tickers}
             for future in concurrent.futures.as_completed(futures):
-                # This line will propagate any exceptions
-                check_for_exceptions = future.result()
-                
                 ticker = futures[future]
+                try:
+                    # This line will propagate any exceptions
+                    check_for_exceptions = future.result()
+                except Exception as e:
+                    print(e)
+                    print(ticker)
                 pbar.update(1)
