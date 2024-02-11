@@ -5,7 +5,7 @@ from src.config import config, MODEL_CONFIG
 def main():
     # ------------------------------------- Calculate target variables and additional features
     dat: pd.DataFrame = pd.read_parquet(path=config.data.merged)
-    dat 
+
     # TODO: overnight news tag
     dat.loc[:, "r_mkt_adj"] =  dat["r"] - dat["r_spy"]
     #TODO: This needs to be of r_mkt_adj, not of wahtever else std_252 is or?
@@ -24,17 +24,14 @@ def main():
 
     # ------------Final filtering of data and make learning_dataset
     # Download dataset
-    dataset = pd.read_parquet(config.data.merged).iloc[-2000:]
-    dataset.shape[0]
+    dataset = pd.read_parquet(config.data.merged)
 
     # Filter out Stocks... TODO: put this into filter interface and make configurable in model_config
     dataset = dataset[
-        (dataset["unadj_open"] >= 2) &          # penny stocks
-        (dataset["dollar_volume"] >= 30_000)  # illiquid stocks TODO: this has look-ahead bias
-                    ]
-    # TODO: Staleness has yet to be calculated
-    if "staleness" in dataset.columns:
-        dataset = dataset[(dataset["staleness"] <= 0.9)] # repeat news
+        (dataset["unadj_open"] >= 2) &         # penny stocks
+        (dataset["dollar_volume"] >= 30_000) & # illiquid stocks TODO: this has look-ahead bias
+        (dataset["staleness"] <= 0.9)          # repeat news      
+        ]
 
     print(dataset.shape[0])
     dataset.dropna(inplace=True)
