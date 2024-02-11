@@ -11,7 +11,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from arch import arch_model
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from src.config import config
 from src.utils.tickers import get_tickers
@@ -20,7 +20,7 @@ tickers = get_tickers(config.data.iqfeed.daily.cleaned)
 
 
 def get_insample_conditional_volatilies(ts: pd.Series):
-    model = (arch_model(ts * 100, 
+    model = (arch_model(100 * ts, 
                         mean = 'Constant', 
                         vol = 'GARCH', 
                         p = 1, o = 0, q = 1)
@@ -44,7 +44,7 @@ def add_indicators(ticker):
 
     mask = ~prices["r"].isna()
     prices["cond_vola"] = np.nan
-    prices.loc[mask, "cond_vola"] = get_insample_conditional_volatilies(prices[mask, "r"])
+    prices.loc[mask, "cond_vola"] = get_insample_conditional_volatilies(prices.loc[mask, "r"])
     
     prices["dollar_volume"] = prices["adj_volume"] * (prices["adj_close"] + prices["adj_open"])/2
     prices["r_intra_(t-1)"] = (prices["adj_close"] / prices["adj_open"] - 1).shift(periods=1)
@@ -62,7 +62,8 @@ if __name__ == '__main__':
     if args.ticker:
         prices = add_indicators(args.ticker)
         print(prices.head())
-        
+        exit()
+
     with tqdm(total=len(tickers), desc="tickers (indicator_applicator)", leave=True, position=0) as pbar:
         # let's give it some more threads:
         with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
