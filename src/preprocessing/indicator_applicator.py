@@ -40,6 +40,7 @@ def write_indicators(ticker):
     prices.to_parquet(path=daily_price_path)
     return prices
 
+
 indicators = ["std_252", "dollar_volume", 'r_intra_(t-1)', 'cond_vola']
 
 def add_indicators(prices):
@@ -65,10 +66,10 @@ def add_indicators(prices):
     
     mask = timedelta_mask | zero_price_mask | constant_price_mask
     
-    
     if mask.any():
         groupers = mask.cumsum()
-        prices = prices.groupby(groupers, group_keys=False).apply(add_indicators)
+        # Exclude bad entries from prices and the groupby operation
+        prices = prices.loc[~mask, :].groupby(groupers[~mask], group_keys=False).apply(add_indicators)
         return prices
 
     # TODO: train_test split... prevent forward looking bias!
@@ -85,6 +86,9 @@ def add_indicators(prices):
     
     return prices
 
+ticker = "BAOS"
+prices = write_indicators(ticker)
+print(prices.head())
 
 if __name__ == '__main__':
     
@@ -109,3 +113,5 @@ if __name__ == '__main__':
                     print(e)
                     print(ticker)
                 pbar.update(1)
+
+

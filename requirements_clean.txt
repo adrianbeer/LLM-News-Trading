@@ -12,6 +12,8 @@ pandas
 lightning
 torchmetrics
 matplotlib
+tqdm
+arch
 
 # Plotting
 plotly
