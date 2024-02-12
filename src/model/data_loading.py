@@ -22,11 +22,12 @@ class CustomDataset(Dataset):
             self.news_data = self.news_data.loc[news_data_idx, :]
             
         self.stage = stage
+
+        if self.stage:
+            self.news_data = self.news_data.loc[self.news_data.split == stage, :]
         
         self.news_data = self.news_data.loc[:, target_col_name]
-        if self.stage:
-            self.news_data = self.news_data[self.news_data.split == stage]
-        
+
         self.class_weights = (self.news_data.shape[0] / self.news_data.value_counts()).values
         
         self.input_ids = pd.read_parquet(input_ids_path)
