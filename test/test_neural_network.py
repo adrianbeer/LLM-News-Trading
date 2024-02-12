@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 
 target_col_name = "z_score_class"
+
+# Should be labeled with 0, 0, 1, 1, 2, 2
 news_data_idx = [12460904, 12460977, 12460964, 12495579, 12460928, 12460928, 12495897]
 
 def test_single_label_training_accuracy():
