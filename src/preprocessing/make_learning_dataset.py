@@ -25,6 +25,7 @@ def main():
     # ------------Final filtering of data and make learning_dataset
     # Download dataset
     dataset = pd.read_parquet(config.data.merged)
+    print(f"Before filtering: {dataset.shape[0]}")
 
     # Filter out Stocks... TODO: put this into filter interface and make configurable in model_config
     dataset = dataset[
@@ -32,10 +33,10 @@ def main():
         (dataset["dollar_volume"] >= 30_000) & # illiquid stocks TODO: this has look-ahead bias
         (dataset["staleness"] <= 0.9)          # repeat news      
         ]
-
-    print(dataset.shape[0])
+    # How many columns do we have? this might be too aggressive of a dropna
     dataset.dropna(inplace=True)
-    print(dataset.shape[0])
+
+    print(f"After filtering: {dataset.shape[0]}")
 
     dataset: pd.DataFrame = MODEL_CONFIG.splitter.add_splits(dataset)
     dataset.to_parquet(config.data.learning_dataset)
