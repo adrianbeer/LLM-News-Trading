@@ -16,19 +16,18 @@ class CustomDataset(Dataset):
                  stage, 
                  target_col_name, 
                  news_data_idx=None):
+        self.stage = stage
         self.news_data = pd.read_parquet(news_data_path)
         # For the test modules where only some indices are selected for unit testing
         if news_data_idx: 
             self.news_data = self.news_data.loc[news_data_idx, :]
             
-        self.stage = stage
-
         if self.stage:
-            self.news_data = self.news_data.loc[self.news_data.split == stage, :]
+            self.news_data = self.news_data.loc[self.news_data.split == self.stage, :]
         
         self.news_data = self.news_data.loc[:, target_col_name]
 
-        self.class_weights = (self.news_data.shape[0] / self.news_data.value_counts()).values
+        self.class_distribution = (self.news_data.value_counts() / self.news_data.shape[0]).sort_index()
         
         self.input_ids = pd.read_parquet(input_ids_path)
         self.masks = pd.read_parquet(masks_path)
@@ -58,7 +57,8 @@ class CustomDataset(Dataset):
 
 
 class CustomDataModule(pl.LightningDataModule):
-    def __init__(self, news_data_path: str, 
+    def __init__(self, 
+                 news_data_path: str, 
                  input_ids_path: str, 
                  masks_path: str, 
                  batch_size: int, 
@@ -102,11 +102,11 @@ class CustomDataModule(pl.LightningDataModule):
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
 
-    def get_weights(self):
-        return self.train_dataset.class_weights
+    def get_class_distribution(self):
+        return self.train_dataset.class_distribution
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
         
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
