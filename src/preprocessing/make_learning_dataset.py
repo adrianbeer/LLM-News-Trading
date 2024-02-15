@@ -29,9 +29,9 @@ def main():
 
     # Filter out Stocks... TODO: put this into filter interface and make configurable in model_config
     dataset = dataset[
-        (dataset["unadj_open"] >= 2) &         # penny stocks
+        (dataset["unadj_open"] >= 1) &         # penny stocks
         (dataset["dollar_volume"] >= 30_000) & # illiquid stocks TODO: this has look-ahead bias
-        (dataset["staleness"] <= 0.9)          # repeat news      
+        (dataset["staleness"] <= 0.95)          # repeat news      
         ]
     # How many columns do we have? this might be too aggressive of a dropna
     dataset.dropna(inplace=True)
