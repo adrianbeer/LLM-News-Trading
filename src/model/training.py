@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
     dm.setup("fit")
 
-    class_distribution = dm.get_class_distribution().values
-    class_weights = 1 / class_distribution
+    class_distribution = dm.get_class_distribution()
+    class_weights = 1 / class_distribution.values
     print(dm.get_class_distribution())
 
     if ckpt:
@@ -49,7 +49,7 @@ if __name__ == "__main__":
                                         class_weights=class_weights)
         initialize_final_layer_bias_with_class_weights(model, class_distribution)
 
-    tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs/")
+    tb_logger = pl_loggers.TensorBoardLogger(save_dir="")
 
     trainer = pl.Trainer(num_sanity_val_steps=2,
                         max_epochs=10,
