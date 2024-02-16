@@ -6,7 +6,7 @@ from typing import List
 from src.config import config
 from torch.utils.data import Dataset
 import lightning as pl
-
+import numpy as np
 
 class CustomDataset(Dataset):
     
@@ -26,8 +26,6 @@ class CustomDataset(Dataset):
             self.news_data = self.news_data.loc[self.news_data.split == self.stage, :]
         
         self.news_data = self.news_data.loc[:, target_col_name]
-
-        self.class_distribution = (self.news_data.value_counts() / self.news_data.shape[0]).sort_index()
         
         self.input_ids = pd.read_parquet(input_ids_path)
         self.masks = pd.read_parquet(masks_path)
@@ -102,8 +100,12 @@ class CustomDataModule(pl.LightningDataModule):
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
 
+    def get_baseline_mae(self):
+        return np.abs((self.news_data - self.news_data.median())).mean()
+
     def get_class_distribution(self):
-        return self.train_dataset.class_distribution
+        class_distribution = (self.news_data.value_counts() / self.news_data.shape[0]).sort_index()
+        return class_distribution
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)

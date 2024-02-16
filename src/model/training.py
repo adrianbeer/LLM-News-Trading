@@ -9,7 +9,7 @@ from src.model.bert_classifier import BERTClassifier
 from src.model.bert_regressor import BERTRegressor
 from src.model.neural_network import initialize_final_layer_bias_with_class_weights
 from lightning.pytorch.tuner import Tuner
-from lightning.pytorch.callbacks import StochasticWeightAveraging
+from lightning.pytorch.callbacks import StochasticWeightAveraging, ModelCheckpoint
 from src.model.data_loading import CustomDataModule
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -30,8 +30,8 @@ ckpt = None
 
 def initialize_regressor():
     model: pl.LightningModule = BERTRegressor(bert_model_name=MODEL_CONFIG.pretrained_network,
-                                deactivate_bert_learning=deactivate_bert_learning,
-                                learning_rate=learning_rate)
+                                            deactivate_bert_learning=deactivate_bert_learning,
+                                            learning_rate=learning_rate)
     return model
 
 
@@ -45,28 +45,31 @@ def initialize_classifier(class_distribution):
     return model
 
 
-dm = CustomDataModule(news_data_path=config.data.learning_dataset, 
-                      input_ids_path=config.data.benzinga.input_ids, 
-                      masks_path=config.data.benzinga.masks, 
-                      batch_size=batch_size, # Batch size is configured automatically later on
-                      target_col_name=MODEL_CONFIG.target_col_name)
-
 if __name__ == "__main__":
-
+    dm = CustomDataModule(news_data_path=config.data.learning_dataset, 
+                        input_ids_path=config.data.benzinga.input_ids, 
+                        masks_path=config.data.benzinga.masks, 
+                        batch_size=batch_size, # Batch size is configured automatically later on
+                        target_col_name=MODEL_CONFIG.target_col_name)
+    dm.setup("fit")
+    
     if ckpt:
         model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, deactivate_bert_learning=False)
         
     if MODEL_CONFIG.neural_net.task == "Regression":
         model: pl.LightningModule = initialize_regressor()
+        print(f"baseline MAE: {dm.get_baseline_mae()}")
         
     if MODEL_CONFIG.neural_net.task == "Classification":    
-        dm.setup("fit")
         class_distribution = dm.get_class_distribution()
         class_weights = 1 / class_distribution.values
         print(dm.get_class_distribution())
         model = initialize_classifier(class_distribution)
 
-    tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs")
+    # tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs")
+    model_checkpoint = ModelCheckpoint(monitor="val_loss",
+                                       mode="min", 
+                                       save_top_k=2)
 
     trainer = pl.Trainer(num_sanity_val_steps=2,
                         max_epochs=10,
@@ -76,7 +79,7 @@ if __name__ == "__main__":
                         precision=16,
                         accelerator="gpu", 
                         devices=1,
-                        logger=tb_logger)
+                        model_checkpoint=model_checkpoint,)
     tuner = Tuner(trainer)
 
     if batch_size == "automatic":

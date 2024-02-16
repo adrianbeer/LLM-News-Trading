@@ -27,7 +27,7 @@ class ModelConfig:
     target_col_name: str
     
     
-MODEL_CONFIG: ModelConfig = ModelConfig(
+ClassificationConfig: ModelConfig = ModelConfig(
     task = "Classification", # or "Regression"
     splitter = RatioSplitter(0.75, 0.15),
     pretrained_network = 'data/models/networks/finbert_tone',
@@ -48,3 +48,4 @@ RegressorConfig: ModelConfig = ModelConfig(
     target_col_name = "z_score",
 )
 
+MODEL_CONFIG = RegressorConfig
