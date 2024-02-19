@@ -29,7 +29,7 @@ batch_size = 2
 
 deactivate_bert_learning = False
 ckpt = None
-ckpt = "tb_logs/bert_regressor/version_3/checkpoints/epoch=7-step=1136.ckpt"
+# ckpt = "tb_logs/bert_regressor/version_5/checkpoints/epoch=9-step=1704.ckpt"
 # ckpt = "C:/Users/Adria/Documents/Github Projects/trading_bot/lightning_logs/version_19/checkpoints/epoch=9-step=346.ckpt"
 
 
@@ -108,9 +108,9 @@ if __name__ == "__main__":
         fig = lr_finder.plot(suggest=True)
         fig.savefig('data/lr_finder.png')
         new_lr = lr_finder.suggestion()
-        print(f"{new_lr=}")
         model.hparams.learning_rate = new_lr
 
+    print(f"Start training with {model.hparams.learning_rate=}")
     trainer.fit(model,
                 dm,
                 ckpt_path=ckpt)
