@@ -67,7 +67,9 @@ if __name__ == "__main__":
         print(dm.train_dataloader().dataset.get_class_distribution())
         model = initialize_classifier(class_distribution)
 
-    tb_logger = pl_loggers.TensorBoardLogger('tb_logs', name="bert_regressor")
+    tb_logger = pl_loggers.TensorBoardLogger('tb_logs', 
+                                             name="bert_regressor",
+                                             flush_secs=120)
     checkpoint_callback = ModelCheckpoint(monitor="val_loss",
                                        mode="min", 
                                        save_top_k=2)

@@ -56,8 +56,7 @@ class BERTRegressor(pl.LightningModule):
 
         loss = self.train_accuracy(preds, y)
 
-        self.log_dict({"loss": loss},
-                      on_step=True, on_epoch=True, prog_bar=True)
+        self.log_dict({"loss": loss}, prog_bar=True)
         return loss
 
     def custom_histogram_adder(self):    
