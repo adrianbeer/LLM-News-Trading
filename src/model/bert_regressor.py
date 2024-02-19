@@ -54,11 +54,9 @@ class BERTRegressor(pl.LightningModule):
 
         preds = self.forward(train_batch["input_id"], train_batch["mask"])
 
-        loss = self.l1_loss(preds, y)
-        tm_loss = self.train_accuracy(preds, y)
+        loss = self.train_accuracy(preds, y)
 
-        self.log_dict({'train_loss': loss,
-                       "train_loss (tochmetrics)": tm_loss}, 
+        self.log_dict({"loss": loss},
                       on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
@@ -85,11 +83,11 @@ class BERTRegressor(pl.LightningModule):
         y = val_batch["target"]
         preds = self.forward(val_batch["input_id"], val_batch["mask"])
         
-        loss = self.l1_loss(preds, y)
-        tm_loss = self.train_accuracy(preds, y)
+        loss = self.val_accuracy(preds, y)
     
-        self.log_dict({'val_loss': loss,
-                       "val_loss (tochmetrics)": tm_loss})
+        self.log_dict({
+            'val_loss': loss
+            })
         return loss
     
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
