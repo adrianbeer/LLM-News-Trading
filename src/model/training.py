@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 pt_version = torch.__version__
 print(f"[INFO] Current PyTorch version: {pt_version} (should be 2.x+)")
 print(f'{torch.cuda.is_available()=}')
-
+torch.set_float32_matmul_precision('high')
 
 # Settings
 tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.tokenizer)
@@ -26,6 +26,7 @@ automatic_batch_size = True
 batch_size = 2
 deactivate_bert_learning = False
 ckpt = None
+ckpt = "tb_logs/bert_regressor/version_0/checkpoints/epoch=1-step=284.ckpt"
 # ckpt = "C:/Users/Adria/Documents/Github Projects/trading_bot/lightning_logs/version_19/checkpoints/epoch=9-step=346.ckpt"
 
 
@@ -56,16 +57,18 @@ if __name__ == "__main__":
     
     
     if ckpt:
-        model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, deactivate_bert_learning=False)
+        model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, deactivate_bert_learning=deactivate_bert_learning)
     
-    if MODEL_CONFIG.task == "Regression":
+    elif MODEL_CONFIG.task == "Regression":
         model: pl.LightningModule = initialize_regressor()
     
-    if MODEL_CONFIG.task == "Classification":
+    elif MODEL_CONFIG.task == "Classification":
         dm.setup("fit")
         class_distribution = dm.get_class_distribution()
         print(dm.train_dataloader().dataset.get_class_distribution())
         model = initialize_classifier(class_distribution)
+    else:
+        raise ValueError()
 
     tb_logger = pl_loggers.TensorBoardLogger('tb_logs', 
                                              name="bert_regressor",
