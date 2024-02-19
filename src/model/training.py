@@ -20,13 +20,16 @@ torch.set_float32_matmul_precision('high')
 
 # Settings
 tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.tokenizer)
-automatic_learning_rate = True
-learning_rate = 1e-3
+
+automatic_learning_rate = False
+learning_rate = 1e-5
+
 automatic_batch_size = True
 batch_size = 2
+
 deactivate_bert_learning = False
 ckpt = None
-ckpt = "tb_logs/bert_regressor/version_0/checkpoints/epoch=1-step=284.ckpt"
+ckpt = "tb_logs/bert_regressor/version_3/checkpoints/epoch=7-step=1136.ckpt"
 # ckpt = "C:/Users/Adria/Documents/Github Projects/trading_bot/lightning_logs/version_19/checkpoints/epoch=9-step=346.ckpt"
 
 
@@ -57,7 +60,9 @@ if __name__ == "__main__":
     
     
     if ckpt:
-        model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, deactivate_bert_learning=deactivate_bert_learning)
+        model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, 
+                                                                                 deactivate_bert_learning=deactivate_bert_learning,
+                                                                                 learning_rate=learning_rate)
     
     elif MODEL_CONFIG.task == "Regression":
         model: pl.LightningModule = initialize_regressor()
@@ -78,12 +83,12 @@ if __name__ == "__main__":
                                        save_top_k=2)
 
     trainer = pl.Trainer(num_sanity_val_steps=2,
-                        max_epochs=10,
+                        max_epochs=20,
                         gradient_clip_val=1,
                         #StochasticWeightAveraging(swa_lrs=1e-2),
                         callbacks=[LearningRateMonitor(logging_interval='step'),
                                    checkpoint_callback],
-                        accumulate_grad_batches=10,
+                        accumulate_grad_batches=5,
                         precision=16,
                         accelerator="gpu", 
                         devices=1,
