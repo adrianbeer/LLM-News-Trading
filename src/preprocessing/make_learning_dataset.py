@@ -10,6 +10,7 @@ def main():
     dat.loc[:, "r_mkt_adj"] =  dat["r"] - dat["r_spy"]
     #TODO: This needs to be of r_mkt_adj, not of wahtever else std_252 is or?
     dat.loc[:, "z_score"] = dat["r_mkt_adj"] / dat["std_252"]
+    dat.loc[:, "z_score"] = dat["z_score"].clip(lower=dat["z_score"].quantile(0.05), upper=dat["z_score"].quantile(0.95))
 
     # TODO: Calculate based on training set split
     upper_z_quantile = 0.27
