@@ -93,6 +93,8 @@ class CustomDataModule(pl.LightningDataModule):
                                                 stage="validation",
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
+            print(f"baseline MAE (train): {self.train_dataset.get_baseline_mae()} \n"
+                  f"baseline MAE (val): {self.val_dataset.get_baseline_mae()}")
         if stage == "test":
             self.test_dataset = CustomDataset(news_data=self.news_data, 
                                                 input_ids=self.input_ids, 

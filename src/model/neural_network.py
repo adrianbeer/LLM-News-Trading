@@ -8,16 +8,7 @@ import torchmetrics
 from tqdm import tqdm
 
 
-def initialize_final_layer_bias_with_class_weights(model, weights):
-    for name, param in model.ff_layer.named_parameters():
-        final_layer_bias_name = list(dict(model.ff_layer.named_parameters()).keys())[-1]
-        assert "bias" in final_layer_bias_name
-        
-        if name == final_layer_bias_name:    
-            assert len(param) == 3
-            param.data[0] = weights.loc[0]
-            param.data[1] = weights.loc[1]
-            param.data[2] = weights.loc[2]
+
 
 
 @torch.no_grad

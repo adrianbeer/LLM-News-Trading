@@ -5,9 +5,8 @@ from src.config import config, MODEL_CONFIG
 import lightning as pl
 from lightning.pytorch import loggers as pl_loggers
 
-from src.model.bert_classifier import BERTClassifier
+from src.model.bert_classifier import BERTClassifier, initialize_final_layer_bias_with_class_weights
 from src.model.bert_regressor import BERTRegressor
-from src.model.neural_network import initialize_final_layer_bias_with_class_weights
 from lightning.pytorch.tuner import Tuner
 from lightning.pytorch.callbacks import StochasticWeightAveraging, ModelCheckpoint
 from src.model.data_loading import CustomDataModule
@@ -37,10 +36,10 @@ def initialize_regressor():
 
 def initialize_classifier(class_distribution):
     model: pl.LightningModule = BERTClassifier(bert_model_name=MODEL_CONFIG.pretrained_network,
-                                    num_classes=3,
-                                    deactivate_bert_learning=deactivate_bert_learning,
-                                    learning_rate=learning_rate,
-                                    class_weights=class_weights)
+                                            num_classes=3,
+                                            deactivate_bert_learning=deactivate_bert_learning,
+                                            learning_rate=learning_rate,
+                                            class_weights=1 / class_distribution.values)
     initialize_final_layer_bias_with_class_weights(model, class_distribution)
     return model
 
@@ -51,19 +50,18 @@ if __name__ == "__main__":
                         masks_path=config.data.benzinga.masks, 
                         batch_size=batch_size, # Batch size is configured automatically later on
                         target_col_name=MODEL_CONFIG.target_col_name)
-    dm.setup("fit")
+    
+    
     
     if ckpt:
         model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, deactivate_bert_learning=False)
-        
+    
     if MODEL_CONFIG.task == "Regression":
         model: pl.LightningModule = initialize_regressor()
-        print(f"baseline MAE (train): {dm.train_dataloader().dataset.get_baseline_mae()} \n"
-              f"baseline MAE (val): {dm.val_dataloader().dataset.get_baseline_mae()}")
-        
-    if MODEL_CONFIG.task == "Classification":    
+    
+    if MODEL_CONFIG.task == "Classification":
+        dm.setup("fit")
         class_distribution = dm.get_class_distribution()
-        class_weights = 1 / class_distribution.values
         print(dm.train_dataloader().dataset.get_class_distribution())
         model = initialize_classifier(class_distribution)
 
@@ -89,6 +87,7 @@ if __name__ == "__main__":
         tuner.scale_batch_size(model, 
                             mode="power", 
                             datamodule=dm)
+        dm.batch_size = min(dm.batch_size,  512)
 
     if learning_rate == "automatic":
         # Run learning rate finder
