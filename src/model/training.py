@@ -20,8 +20,10 @@ print(f'{torch.cuda.is_available()=}')
 
 # Settings
 tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.tokenizer)
-learning_rate = 1e-3 # or "automatic"
-batch_size = 256 # or "automatic"
+automatic_learning_rate = True
+learning_rate = 1e-3
+automatic_batch_size = True
+batch_size = 2
 deactivate_bert_learning = False
 ckpt = None
 # ckpt = "C:/Users/Adria/Documents/Github Projects/trading_bot/lightning_logs/version_19/checkpoints/epoch=9-step=346.ckpt"
@@ -82,14 +84,14 @@ if __name__ == "__main__":
                         logger=tb_logger)
     tuner = Tuner(trainer)
 
-    if batch_size == "automatic":
+    if automatic_batch_size:
         # Auto-scale batch size by growing it exponentially (default)
-        tuner.scale_batch_size(model, 
-                            mode="power", 
-                            datamodule=dm)
+        tuner.scale_batch_size(model,
+                               mode="power",
+                               datamodule=dm)
         dm.batch_size = min(dm.batch_size,  512)
 
-    if learning_rate == "automatic":
+    if automatic_learning_rate:
         # Run learning rate finder
         lr_finder = tuner.lr_find(model, dm)
         fig = lr_finder.plot(suggest=True)

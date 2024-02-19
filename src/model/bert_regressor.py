@@ -39,6 +39,7 @@ class BERTRegressor(pl.LightningModule):
         pooled_output = outputs.pooler_output
         x = self.dropout(pooled_output)
         preds = self.ff_layer(x)
+        preds.squeeze_(1)
         return preds
 
     def configure_optimizers(self):
@@ -50,16 +51,17 @@ class BERTRegressor(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         y = train_batch["target"]
+
         preds = self.forward(train_batch["input_id"], train_batch["mask"])
-        
+
         loss = self.l1_loss(preds, y)
         tm_loss = self.train_accuracy(preds, y)
-    
+
         self.log_dict({'train_loss': loss,
                        "train_loss (tochmetrics)": tm_loss}, 
                       on_step=True, on_epoch=True, prog_bar=True)
         return loss
-    
+
     def custom_histogram_adder(self):    
         for name, params in self.ff_layer.named_parameters():
             self.logger.experiment.add_histogram(name,
