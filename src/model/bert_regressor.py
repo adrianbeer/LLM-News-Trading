@@ -14,13 +14,12 @@ class BERTRegressor(pl.LightningModule):
                  learning_rate):
         super().__init__()
         self.save_hyperparameters()
-        self.learning_rate = learning_rate
         
         self.train_accuracy = MeanAbsoluteError()
         self.val_accuracy = MeanAbsoluteError()
 
         self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
-        if deactivate_bert_learning:
+        if self.hparams.deactivate_bert_learning:
             for param in self.bert.parameters():
                 param.requires_grad = False
                 
@@ -43,7 +42,7 @@ class BERTRegressor(pl.LightningModule):
         return preds
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         return optimizer
 
     def l1_loss(self, preds, labels):
