@@ -8,7 +8,7 @@ from lightning.pytorch import loggers as pl_loggers
 from src.model.bert_classifier import BERTClassifier, initialize_final_layer_bias_with_class_weights
 from src.model.bert_regressor import BERTRegressor
 from lightning.pytorch.tuner import Tuner
-from lightning.pytorch.callbacks import StochasticWeightAveraging, ModelCheckpoint
+from lightning.pytorch.callbacks import StochasticWeightAveraging, ModelCheckpoint, LearningRateMonitor
 from src.model.data_loading import CustomDataModule
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -75,7 +75,8 @@ if __name__ == "__main__":
     trainer = pl.Trainer(num_sanity_val_steps=2,
                         max_epochs=10,
                         gradient_clip_val=1,
-                        callbacks=[StochasticWeightAveraging(swa_lrs=1e-2),
+                        #StochasticWeightAveraging(swa_lrs=1e-2),
+                        callbacks=[LearningRateMonitor(logging_interval='step'),
                                    checkpoint_callback],
                         accumulate_grad_batches=10,
                         precision=16,
