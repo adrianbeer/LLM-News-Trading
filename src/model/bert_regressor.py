@@ -60,6 +60,25 @@ class BERTRegressor(pl.LightningModule):
                       on_step=True, on_epoch=True, prog_bar=True)
         return loss
     
+    def custom_histogram_adder(self):    
+        for name, params in self.ff_layer.named_parameters():
+            self.logger.experiment.add_histogram(name,
+                                                 params,
+                                                 self.current_epoch)    
+
+    # def training_epoch_end(self,outputs): 
+    #     # calculating average loss  
+    #     avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+ 
+    #     # logging histograms
+    #     self.custom_histogram_adder()
+         
+    #     epoch_dictionary={            
+    #                       'loss': avg_loss
+    #                       }
+ 
+    #     return epoch_dictionary
+    
     def validation_step(self, val_batch, batch_idx):
         y = val_batch["target"]
         preds = self.forward(val_batch["input_id"], val_batch["mask"])

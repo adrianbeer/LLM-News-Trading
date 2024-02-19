@@ -10,14 +10,15 @@ import numpy as np
 
 class CustomDataset(Dataset):
     
-    def __init__(self, news_data_path, 
-                 input_ids_path, 
-                 masks_path, 
+    def __init__(self, 
+                 news_data, 
+                 input_ids, 
+                 masks, 
                  stage, 
                  target_col_name, 
                  news_data_idx=None):
         self.stage = stage
-        self.news_data = pd.read_parquet(news_data_path)
+        self.news_data = news_data
         # For the test modules where only some indices are selected for unit testing
         if news_data_idx: 
             self.news_data = self.news_data.loc[news_data_idx, :]
@@ -27,14 +28,21 @@ class CustomDataset(Dataset):
         
         self.news_data = self.news_data.loc[:, target_col_name]
         
-        self.input_ids = pd.read_parquet(input_ids_path)
-        self.masks = pd.read_parquet(masks_path)
+        self.input_ids = input_ids
+        self.masks = masks
         
         self.input_ids = self.input_ids.loc[self.news_data.index, :]
         self.masks = self.masks.loc[self.news_data.index, :]
         
         assert (self.news_data.index == self.input_ids.index).all()
         assert (self.news_data.index == self.masks.index).all()
+        
+    def get_baseline_mae(self):
+        return np.abs((self.news_data - self.news_data.median())).mean()
+
+    def get_class_distribution(self):
+        class_distribution = (self.news_data.value_counts() / self.news_data.shape[0]).sort_index()
+        return class_distribution
         
     def __len__(self):
         return self.input_ids.shape[0]
@@ -63,9 +71,9 @@ class CustomDataModule(pl.LightningDataModule):
                  target_col_name: str, 
                  news_data_idx = None):
         super().__init__()
-        self.news_data_path = news_data_path
-        self.input_ids_path = input_ids_path 
-        self.masks_path = masks_path
+        self.news_data = pd.read_parquet(news_data_path)
+        self.input_ids = pd.read_parquet(input_ids_path)
+        self.masks = pd.read_parquet(masks_path)
         self.batch_size = batch_size
         self.target_col_name = target_col_name
         self.news_data_idx = news_data_idx
@@ -73,39 +81,32 @@ class CustomDataModule(pl.LightningDataModule):
     def setup(self, stage: str):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit":
-            self.train_dataset = CustomDataset(news_data_path=self.news_data_path, 
-                                                input_ids_path=self.input_ids_path, 
-                                                masks_path=self.masks_path,
+            self.train_dataset = CustomDataset(news_data=self.news_data, 
+                                                input_ids=self.input_ids, 
+                                                masks=self.masks,
                                                 stage="training",
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
-            self.val_dataset = CustomDataset(news_data_path=self.news_data_path, 
-                                                input_ids_path=self.input_ids_path, 
-                                                masks_path=self.masks_path,
+            self.val_dataset = CustomDataset(news_data=self.news_data, 
+                                                input_ids=self.input_ids, 
+                                                masks=self.masks,
                                                 stage="validation",
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
         if stage == "test":
-            self.test_dataset = CustomDataset(news_data_path=self.news_data_path, 
-                                                input_ids_path=self.input_ids_path, 
-                                                masks_path=self.masks_path,
+            self.test_dataset = CustomDataset(news_data=self.news_data, 
+                                                input_ids=self.input_ids, 
+                                                masks=self.masks,
                                                 stage="testing",
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
         if stage == "predict":
-            self.predict_dataset = CustomDataset(news_data_path=self.news_data_path, 
-                                                input_ids_path=self.input_ids_path, 
-                                                masks_path=self.masks_path,
+            self.predict_dataset = CustomDataset(news_data=self.news_data, 
+                                                input_ids=self.input_ids, 
+                                                masks=self.masks,
                                                 stage=None,
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
-
-    def get_baseline_mae(self):
-        return np.abs((self.news_data - self.news_data.median())).mean()
-
-    def get_class_distribution(self):
-        class_distribution = (self.news_data.value_counts() / self.news_data.shape[0]).sort_index()
-        return class_distribution
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)

@@ -56,30 +56,32 @@ if __name__ == "__main__":
     if ckpt:
         model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, deactivate_bert_learning=False)
         
-    if MODEL_CONFIG.neural_net.task == "Regression":
+    if MODEL_CONFIG.task == "Regression":
         model: pl.LightningModule = initialize_regressor()
-        print(f"baseline MAE: {dm.get_baseline_mae()}")
+        print(f"baseline MAE (train): {dm.train_dataloader().dataset.get_baseline_mae()} \n"
+              f"baseline MAE (val): {dm.val_dataloader().dataset.get_baseline_mae()}")
         
-    if MODEL_CONFIG.neural_net.task == "Classification":    
+    if MODEL_CONFIG.task == "Classification":    
         class_distribution = dm.get_class_distribution()
         class_weights = 1 / class_distribution.values
-        print(dm.get_class_distribution())
+        print(dm.train_dataloader().dataset.get_class_distribution())
         model = initialize_classifier(class_distribution)
 
-    # tb_logger = pl_loggers.TensorBoardLogger(save_dir="lightning_logs")
-    model_checkpoint = ModelCheckpoint(monitor="val_loss",
+    tb_logger = pl_loggers.TensorBoardLogger('tb_logs', name="bert_regressor")
+    checkpoint_callback = ModelCheckpoint(monitor="val_loss",
                                        mode="min", 
                                        save_top_k=2)
 
     trainer = pl.Trainer(num_sanity_val_steps=2,
                         max_epochs=10,
                         gradient_clip_val=1,
-                        callbacks=[StochasticWeightAveraging(swa_lrs=1e-2)],
+                        callbacks=[StochasticWeightAveraging(swa_lrs=1e-2),
+                                   checkpoint_callback],
                         accumulate_grad_batches=10,
                         precision=16,
                         accelerator="gpu", 
                         devices=1,
-                        model_checkpoint=model_checkpoint,)
+                        logger=tb_logger)
     tuner = Tuner(trainer)
 
     if batch_size == "automatic":
