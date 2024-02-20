@@ -1,6 +1,6 @@
 
 import pandas as pd
-from src.config import config, MODEL_CONFIG
+from src.config import config, PREP_CONFIG
 import numpy as np
 from typing import List
 from multiprocessing.pool import ThreadPool
@@ -71,7 +71,7 @@ def get_encoding(encoding_matrix_path: str):
 
 
 if __name__ == "__main__":
-    tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.pretrained_network)
+    tokenizer = BertTokenizerFast.from_pretrained(PREP_CONFIG.tokenizer)
     dataset = pd.read_parquet(DATASET_PATH)
 
     # Dummy column

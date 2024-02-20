@@ -22,28 +22,37 @@ class ModelConfig:
     splitter: Splitter
     neural_net: nn.Module
     pretrained_network: str
+    input_col_name: str
+    target_col_name: str
+
+@dataclass(frozen=True)
+class PreprocessingConfig: 
+    splitter: Splitter
     tokenizer: str
     input_col_name: str
     target_col_name: str
-    
+
+PREP_CONFIG = PreprocessingConfig(
+    splitter = RatioSplitter(0.75, 0.15),
+    tokenizer = "data/models/tokenizers/finbert-tone",
+    input_col_name =  "parsed_body",
+    target_col_name = "z_score",
+)  
     
 ClassificationConfig: ModelConfig = ModelConfig(
     task = "Classification", # or "Regression"
     splitter = RatioSplitter(0.75, 0.15),
     pretrained_network = 'data/models/networks/finbert_tone',
     neural_net = BERTClassifier,
-    tokenizer = "data/models/tokenizers/finbert-tone",
     input_col_name =  "parsed_body",
     target_col_name = "z_score_class",
 )
 
-    
 RegressorConfig: ModelConfig = ModelConfig(
     task = "Regression",
     splitter = RatioSplitter(0.75, 0.15),
     pretrained_network = 'data/models/networks/finbert_tone',
     neural_net = BERTRegressor,
-    tokenizer = "data/models/tokenizers/finbert-tone",
     input_col_name =  "parsed_body",
     target_col_name = "z_score",
 )
