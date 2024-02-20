@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from transformers import BertTokenizerFast
 from src.config import config, MODEL_CONFIG
 import lightning as pl
 from lightning.pytorch import loggers as pl_loggers
@@ -19,8 +18,6 @@ print(f'{torch.cuda.is_available()=}')
 torch.set_float32_matmul_precision('high')
 
 # Settings
-tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.tokenizer)
-
 automatic_learning_rate = False
 learning_rate = 1e-6
 
