@@ -132,8 +132,8 @@ def get_data_loader_from_dataset(dataset: pd. DataFrame,
     if split:
         indices = dataset.loc[dataset["split"] == split, :].index
     
-    input_ids: pd.DataFrame = pd.read_parquet(config.data.benzinga.input_ids)
-    masks: pd.DataFrame = pd.read_parquet(config.data.benzinga.masks)
+    input_ids: pd.DataFrame = pd.read_parquet(config.data.news.input_ids)
+    masks: pd.DataFrame = pd.read_parquet(config.data.news.masks)
     labels = dataset[label_col]
     print(f"{dataset.index.name=}")
 

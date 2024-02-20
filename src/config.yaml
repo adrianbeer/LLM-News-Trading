@@ -12,13 +12,17 @@ data:
   benzinga:
     raw: "D:/data/bzg/raw_bzg"
     raw_html_parsed: "D:/data/bzg/html_parsed"
-    cleaned: "D:/data/bzg/processed_news.parquet" 
-    input_ids: "D:/data/bzg/input_ids.parquet"
-    masks: "D:/data/bzg/masks.parquet"
-    ticker_name_mapper: "data_shared/ticker_name_mapper.parquet"
-    corporation_endings: "data_shared/corporation_endings.txt"
+
+  fnspid: 
+    raw_html_parsed: "D:/data/fnspid/html_parsed.parquet"
+
+  news:
+    cleaned: "D:/data/news/processed_news.parquet" 
+    input_ids: "D:/news/bzg/input_ids.parquet"
+    masks: "D:/news/bzg/masks.parquet"
 
   shared:
+    corporation_endings: "data_shared/corporation_endings.txt"
     ticker_name_mapper: "data_shared/ticker_name_mapper.parquet"
     ticker_name_mapper_reduced: "data_shared/ticker_name_mapper_reduced.parquet"
     ticker_name_mapper_consolidated: "data_shared/ticker_name_mapper_consolidated.parquet"

@@ -27,9 +27,9 @@ if __name__ == '__main__':
     print(device)
     model.to(device)
     
-    dataset = pd.read_parquet(config.data.benzinga.cleaned)
-    input_ids = pd.read_parquet(config.data.benzinga.input_ids)
-    masks = pd.read_parquet(config.data.benzinga.masks)
+    dataset = pd.read_parquet(config.data.news.cleaned)
+    input_ids = pd.read_parquet(config.data.news.input_ids)
+    masks = pd.read_parquet(config.data.news.masks)
     
     if not dataset.index.name: 
         dataset.index.name = "index"
@@ -84,5 +84,5 @@ if __name__ == '__main__':
         dataset.loc[ticker_news.index, "staleness"] = ticker_news.loc[:, "staleness"]
         
     print(n_of_sametime_news)
-    dataset.to_parquet(config.data.benzinga.cleaned)
+    dataset.to_parquet(config.data.news.cleaned)
 

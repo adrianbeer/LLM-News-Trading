@@ -135,7 +135,7 @@ if __name__ == "__main__":
     cmd = sys.argv[1]
     
     if cmd == "initial_merge":
-        news = import_and_preprocess_news(input_path=config.data.benzinga.cleaned)
+        news = import_and_preprocess_news(input_path=config.data.news.cleaned)
         merge_news_with_price_ts(prices_path=config.data.iqfeed.minute.cleaned,
                                  news=news)
     elif cmd == "merge_daily_indicators":
@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
 
 # ------------ Inspecting staleness
-# dataset = pd.read_parquet(config.data.benzinga.cleaned, columns=["time", "stocks", "staleness"])
+# dataset = pd.read_parquet(config.data.news.cleaned, columns=["time", "stocks", "staleness"])
 # print((dataset["staleness"] >= 1).sum())
 # print((dataset["staleness"] >= 0.995).sum())
 # import plotly.express as px

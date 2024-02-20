@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 
 MAX_ENCODING_LENGTH = 512
-DATASET_PATH = config.data.benzinga.cleaned
+DATASET_PATH = config.data.news.cleaned
 
 def embed_input(text, tokenizer):
     # Truncation = True as bert can only take inputs of max 512 tokens.
@@ -88,5 +88,5 @@ if __name__ == "__main__":
     input_ids.columns = [str(x) for x in input_ids.columns]
     masks.columns = [str(x) for x in masks.columns]
 
-    input_ids.to_parquet(config.data.benzinga.input_ids)
-    masks.to_parquet(config.data.benzinga.masks)
+    input_ids.to_parquet(config.data.news.input_ids)
+    masks.to_parquet(config.data.news.masks)

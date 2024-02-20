@@ -6,8 +6,8 @@ tqdm.pandas()
 
 
 INPUT_DF_PATH = config.data.benzinga.raw_html_parsed
-CORPORATION_ENDINGS_FILE = config.data.benzinga.corporation_endings
-OUTPUT_DF_PATH = config.data.benzinga.ticker_name_mapper
+CORPORATION_ENDINGS_FILE = config.data.shared.corporation_endings
+OUTPUT_DF_PATH = config.data.shared.ticker_name_mapper
 
 if __name__ == '__main__':
     ddf = pd.read_parquet(INPUT_DF_PATH)

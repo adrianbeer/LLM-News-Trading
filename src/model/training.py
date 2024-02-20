@@ -49,8 +49,8 @@ def initialize_classifier(class_distribution):
 
 if __name__ == "__main__":
     dm = CustomDataModule(news_data_path=config.data.learning_dataset, 
-                        input_ids_path=config.data.benzinga.input_ids, 
-                        masks_path=config.data.benzinga.masks, 
+                        input_ids_path=config.data.news.input_ids, 
+                        masks_path=config.data.news.masks, 
                         batch_size=batch_size, # Batch size is configured automatically later on
                         target_col_name=MODEL_CONFIG.target_col_name)
     

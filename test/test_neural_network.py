@@ -22,8 +22,8 @@ def test_single_label_training_accuracy():
     initialize_final_layer_bias_with_class_weights(model, weights)
 
     dm = CustomDataModule(news_data_path=config.data.learning_dataset, 
-                          input_ids_path=config.data.benzinga.input_ids, 
-                          masks_path=config.data.benzinga.masks, 
+                          input_ids_path=config.data.news.input_ids, 
+                          masks_path=config.data.news.masks, 
                           batch_size=len(news_data_idx),
                           target_col_name=target_col_name,
                           news_data_idx=news_data_idx)
