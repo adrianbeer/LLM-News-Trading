@@ -26,10 +26,15 @@ class BERTRegressor(pl.LightningModule):
         self.dropout = nn.Dropout(0)
         
         self.ff_layer: nn.Module = nn.Sequential(
-            # nn.Dropout(0.2),
-            nn.Linear(self.bert.config.hidden_size, 10),
+            nn.Dropout(0.2),
+            nn.Linear(self.bert.config.hidden_size, 20),
             nn.LeakyReLU(),
-            # nn.Dropout(0.2),
+            
+            nn.Dropout(0.2),
+            nn.Linear(20, 10),
+            nn.LeakyReLU(),
+            
+            nn.Dropout(0.2),
             nn.Linear(10, 1) # Output Layer
         )
         
@@ -55,7 +60,7 @@ class BERTRegressor(pl.LightningModule):
 
         loss = self.train_accuracy(preds, y)
 
-        self.log_dict({"loss": loss}, prog_bar=True)
+        self.log_dict({"loss": loss}, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def custom_histogram_adder(self):    

@@ -22,7 +22,7 @@ torch.set_float32_matmul_precision('high')
 tokenizer = BertTokenizerFast.from_pretrained(MODEL_CONFIG.tokenizer)
 
 automatic_learning_rate = False
-learning_rate = 1e-5
+learning_rate = 1e-6
 
 automatic_batch_size = True
 batch_size = 2
@@ -78,16 +78,14 @@ if __name__ == "__main__":
     tb_logger = pl_loggers.TensorBoardLogger('tb_logs', 
                                              name="bert_regressor",
                                              flush_secs=120)
-    checkpoint_callback = ModelCheckpoint(monitor="val_loss",
-                                       mode="min", 
-                                       save_top_k=2)
-
     trainer = pl.Trainer(num_sanity_val_steps=2,
                         max_epochs=20,
                         gradient_clip_val=1,
                         #StochasticWeightAveraging(swa_lrs=1e-2),
-                        callbacks=[LearningRateMonitor(logging_interval='step'),
-                                   checkpoint_callback],
+                        callbacks=[
+                            LearningRateMonitor(logging_interval='step'),
+                            ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=2, save_last=True),
+                            ],
                         accumulate_grad_batches=5,
                         precision=16,
                         accelerator="gpu", 
