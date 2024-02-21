@@ -10,6 +10,7 @@ from dateutil.parser import UnknownTimezoneWarning
 import dateutil
 warnings.filterwarnings("ignore", category=UnknownTimezoneWarning)
 import datetime
+import numpy as np
 
 # from sutime import SUTime
 import datefinder
@@ -41,7 +42,7 @@ def infer_author(body):
   for author in ["PRNewswire", "Globe Newswire", "Business Wire", "ACCESSWIRE"]:
     if re.search(author, body, re.IGNORECASE) is not None:
       return author
-  return None
+  return np.nan
 
 
 # Get company name by ticker (longName is always equal to shortName in yf...)
@@ -220,8 +221,16 @@ def filter_body(row: pd.Series) -> str:
     
     
     # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
-    body = remove_patterns([f"(.*{author})|(^.*{author})", # Remove author (preamble)
-                            "\([^\)]*\"[^\)]*\"[^\)]*\)"], # Remove (the "Company") parenthesis and other `("different name")`-constructs
+    # Note: np.isnan doesn't work for object or string types
+    if pd.isnull(author):
+        patterns = [
+            f"(.*{author})|(^.*{author})", # Remove author (preamble)
+            "\([^\)]*\"[^\)]*\"[^\)]*\)"   # Remove (the "Company") parenthesis and other `("different name")`-constructs
+        ]
+    else:
+        patterns = ["\([^\)]*\"[^\)]*\"[^\)]*\)"]
+
+    body = remove_patterns(patterns,
                             "", 
                             body,
                             flags=re.IGNORECASE)
