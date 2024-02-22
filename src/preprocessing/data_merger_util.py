@@ -67,7 +67,7 @@ def merge_ticker_news_with_prices(ticker_news: pd.DataFrame, spy: pd.DataFrame):
     prices.columns = [x.strip("adj_") for x in prices.columns]
     prices = prices.reset_index().sort_values("time")
 
-    # We generally neeed to use `merge_asof` here instad of simple `merge`, because
+    # We generally neeed to use `merge_asof` here instead of simple `merge`, because
     # Sometimes no auction occurred or was recorded at 16:00 or things of this sort.
 
     # Left key must be sorted
