@@ -72,7 +72,7 @@ def get_encoding(encoding_matrix_path: str):
 
 if __name__ == "__main__":
     tokenizer: BertTokenizerFast = BertTokenizerFast.from_pretrained(PREP_CONFIG.tokenizer)
-    dataset = pd.read_parquet(DATASET_PATH)
+    dataset = pd.read_parquet(DATASET_PATH, columns=["parsed_body"])
 
     # Dummy column
     dataset["text_length"] = dataset["parsed_body"].map(lambda x: len(x))
