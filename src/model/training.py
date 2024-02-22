@@ -58,11 +58,11 @@ if __name__ == "__main__":
     parser.add_argument("--hidden_layer_size", type=int)
     parser.add_argument("--learning_rate", type=float)
     parser.add_argument("--ckpt", type=str)
-    parser.add_argument("--deactivate_bert_learning", type=bool, action='store_true')    
-    parser.add_argument("--fast_dev_run", type=bool, action='store_true')
+    parser.add_argument("--deactivate_bert_learning", action='store_true')    
+    parser.add_argument("--fast_dev_run", action='store_true')
     parser.add_argument("--dropout_rate", type=float, default=0.1)
-    parser.add_argument("--stop_after_lr_finder", type=bool, action='store_true', 
-                        description="Creates data/lr_finder.png and stops afterwards in order to inspect learning_rates.")
+    parser.add_argument("--stop_after_lr_finder", action='store_true', 
+                        help="Creates data/lr_finder.png and stops afterwards in order to inspect learning_rates")
     
     args = parser.parse_args()
 
