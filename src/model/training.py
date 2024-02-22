@@ -31,18 +31,21 @@ if __name__ == "__main__":
     parser = ArgumentParser()
 
     parser.add_argument("--batch_size", type=int)
+    parser.add_argument("--hidden_layer_size", type=int)
     parser.add_argument("--learning_rate", type=float)
     parser.add_argument("--ckpt", type=str)
     parser.add_argument("--deactivate_bert_learning", type=bool, action='store_true')    
     parser.add_argument("--fast_dev_run", type=bool, action='store_true')
     parser.add_argument("--dropout_rate", type=float, default=0.1)
+    
 
     args = parser.parse_args()
 
     model_args = dict(
         deactivate_bert_learning=args.deactivate_bert_learning,
         learning_rate=args.learning_rate,
-        dropout_rate=args.dropout_rate
+        dropout_rate=args.dropout_rate,
+        hidden_layer_size=args.hidden_layer_size,
     )
 
     dm = CustomDataModule(news_data_path=config.data.learning_dataset, 

@@ -12,7 +12,8 @@ class BERTRegressor(pl.LightningModule):
                  bert_model_name, 
                  deactivate_bert_learning, 
                  learning_rate,
-                 dropout_rate):
+                 dropout_rate,
+                 hidden_layer_size):
         super().__init__()
         self.save_hyperparameters()
         
@@ -20,25 +21,25 @@ class BERTRegressor(pl.LightningModule):
         self.val_accuracy = MeanAbsoluteError()
 
         self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
-        print("{self.bert.config.hidden_size=}")
         
         if self.hparams.deactivate_bert_learning:
             for param in self.bert.parameters():
                 param.requires_grad = False
                 
         self.dropout = nn.Dropout(self.hparams.dropout_rate)
+        hls = self.hparams.hidden_layer_size
         
         self.ff_layer: nn.Module = nn.Sequential(
+            nn.Linear(self.bert.config.hidden_size, hls), nn.LeakyReLU(),
             nn.Dropout(self.hparams.dropout_rate),
-            nn.Linear(self.bert.config.hidden_size, 20),
-            nn.LeakyReLU(),
             
+            nn.Linear(hls, hls), nn.LeakyReLU(),
             nn.Dropout(self.hparams.dropout_rate),
-            nn.Linear(20, 10),
-            nn.LeakyReLU(),
             
+            nn.Linear(hls, hls), nn.LeakyReLU(),
             nn.Dropout(self.hparams.dropout_rate),
-            nn.Linear(10, 1) # Output Layer
+            
+            nn.Linear(hls, 1) # Output Layer
         )
         
     def forward(self, input_ids, masks):
