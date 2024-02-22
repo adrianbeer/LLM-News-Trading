@@ -11,7 +11,8 @@ class BERTRegressor(pl.LightningModule):
     def __init__(self, 
                  bert_model_name, 
                  deactivate_bert_learning, 
-                 learning_rate):
+                 learning_rate,
+                 dropout_rate):
         super().__init__()
         self.save_hyperparameters()
         
@@ -19,22 +20,24 @@ class BERTRegressor(pl.LightningModule):
         self.val_accuracy = MeanAbsoluteError()
 
         self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
+        print("{self.bert.config.hidden_size=}")
+        
         if self.hparams.deactivate_bert_learning:
             for param in self.bert.parameters():
                 param.requires_grad = False
                 
-        self.dropout = nn.Dropout(0)
+        self.dropout = nn.Dropout(self.hparams.dropout_rate)
         
         self.ff_layer: nn.Module = nn.Sequential(
-            nn.Dropout(0.2),
+            nn.Dropout(self.hparams.dropout_rate),
             nn.Linear(self.bert.config.hidden_size, 20),
             nn.LeakyReLU(),
             
-            nn.Dropout(0.2),
+            nn.Dropout(self.hparams.dropout_rate),
             nn.Linear(20, 10),
             nn.LeakyReLU(),
             
-            nn.Dropout(0.2),
+            nn.Dropout(self.hparams.dropout_rate),
             nn.Linear(10, 1) # Output Layer
         )
         
@@ -42,7 +45,7 @@ class BERTRegressor(pl.LightningModule):
         outputs = self.bert(input_ids=input_ids, attention_mask=masks)
         pooled_output = outputs.pooler_output
         x = self.dropout(pooled_output)
-        preds = self.ff_layer(x)
+        preds: nn.Tensor = self.ff_layer(x)
         preds.squeeze_(1)
         return preds
 

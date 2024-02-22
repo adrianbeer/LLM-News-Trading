@@ -16,7 +16,7 @@ from tqdm import tqdm
 MAX_ENCODING_LENGTH = 512
 DATASET_PATH = config.data.news.cleaned
 
-def embed_input(text, tokenizer):
+def tokenize_input(text, tokenizer: BertTokenizerFast):
     # Truncation = True as bert can only take inputs of max 512 tokens.
     # return_tensors = "pt" makes the funciton return PyTorch tensors
     # tokenizer.encode_plus specifically returns a dictionary of values instead of just a list of values
@@ -37,13 +37,13 @@ def embed_input(text, tokenizer):
 
 
 @timing
-def embed_inputs(texts: list, tokenizer) -> tuple[Tensor, Tensor]:
+def tokenize_inputs(texts: list, tokenizer: BertTokenizerFast) -> tuple[Tensor, Tensor]:
     input_ids = []
     attention_masks = []
     
     print("Start embedding inputs...")
     executor = ThreadPool(processes=os.cpu_count())
-    ans = tqdm(executor.imap(partial(embed_input, 
+    ans = tqdm(executor.imap(partial(tokenize_input, 
                                     tokenizer=tokenizer), 
                             texts),
                total=len(texts))
@@ -71,7 +71,7 @@ def get_encoding(encoding_matrix_path: str):
 
 
 if __name__ == "__main__":
-    tokenizer = BertTokenizerFast.from_pretrained(PREP_CONFIG.tokenizer)
+    tokenizer: BertTokenizerFast = BertTokenizerFast.from_pretrained(PREP_CONFIG.tokenizer)
     dataset = pd.read_parquet(DATASET_PATH)
 
     # Dummy column
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     texts, labels = get_text_and_labels(dat=dataset, 
                                         text_col="parsed_body", 
                                         label_col="text_length")
-    input_ids, masks = embed_inputs(texts, tokenizer)
+    input_ids, masks = tokenize_inputs(texts, tokenizer)
 
     input_ids = pd.DataFrame(data=Tensor.numpy(input_ids), index=dataset.index)
     masks = pd.DataFrame(data=Tensor.numpy(masks), index=dataset.index)

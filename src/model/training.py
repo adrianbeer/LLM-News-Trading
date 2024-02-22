@@ -35,8 +35,15 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt", type=str)
     parser.add_argument("--deactivate_bert_learning", type=bool, action='store_true')    
     parser.add_argument("--fast_dev_run", type=bool, action='store_true')
+    parser.add_argument("--dropout_rate", type=float, default=0.1)
 
     args = parser.parse_args()
+
+    model_args = dict(
+        deactivate_bert_learning=args.deactivate_bert_learning,
+        learning_rate=args.learning_rate,
+        dropout_rate=args.dropout_rate
+    )
 
     dm = CustomDataModule(news_data_path=config.data.learning_dataset, 
                         input_ids_path=config.data.news.input_ids, 
@@ -46,13 +53,11 @@ if __name__ == "__main__":
     
     if args.ckpt:
         model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(args.ckpt, 
-                                                                                 deactivate_bert_learning=args.deactivate_bert_learning,
-                                                                                 learning_rate=args.learning_rate)
+                                                                                 **model_args)
     
     elif MODEL_CONFIG.task == "Regression":
         model: pl.LightningModule = BERTRegressor(bert_model_name=MODEL_CONFIG.pretrained_network,
-                                        deactivate_bert_learning=args.deactivate_bert_learning,
-                                        learning_rate=args.learning_rate)
+                                                  **model_args)
     
     elif MODEL_CONFIG.task == "Classification":
         dm.setup("fit")
@@ -60,9 +65,8 @@ if __name__ == "__main__":
         print(dm.train_dataloader().dataset.get_class_distribution())
         model: pl.LightningModule = BERTClassifier(bert_model_name=MODEL_CONFIG.pretrained_network,
                                         num_classes=3,
-                                        deactivate_bert_learning=args.deactivate_bert_learning,
-                                        learning_rate=args.learning_rate,
-                                        class_weights=1 / class_distribution.values)
+                                        class_weights=1 / class_distribution.values,
+                                        **model_args)
         initialize_final_layer_bias_with_class_weights(model, class_distribution)
     else:
         raise ValueError()
