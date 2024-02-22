@@ -7,9 +7,7 @@ GoogDrive:
             - Raw news articles which were scraped using `src/preprocessing/news_downloader.py`
         `unraw1_bzg`: 
             - Converts HTML to plain text
-        `unraw2_bzg`:
             - Just partitions the data set in a new way
-        `unraw3_bzg`:
             - Remove news without ticker information
             - Extract the news source/author
             - Only keep news from "PRNewswire", "Globe Newswire", "Business Wire" and "ACCESSWIRE"
@@ -28,12 +26,6 @@ data_shared/
         - Maps company tickers to company name
 
 
-Google Cloud Storage:
-======================
-    `gcs://extreme-lore-398917-bzg/latest2/`
-        - same as `latest2` from GoogDrive
-
-
 Intenso-2TB Hard Drive:
 ===================
     `IQFeedData`
@@ -43,3 +35,10 @@ Intenso-2TB Hard Drive:
 USB-K:
 ======
     Downloaded news from Benzinga in raw format, see `src/preprocessing/news_downloader.py`.
+
+
+Online News Sources:
+====================
+- https://github.com/adrianbeer/financial-news-dataset
+- https://www.kaggle.com/datasets/miguelaenlle/massive-stock-news-analysis-db-for-nlpbacktests?resource=download&select=analyst_ratings_processed.csv
+- https://huggingface.co/datasets/Zihan1004/FNSPID

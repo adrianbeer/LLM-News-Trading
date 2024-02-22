@@ -1,25 +1,27 @@
 # PROJECT B U G A T T I
 
-## Data
-Description for the files and processing steps can be found in `README_DATA.md`.
-
-## Warnings
-- Pylance breaks everything.
-
-
 ## Interesting Links:
 - https://stackoverflow.com/questions/25665114/understanding-interactive-brokers-tick-events
 - https://epchan.blogspot.com/2015/04/beware-of-low-frequency-data.html
 
+# Instructions 
+## 1. Downloading
+Download data using the modules in src.downloaders etc.
 
-## Instruktionen
-1. First execute asset_data_preprocessor (to get relevant list of tickers)
-2. Then news_importer
-3. Then news_parser (here tickers from assert_data_processor are used)
-4. Then data_merger, where price and news data are merged.
-5. Then neural_net.py, where the neural network is trained
-6. Then neural_net_evaluation(.ipynb) where the performance of the neurlal network that was trained in the last step is eavluated
+## 2. Preprocessing
+1. python -m src.preprocessing.news_preprocessing ----ticker_name_mapping
+1. python -m src.preprocessing.news_preprocessing ----process_body
+1. python -m src.preprocessing.tokenizer
+1. python -m src.preprocessing.staleness
+1. python -m src.preprocessing.data_merger initial_merge
+1. python -m src.preprocessing.data_merger merge_daily_indicators
+1. python -m src.preprocessing.make_learning_dataset
 
+## 3. Training
+See `python -m src.model.training -h` for more info.
+
+
+# Miscellaneous 
 ## Google Colab
 Keep alive by pasting the following in the the developer console:
 ```
