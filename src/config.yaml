@@ -14,9 +14,11 @@ data:
     raw_html_parsed: "D:/data/bzg/html_parsed"
 
   fnspid: 
+    raw: "D:/data/fnspid/raw.csv"
     raw_html_parsed: "D:/data/fnspid/html_parsed.parquet"
 
   news:
+    raw_html_parsed: "D:/data/news/raw_html_parsed.parquet" 
     cleaned: "D:/data/news/processed_news.parquet" 
     input_ids: "D:/news/bzg/input_ids.parquet"
     masks: "D:/news/bzg/masks.parquet"
