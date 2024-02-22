@@ -15,6 +15,9 @@ matplotlib
 tqdm
 arch
 
+# Neural Network
+ray[tune]
+
 # Plotting
 plotly
 
