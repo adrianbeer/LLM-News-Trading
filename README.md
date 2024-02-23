@@ -9,10 +9,10 @@
 Download data using the modules in src.downloaders etc.
 
 ## 2. Preprocessing
-1. python -m src.preprocessing.news_preprocessing ----ticker_name_mapping
-1. python -m src.preprocessing.news_preprocessing ----process_body
+1. python -m src.preprocessing.news_preprocessing --ticker_name_mapping
+1. python -m src.preprocessing.news_preprocessing --process_body
 1. python -m src.preprocessing.tokenizer
-1. python -m src.preprocessing.staleness
+1. python -m src.preprocessing.staleness --batchsize <batchsize>
 1. python -m src.preprocessing.data_merger initial_merge
 1. python -m src.preprocessing.data_merger merge_daily_indicators
 1. python -m src.preprocessing.make_learning_dataset
