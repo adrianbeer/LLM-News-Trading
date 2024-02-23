@@ -54,16 +54,13 @@ def train_model(config: dict):
     
     model: pl.LightningModule = get_model(config["ckpt"], model_args, dm)
 
-    tb_logger = pl_loggers.TensorBoardLogger('tb_logs', 
-                                             name="bert_regressor",
-                                             flush_secs=600)
     wandb_logger = WandbLogger(log_model="all", 
                                project='news_trading')
-    
+    # wandb_logger.watch(model)
     callbacks = [
         RayTrainReportCallback(),
         LearningRateMonitor(logging_interval='step'),
-        ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=2, save_last=True),
+        ModelCheckpoint(monitor="val/loss", mode="min", save_top_k=2, save_last=True),
         #StochasticWeightAveraging(swa_lrs=1e-2),
         ]
     trainer = pl.Trainer(num_sanity_val_steps=2,
@@ -74,7 +71,7 @@ def train_model(config: dict):
                         precision=16,
                         accelerator="gpu", 
                         devices=1,
-                        logger=[tb_logger, wandb_logger],
+                        logger=[wandb_logger],
                         fast_dev_run=config["fast_dev_run"],
                         strategy=RayDDPStrategy(),
                         plugins=[RayLightningEnvironment()])
@@ -105,7 +102,6 @@ def train_model(config: dict):
                 dm,
                 ckpt_path=config["ckpt"])
 
-
 search_space = {
     "batch_size": tune.choice([32, 64, 128, 512]),
     "hidden_layer_size": tune.choice([10, 128, 786]),
@@ -135,7 +131,7 @@ scaling_config = ScalingConfig(
 run_config = RunConfig(
     checkpoint_config=CheckpointConfig(
         num_to_keep=2,
-        checkpoint_score_attribute="val_loss",
+        checkpoint_score_attribute="val/loss",
         checkpoint_score_order="min",
     ),
     callbacks=[WandbLoggerCallback(project="news_trading",
@@ -157,7 +153,7 @@ def tune_model_asha(num_samples=10):
         ray_trainer,
         param_space={"train_loop_config": search_space},
         tune_config=tune.TuneConfig(
-            metric="val_loss", 
+            metric="val/loss", 
             mode="min",
             num_samples=num_samples,
             scheduler=scheduler,
@@ -187,8 +183,10 @@ if __name__ == "__main__":
     args_dict = vars(args)
     
     if args.hyperparameter_tune:
+        print("Starting hyperparameter search.")
         results = tune_model_asha(num_samples=num_samples)
         print(results)
     else:
+        print("Start normal training")
         train_model(config=args_dict)
 

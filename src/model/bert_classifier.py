@@ -84,7 +84,7 @@ class BERTClassifier(pl.LightningModule):
         self.val_accuracy(preds, y)
         self.val_f1_score(preds, y)
     
-        self.log_dict({'val_loss': loss,
+        self.log_dict({'val/loss': loss,
                        "val_f1_score": self.val_f1_score,
                        "val_accuracy": self.val_accuracy})
         return loss

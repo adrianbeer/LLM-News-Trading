@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from transformers import BertModel
 import lightning as pl
 from torchmetrics.regression import MeanAbsoluteError
-
+import wandb
 
 class BERTRegressor(pl.LightningModule):
     
@@ -62,7 +62,7 @@ class BERTRegressor(pl.LightningModule):
         preds = self.forward(train_batch)
         loss = self.train_accuracy(preds, y)
 
-        self.log_dict({"loss": loss}, on_step=True, on_epoch=True, prog_bar=True)
+        self.log_dict({"train/loss": loss}, on_step=True, on_epoch=True, prog_bar=True)
         return loss
 
     def custom_histogram_adder(self):    
@@ -90,9 +90,25 @@ class BERTRegressor(pl.LightningModule):
         loss = self.val_accuracy(preds, y)
     
         self.log_dict({
-            'val_loss': loss
+            'val/loss': loss
             })
-        return loss
+        return preds
     
+    def validation_epoch_end(self, validation_step_outputs):
+        validation_step_outputs = self.validation_step_outputs
+
+        # dummy_input = torch.zeros(self.hparams["in_dims"], device=self.device)
+        
+        # model_filename = f"model_{str(self.global_step).zfill(5)}.onnx"
+        # torch.onnx.export(self, dummy_input, model_filename, opset_version=11)
+        # artifact = wandb.Artifact(name="model.ckpt", type="model")
+        # artifact.add_file(model_filename)
+        # self.logger.experiment.log_artifact(artifact)
+
+        flattened_preds = torch.flatten(torch.cat(validation_step_outputs))
+        self.logger.experiment.log(
+            {"valid/preds": wandb.Histogram(flattened_preds.to("cpu")),
+            "global_step": self.global_step})
+        
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         return self(batch)
