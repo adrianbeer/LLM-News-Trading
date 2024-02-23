@@ -42,8 +42,8 @@ class BERTRegressor(pl.LightningModule):
             nn.Linear(hls, 1) # Output Layer
         )
         
-    def forward(self, input_ids, masks):
-        outputs = self.bert(input_ids=input_ids, attention_mask=masks)
+    def forward(self, batch):
+        outputs = self.bert(input_ids=batch["input_ids"], attention_mask=batch["masks"])
         pooled_output = outputs.pooler_output
         x = self.dropout(pooled_output)
         preds: nn.Tensor = self.ff_layer(x)
@@ -59,9 +59,7 @@ class BERTRegressor(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         y = train_batch["target"]
-
-        preds = self.forward(train_batch["input_id"], train_batch["mask"])
-
+        preds = self.forward(train_batch)
         loss = self.train_accuracy(preds, y)
 
         self.log_dict({"loss": loss}, on_step=True, on_epoch=True, prog_bar=True)
@@ -88,8 +86,7 @@ class BERTRegressor(pl.LightningModule):
     
     def validation_step(self, val_batch, batch_idx):
         y = val_batch["target"]
-        preds = self.forward(val_batch["input_id"], val_batch["mask"])
-        
+        preds = self.forward(val_batch)
         loss = self.val_accuracy(preds, y)
     
         self.log_dict({
@@ -98,4 +95,4 @@ class BERTRegressor(pl.LightningModule):
         return loss
     
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        return self(batch["input_id"], batch["mask"])
+        return self(batch)
