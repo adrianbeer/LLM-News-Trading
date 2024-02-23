@@ -10,14 +10,20 @@ from lightning.pytorch.callbacks import (
     StochasticWeightAveraging,
 )
 from lightning.pytorch.tuner import Tuner
-from ray.tune.integration.pytorch_lightning import TuneReportCallback
-
-from src.config import MODEL_CONFIG, config
-from src.model.bert_classifier import (
-    BERTClassifier,
-    initialize_final_layer_bias_with_class_weights,
+from ray.train.lightning import (
+    RayDDPStrategy,
+    RayLightningEnvironment,
+    RayTrainReportCallback,
+    prepare_trainer,
 )
-from src.model.bert_regressor import BERTRegressor
+from ray import tune
+from ray.tune.schedulers import ASHAScheduler
+from ray.train import RunConfig, ScalingConfig, CheckpointConfig
+from ray.train.torch import TorchTrainer
+
+from src.config import MODEL_CONFIG
+from src.config import config as DATA_CONFIG
+from src.model.neural_network import get_model
 from src.model.data_loading import CustomDataModule
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -27,32 +33,135 @@ print(f"[INFO] Current PyTorch version: {pt_version} (should be 2.x+)")
 print(f'{torch.cuda.is_available()=}')
 torch.set_float32_matmul_precision('high')
 
+def train_model(config: dict):
+    model_args = dict(
+        deactivate_bert_learning=config["deactivate_bert_learning"],
+        learning_rate=config["learning_rate"],
+        dropout_rate=config["dropout_rate"],
+        hidden_layer_size=config["hidden_layer_size"],
+    )
 
-def get_model(ckpt, model_args) -> pl.LightningModule:
-    if ckpt:
-        model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, 
-                                                                                 **model_args)
-        print(f"Using Checkpointed model at {ckpt}...")
-    elif MODEL_CONFIG.task == "Regression":
-        print("Initialize news regression model...")
-        model: pl.LightningModule = BERTRegressor(bert_model_name=MODEL_CONFIG.pretrained_network,
-                                                  **model_args)
-    elif MODEL_CONFIG.task == "Classification":
-        print("Initialize new Classification model...")
-        dm.setup("fit")
-        class_distribution = dm.get_class_distribution()
-        print(dm.train_dataloader().dataset.get_class_distribution())
-        model: pl.LightningModule = BERTClassifier(bert_model_name=MODEL_CONFIG.pretrained_network,
-                                        num_classes=3,
-                                        class_weights=1 / class_distribution.values,
-                                        **model_args)
-        initialize_final_layer_bias_with_class_weights(model, class_distribution)
-    else:
-        raise ValueError()
-    return model
+    dm = CustomDataModule(news_data_path=DATA_CONFIG.data.learning_dataset, 
+                          input_ids_path=DATA_CONFIG.data.news.input_ids, 
+                          masks_path=DATA_CONFIG.data.news.masks, 
+                          batch_size=config["batch_size"], # Batch size is configured automatically later on
+                          target_col_name=MODEL_CONFIG.target_col_name)
+    
+    model: pl.LightningModule = get_model(config["ckpt"], model_args, dm)
 
+    tb_logger = pl_loggers.TensorBoardLogger('tb_logs', 
+                                             name="bert_regressor",
+                                             flush_secs=600)
+    
+    callbacks = [
+        RayTrainReportCallback(),
+        LearningRateMonitor(logging_interval='step'),
+        ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=2, save_last=True),
+        #StochasticWeightAveraging(swa_lrs=1e-2),
+        ]
+    trainer = pl.Trainer(num_sanity_val_steps=2,
+                        max_epochs=20,
+                        gradient_clip_val=1,
+                        callbacks=callbacks,
+                        accumulate_grad_batches=5,
+                        precision=16,
+                        accelerator="gpu", 
+                        devices=1,
+                        logger=tb_logger,
+                        fast_dev_run=config["fast_dev_run"],
+                        strategy=RayDDPStrategy(),
+                        plugins=[RayLightningEnvironment()])
+    trainer = prepare_trainer(trainer)
+    tuner = Tuner(trainer)
+
+    if config["batch_size"] is None:
+        # Auto-scale batch size by growing it exponentially (default)
+        tuner.scale_batch_size(model,
+                               mode="power",
+                               datamodule=dm)
+        dm.batch_size = min(dm.batch_size,  512)
+
+    if config["learning_rate"] is None:
+        # Run learning rate finder
+        lr_finder = tuner.lr_find(model, dm)
+        fig = lr_finder.plot(suggest=True)
+        fig.savefig('data/lr_finder.png')
+        new_lr = lr_finder.suggestion()
+        model.hparams.learning_rate = new_lr
+        
+    if config["stop_after_lr_finder"]:
+        print("Created data/lr_finder.png and stopping.")
+        exit
+
+    print(f"Start training with {model.hparams.learning_rate=}")
+    trainer.fit(model,
+                dm,
+                ckpt_path=config["ckpt"])
+
+
+search_space = {
+    "batch_size": tune.choice([32, 64, 128, 512]),
+    "hidden_layer_size": tune.choice([10, 128, 786]),
+    "learning_rate": tune.loguniform(1e-4, 1e-1),
+    "ckpt": None,
+    "fast_dev_run": False,
+    "deactivate_bert_learning": True,
+    "dropout_rate": tune.choice([0.1]),
+    "stop_after_lr_finder": False,
+}
+
+# The maximum training epochs
+num_epochs = 2
+
+# Number of sampls from parameter space
+num_samples = 1
+
+
+scheduler = ASHAScheduler(max_t=num_epochs, grace_period=1, reduction_factor=2)
+
+scaling_config = ScalingConfig(
+    num_workers=1, 
+    use_gpu=True, 
+    resources_per_worker={"CPU": 4, "GPU": 1}
+)
+
+run_config = RunConfig(
+    checkpoint_config=CheckpointConfig(
+        num_to_keep=2,
+        checkpoint_score_attribute="val_loss",
+        checkpoint_score_order="min",
+    ),
+)
+
+# Define a TorchTrainer without hyper-parameters for Tuner
+ray_trainer = TorchTrainer(
+    train_model,
+    scaling_config=scaling_config,
+    run_config=run_config,
+)
+
+def tune_model_asha(num_samples=10):
+    scheduler = ASHAScheduler(max_t=num_epochs, grace_period=1, reduction_factor=2)
+
+    tuner = tune.Tuner(
+        ray_trainer,
+        param_space={"train_loop_config": search_space},
+        tune_config=tune.TuneConfig(
+            metric="val_loss", 
+            mode="min",
+            num_samples=num_samples,
+            scheduler=scheduler,
+        ),
+    )
+    return tuner.fit()
+
+
+#TODO remove argsparser and just use config and ray? try out ray... 
 if __name__ == "__main__":
     parser = ArgumentParser()
+
+    parser.add_argument("--hyperparameter_tune", action='store_true',
+                        help="If invoked, all other cli options don't matter.")
 
     parser.add_argument("--batch_size", type=int)
     parser.add_argument("--hidden_layer_size", type=int)
@@ -65,69 +174,11 @@ if __name__ == "__main__":
                         help="Creates data/lr_finder.png and stops afterwards in order to inspect learning_rates")
     
     args = parser.parse_args()
-
-    model_args = dict(
-        deactivate_bert_learning=args.deactivate_bert_learning,
-        learning_rate=args.learning_rate,
-        dropout_rate=args.dropout_rate,
-        hidden_layer_size=args.hidden_layer_size,
-    )
-
-    dm = CustomDataModule(news_data_path=config.data.learning_dataset, 
-                          input_ids_path=config.data.news.input_ids, 
-                          masks_path=config.data.news.masks, 
-                          batch_size=args.batch_size, # Batch size is configured automatically later on
-                          target_col_name=MODEL_CONFIG.target_col_name)
+    args_dict = vars(args)
     
-    model: pl.LightningModule = get_model(args.ckpt, model_args)
-
-    tb_logger = pl_loggers.TensorBoardLogger('tb_logs', 
-                                             name="bert_regressor",
-                                             flush_secs=120)
-    
-    #TODO change metrics
-    metrics = {"loss": "ptl/val_loss", "acc": "ptl/val_accuracy"}
-    callbacks = [
-        TuneReportCallback(metrics, on="validation_end"),
-        LearningRateMonitor(logging_interval='step'),
-        ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=2, save_last=True),
-        #StochasticWeightAveraging(swa_lrs=1e-2),
-        ]
-    trainer = pl.Trainer(num_sanity_val_steps=2,
-                        max_epochs=20,
-                        gradient_clip_val=1,
-                        
-                        callbacks=callbacks,
-                        accumulate_grad_batches=5,
-                        precision=16,
-                        accelerator="gpu", 
-                        devices=1,
-                        logger=tb_logger,
-                        fast_dev_run=args.fast_dev_run)
-    tuner = Tuner(trainer)
-
-    if args.batch_size is None:
-        # Auto-scale batch size by growing it exponentially (default)
-        tuner.scale_batch_size(model,
-                               mode="power",
-                               datamodule=dm)
-        dm.batch_size = min(dm.batch_size,  512)
-
-    if args.learning_rate is None:
-        # Run learning rate finder
-        lr_finder = tuner.lr_find(model, dm)
-        fig = lr_finder.plot(suggest=True)
-        fig.savefig('data/lr_finder.png')
-        new_lr = lr_finder.suggestion()
-        model.hparams.learning_rate = new_lr
-        
-    if args.stop_after_lr_finder:
-        print("Created data/lr_finder.png and stopping.")
-        exit
-
-    print(f"Start training with {model.hparams.learning_rate=}")
-    trainer.fit(model,
-                dm,
-                ckpt_path=args.ckpt)
-
+    if args.hyperparameter_tune:
+        results = tune_model_asha(num_samples=num_samples)
+        print(results)
+    else:
+        train_model(config=args_dict)
 
