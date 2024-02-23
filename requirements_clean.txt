@@ -17,6 +17,7 @@ arch
 
 # Neural Network
 ray[tune]
+wandb-osh[lightning]
 
 # Plotting
 plotly

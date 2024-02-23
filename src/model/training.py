@@ -24,6 +24,7 @@ from ray import tune
 from ray.tune.schedulers import ASHAScheduler
 from ray.train import RunConfig, ScalingConfig, CheckpointConfig
 from ray.train.torch import TorchTrainer
+from wandb_osh.ray_hooks import TriggerWandbSyncRayHook
 from ray.air.integrations.wandb import WandbLoggerCallback
 
 from src.config import MODEL_CONFIG
@@ -56,7 +57,7 @@ def train_model(config: dict):
 
     wandb_logger = WandbLogger(log_model="all", 
                                project='news_trading')
-    # wandb_logger.watch(model)
+
     callbacks = [
         RayTrainReportCallback(),
         LearningRateMonitor(logging_interval='step'),
@@ -113,13 +114,8 @@ search_space = {
     "stop_after_lr_finder": False,
 }
 
-# The maximum training epochs
 num_epochs = 2
-
-# Number of sampls from parameter space
 num_samples = 1
-
-
 scheduler = ASHAScheduler(max_t=num_epochs, grace_period=1, reduction_factor=2)
 
 scaling_config = ScalingConfig(
@@ -135,8 +131,8 @@ run_config = RunConfig(
         checkpoint_score_order="min",
     ),
     callbacks=[WandbLoggerCallback(project="news_trading",
-                                   log_config=True,
-                                   api_key='601e267b2d7662e90fd91b4ce60196406c6c86bf')]
+                                   log_config=True),
+               TriggerWandbSyncRayHook()]
 )
 
 # Define a TorchTrainer without hyper-parameters for Tuner
