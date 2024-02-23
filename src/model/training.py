@@ -9,6 +9,8 @@ from lightning.pytorch.callbacks import (
     ModelCheckpoint,
     StochasticWeightAveraging,
 )
+from lightning.pytorch.loggers import WandbLogger
+
 from lightning.pytorch.tuner import Tuner
 from ray.train.lightning import (
     RayDDPStrategy,
@@ -16,10 +18,13 @@ from ray.train.lightning import (
     RayTrainReportCallback,
     prepare_trainer,
 )
+import wandb
+
 from ray import tune
 from ray.tune.schedulers import ASHAScheduler
 from ray.train import RunConfig, ScalingConfig, CheckpointConfig
 from ray.train.torch import TorchTrainer
+from ray.air.integrations.wandb import WandbLoggerCallback
 
 from src.config import MODEL_CONFIG
 from src.config import config as DATA_CONFIG
@@ -52,6 +57,8 @@ def train_model(config: dict):
     tb_logger = pl_loggers.TensorBoardLogger('tb_logs', 
                                              name="bert_regressor",
                                              flush_secs=600)
+    wandb_logger = WandbLogger(log_model="all", 
+                               project='news_trading')
     
     callbacks = [
         RayTrainReportCallback(),
@@ -67,7 +74,7 @@ def train_model(config: dict):
                         precision=16,
                         accelerator="gpu", 
                         devices=1,
-                        logger=tb_logger,
+                        logger=[tb_logger, wandb_logger],
                         fast_dev_run=config["fast_dev_run"],
                         strategy=RayDDPStrategy(),
                         plugins=[RayLightningEnvironment()])
@@ -131,6 +138,9 @@ run_config = RunConfig(
         checkpoint_score_attribute="val_loss",
         checkpoint_score_order="min",
     ),
+    callbacks=[WandbLoggerCallback(project="news_trading",
+                                   log_config=True,
+                                   api_key='601e267b2d7662e90fd91b4ce60196406c6c86bf')]
 )
 
 # Define a TorchTrainer without hyper-parameters for Tuner
