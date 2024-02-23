@@ -43,7 +43,7 @@ class BERTRegressor(pl.LightningModule):
         )
         
     def forward(self, batch):
-        outputs = self.bert(input_ids=batch["input_ids"], attention_mask=batch["masks"])
+        outputs = self.bert(input_ids=batch["input_id"], attention_mask=batch["mask"])
         pooled_output = outputs.pooler_output
         x = self.dropout(pooled_output)
         preds: nn.Tensor = self.ff_layer(x)
