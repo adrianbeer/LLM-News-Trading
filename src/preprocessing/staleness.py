@@ -8,7 +8,7 @@ from numpy import dot
 from numpy.linalg import norm
 from src.model.neural_network import predict_cls
 from transformers.models.bert.modeling_bert import BertModel
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -55,10 +55,13 @@ if __name__ == '__main__':
         cls_tokens = predict_cls(model, dataloader, device)
         cls_tokens = pd.Series(index=dataset.index, data=list(cls_tokens))
         cls_tokens.to_pickle("data/news/cls_tokens.pkl")
-        print("Finished")
+        print("Finished making cls tokens")
     
     if args.calculate_staleness:
+        print("Start calculating staleness")
         dataset = pd.read_parquet(config.data.news.cleaned)
+        original_index_name = dataset.index.name
+        
         cls_tokens = pd.read_pickle("data/news/cls_tokens.pkl")
         dataset["cls_token"] = cls_tokens
         dataset["staleness"] = 0.0
@@ -92,5 +95,5 @@ if __name__ == '__main__':
             
         print(n_of_sametime_news)
         dataset.to_parquet(config.data.news.cleaned)
-        print("Finished")
+        print("Finished calculating staleness")
 
