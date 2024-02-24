@@ -19,10 +19,10 @@ parser.add_argument('--calculate_staleness', action='store_true', help='')
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    batch_size = int(args.batchsize)
     
     if args.generate_cls_tokens:
         print("Start loading in the BERT model...")
+        batch_size = int(args.batchsize)
         # Use baseline bert model to avoid look-ahead bias 
         model = BertModel.from_pretrained(MODEL_CONFIG.pretrained_network)
         model.eval()
