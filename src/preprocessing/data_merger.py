@@ -132,6 +132,7 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
 
 
 if __name__ == "__main__":
+    print(f"Starting data_merger: {sys.argv}")
     cmd = sys.argv[1]
     
     if cmd == "initial_merge":
