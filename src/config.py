@@ -8,12 +8,12 @@ from src.model.splits import Splitter, RatioSplitter
 from dataclasses import dataclass
 
 # Default location/file
-config_path = "src/config.yaml"
+data_config_path = "src/data_config.yaml"
 try:
-    config_path = os.environ["TRADING_BOT_CONFIG_PATH"]
+    data_config_path = os.environ["TRADING_BOT_CONFIG_PATH"]
 except KeyError:
     pass
-config = DotMap(yaml.safe_load(open(config_path)), _dynamic=False)
+config = DotMap(yaml.safe_load(open(data_config_path)), _dynamic=False)
 
 
 @dataclass(frozen=True)
