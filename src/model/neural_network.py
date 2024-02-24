@@ -13,6 +13,7 @@ from src.model.bert_classifier import (
 
 def get_model(ckpt, model_args, dm) -> pl.LightningModule:
     if ckpt:
+        #! I found that when you integrate lightning with ray tune, you must use model.load_state_dict() instead of model.load_from_checkpoint() to really get the trained weights.
         model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, 
                                                                                  **model_args)
         print(f"Using Checkpointed model at {ckpt}...")
