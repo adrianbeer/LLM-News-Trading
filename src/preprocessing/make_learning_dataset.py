@@ -43,4 +43,5 @@ def main():
     dataset.to_parquet(config.data.learning_dataset)
 
 if __name__ == "__main__":
+    print("Starting make_learning_dataset")
     main()

@@ -13,8 +13,8 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batchsize', help='batch size')
-parser.add_argument('--generate_cls_tokens', help='')
-parser.add_argument('--calculate_staleness', help='')
+parser.add_argument('--generate_cls_tokens', action='store_true', help='')
+parser.add_argument('--calculate_staleness', action='store_true', help='')
 
 
 if __name__ == '__main__':
@@ -22,6 +22,7 @@ if __name__ == '__main__':
     batch_size = int(args.batchsize)
     
     if args.generate_cls_tokens:
+        print("Start loading in the BERT model...")
         # Use baseline bert model to avoid look-ahead bias 
         model = BertModel.from_pretrained(MODEL_CONFIG.pretrained_network)
         model.eval()
@@ -30,7 +31,7 @@ if __name__ == '__main__':
         print(device)
         model.to(device)
         
-        dataset = pd.read_parquet(config.data.news.cleaned, columns="stocks")
+        dataset = pd.read_parquet(config.data.news.cleaned, columns=["stocks"])
         input_ids = pd.read_parquet(config.data.news.input_ids)
         masks = pd.read_parquet(config.data.news.masks)
         
@@ -54,6 +55,7 @@ if __name__ == '__main__':
         cls_tokens = predict_cls(model, dataloader, device)
         cls_tokens = pd.Series(index=dataset.index, data=list(cls_tokens))
         cls_tokens.to_pickle("data/news/cls_tokens.pkl")
+        print("Finished")
     
     if args.calculate_staleness:
         dataset = pd.read_parquet(config.data.news.cleaned)
@@ -90,4 +92,5 @@ if __name__ == '__main__':
             
         print(n_of_sametime_news)
         dataset.to_parquet(config.data.news.cleaned)
+        print("Finished")
 
