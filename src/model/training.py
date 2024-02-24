@@ -79,13 +79,6 @@ def train_model(config: dict):
     trainer = prepare_trainer(trainer)
     tuner = Tuner(trainer)
 
-    if config["batch_size"] is None:
-        # Auto-scale batch size by growing it exponentially (default)
-        tuner.scale_batch_size(model,
-                               mode="power",
-                               datamodule=dm)
-        dm.batch_size = min(dm.batch_size,  512)
-
     if config["learning_rate"] is None:
         # Run learning rate finder
         lr_finder = tuner.lr_find(model, dm)
