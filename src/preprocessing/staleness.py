@@ -38,9 +38,6 @@ if __name__ == '__main__':
         if not dataset.index.name: 
             dataset.index.name = "index"
             
-        original_index_name = dataset.index.name
-        print(f"{original_index_name=}")
-
         # Align DataFrames
         input_ids = input_ids.loc[dataset.index]
         masks = masks.loc[dataset.index]
@@ -60,8 +57,10 @@ if __name__ == '__main__':
     if args.calculate_staleness:
         print("Start calculating staleness")
         dataset = pd.read_parquet(config.data.news.cleaned)
+        if dataset.index.name is None: 
+            dataset.index.name = "index"
         original_index_name = dataset.index.name
-        
+
         cls_tokens = pd.read_pickle("data/news/cls_tokens.pkl")
         dataset["cls_token"] = cls_tokens
         dataset["staleness"] = 0.0
@@ -93,7 +92,7 @@ if __name__ == '__main__':
             # Add entries to data set
             dataset.loc[ticker_news.index, "staleness"] = ticker_news.loc[:, "staleness"]
             
-        print(n_of_sametime_news)
+        print(f"{n_of_sametime_news=}")
         dataset.to_parquet(config.data.news.cleaned)
         print("Finished calculating staleness")
 

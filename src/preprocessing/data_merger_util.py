@@ -5,8 +5,8 @@ import pandas_market_calendars as mcal
 from dotmap import DotMap
 import yaml
 import logging
+from src.config import config
 
-config = DotMap(yaml.safe_load(open("src/config.yaml")), _dynamic=False)
 nyse_cal = mcal.get_calendar('NYSE')
 
 def get_next_available_candle(prices: pd.DataFrame, 

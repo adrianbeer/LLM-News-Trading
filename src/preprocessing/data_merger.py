@@ -61,7 +61,7 @@ def merge_news_with_price_ts(prices_path,
     spy.columns = [x.strip("adj_") for x in spy.columns]
     spy.columns = [f"SPY_{x}" for x in spy.columns]
 
-    keep_columns_from_news = ["staleness"]
+    keep_columns_from_news = ["staleness", 'stocks']
     keep_columns = ["est_entry_time",
                     "est_exit_time",
                     "entry_time",
@@ -116,14 +116,14 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
                             .drop(columns=indicators)
                             .sort_values("est_entry_time"))
         merged = pd.merge_asof(ticker_dat, 
-                            prices[indicators], 
+                            prices[indicators].reset_index().rename(columns={"date": "daily_indic_date"}), 
                             left_on="est_entry_time", 
-                            right_on="date", 
+                            right_on="daily_indic_date", 
                             direction="backward")
         
         # If the most recent indicators refer to a time that is too old,
         # we don't use the indicators and leave them as NaNs
-        time_discrepancy_filter = (merged.est_entry_time - merged.date) >= pd.Timedelta(days=2)
+        time_discrepancy_filter = (merged.est_entry_time - merged["daily_indic_date"]) >= pd.Timedelta(days=2)
         merged.loc[time_discrepancy_filter, indicators] = np.nan
         
         merged.set_index("index", inplace=True)
@@ -139,11 +139,13 @@ if __name__ == "__main__":
         news = import_and_preprocess_news(input_path=config.data.news.cleaned)
         merge_news_with_price_ts(prices_path=config.data.iqfeed.minute.cleaned,
                                  news=news)
+
     elif cmd == "merge_daily_indicators":
         merge_with_daily_indicators(daily_ts_dir_path=config.data.iqfeed.daily.cleaned,
                                     merged_path=config.data.merged)
     else:
         raise ValueError(f"Invalid input argument: {cmd}")
+    print("Finished data_merger...") 
 
 
 # ------------ Inspecting staleness
