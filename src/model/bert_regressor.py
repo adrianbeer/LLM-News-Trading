@@ -17,6 +17,8 @@ class BERTRegressor(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         
+        self.validation_step_outputs = []
+        
         self.train_accuracy = MeanAbsoluteError()
         self.val_accuracy = MeanAbsoluteError()
 
@@ -87,14 +89,17 @@ class BERTRegressor(pl.LightningModule):
     def validation_step(self, val_batch, batch_idx):
         y = val_batch["target"]
         preds = self.forward(val_batch)
+        self.validation_step_outputs.append(preds)
+        
         loss = self.val_accuracy(preds, y)
     
         self.log_dict({
             'val/loss': loss
             })
+        
         return preds
     
-    def validation_epoch_end(self, validation_step_outputs):
+    def on_validation_epoch_end(self):
         validation_step_outputs = self.validation_step_outputs
 
         # dummy_input = torch.zeros(self.hparams["in_dims"], device=self.device)
