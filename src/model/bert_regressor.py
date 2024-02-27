@@ -4,6 +4,7 @@ from torch.nn import functional as F
 from transformers import BertModel
 import lightning as pl
 from torchmetrics.regression import MeanAbsoluteError
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import wandb
 
 class BERTRegressor(pl.LightningModule):
@@ -54,7 +55,8 @@ class BERTRegressor(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
-        return optimizer
+        scheduler = ReduceLROnPlateau(optimizer, factor=0.2, patience=3)
+        return optimizer, scheduler
 
     def l1_loss(self, preds, labels):
         return F.l1_loss(preds, labels)
