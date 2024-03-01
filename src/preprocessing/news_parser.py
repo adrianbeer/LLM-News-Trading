@@ -83,7 +83,7 @@ def body_formatter(body):
     # Remove any segments at the end of a press release about the company
     # TODO: Maybe also tag news where there exists such a postable,
     # May be more reliable news than others ? 
-    body = re.sub(f"(<b>About|for more information)((.|\n)*)+", "", body, re.IGNORECASE)
+    body = re.sub(f"(<b>About|(f|F)or more information)((.|\n)*)+", "", body, re.IGNORECASE)
     
     soup = BeautifulSoup(body, features='html.parser')
     for t in soup.find_all('pre'):
@@ -262,7 +262,7 @@ def filter_body(row: pd.Series) -> str:
 
 
     # Remove exccess dots and white space around them
-    body = re.sub("(( )*(\.)( )*){1,}", ".", body)
+    body = re.sub("(( )*(\.)( )*){1,}", ". ", body)
 
     # Final stripping of stuff at the start/end of the file
     body = body.strip("\n -\\_*/().'")
