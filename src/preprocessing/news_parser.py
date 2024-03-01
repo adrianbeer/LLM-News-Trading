@@ -203,11 +203,11 @@ def remove_patterns(patterns: List[str], remove_with: str, text:str, flags=0):
 
 
 def filter_body(row: pd.Series) -> str:
-    '''
-    TODO: Vor dem parsen sollten wir den Titel noch vorne anfügen, falls dort der Unternehmensname auch vorkommt.
-    Das werden wir ja sowieso tun...
-    '''
+    
     body, ticker, author, pr_date, company_name, short_name = row.body, row.stocks, row.author, row.time, row.company_name, row.short_name
+
+    #! This was already done when formatting HTML but we do a second pass here after correcting some bugs...
+    body = re.sub(f"((f|F)or more information)((.|\n)*)+", "", body, re.IGNORECASE)
     
     # Remove newline symbols which can interfere
     # with the date detection process
@@ -262,7 +262,7 @@ def filter_body(row: pd.Series) -> str:
 
 
     # Remove exccess dots and white space around them
-    body = re.sub("(( )*(\.)( )*){1,}", ". ", body)
+    body = re.sub("(( )*(\.)){1,}", ".", body)
 
     # Final stripping of stuff at the start/end of the file
     body = body.strip("\n -\\_*/().'")

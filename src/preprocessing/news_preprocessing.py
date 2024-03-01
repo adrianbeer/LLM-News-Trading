@@ -32,6 +32,7 @@ def merge_news_sources():
     dfs = []
     for source in NEWS_SOURCES:
         df = pd.read_parquet(NEWS_SOURCES[source])
+        # FNSPID has a intra_day_time boolean column, but BZG doesnt, since BZG always has intra_day timestamps
         if source == "BZG":
             df['intra_day_time'] = True
         dfs.append(df)
@@ -95,25 +96,7 @@ def make_ticker_name_mapping():
     return mapper
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='First invoke with --ticker_name_mapping and afterwards with --process_body.')
-    parser.add_argument('--ticker_name_mapping', action='store_true',
-                        help='Takes quite a long time, and can`t be parallelized much')
-    parser.add_argument('--process_body', action='store_true',
-                        help='Can be heavilty parallelized. Invoke this after creating the ticker_name_mapping')
-    args = parser.parse_args()
-    
-    if args.ticker_name_mapping:
-        print("Creating ticker_name_mapping...")
-        make_ticker_name_mapping()
-        print("Done")
-    
-    if not args.process_body:
-        exit
-    
-    print("Processing news bodies...")
-    ddf = merge_news_sources()
-    
+def preprocess_news(ddf):
     ### Duplikate Entfernen
     samples_before = ddf.shape[0]
     ddf = ddf.drop_duplicates()
@@ -144,14 +127,37 @@ if __name__ == "__main__":
     ## Make reduced ticker name mapping 
     ticker_name_mapper = pd.read_parquet(config.data.shared.ticker_name_mapper)
     ticker_name_mapper_reduced = ddf[["stocks", "company_name", "short_name"]].drop_duplicates(keep="first")
-    ticker_name_mapper_reduced.to_parquet(config.data.shared.ticker_name_mapper_reduced)
+    
     print(f"From {ticker_name_mapper.shape[0]} to {ticker_name_mapper_reduced.shape[0]} tickers (reduced)")
 
     ## Parsing News Bodies
     ddf["time"] = ddf["time"].progress_map(lambda x: convert_timezone(pd.to_datetime(x)))
     ddf["parsed_body"] = parallelize_dataframe(ddf, block_apply_factory(filter_body, axis=1), n_cores=os.cpu_count())
-    ddf["parsed_body"] = ddf.apply(lambda x: x['title'] + ". " + x['parsed_body'], axis=1)
+    ddf["parsed_body"] = ddf.apply(lambda x: x['title'] + ". " + x['body'], axis=1)
+    return ddf, ticker_name_mapper_reduced
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='First invoke with --ticker_name_mapping and afterwards with --process_body.')
+    parser.add_argument('--ticker_name_mapping', action='store_true',
+                        help='Takes quite a long time, and can`t be parallelized much')
+    parser.add_argument('--process_body', action='store_true',
+                        help='Can be heavilty parallelized. Invoke this after creating the ticker_name_mapping')
+    args = parser.parse_args()
+    
+    if args.ticker_name_mapping:
+        print("Creating ticker_name_mapping...")
+        make_ticker_name_mapping()
+        print("Done")
+    
+    if not args.process_body:
+        exit
+    
+    print("Processing news bodies...")
+    ddf = merge_news_sources()
+    ddf, ticker_name_mapper_reduced = preprocess_news(ddf)
     ddf.to_parquet(config.data.news.cleaned)
+    ticker_name_mapper_reduced.to_parquet(config.data.shared.ticker_name_mapper_reduced)
     
     print("End.")
 
