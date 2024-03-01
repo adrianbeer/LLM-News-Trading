@@ -29,7 +29,7 @@ torch.set_float32_matmul_precision('high')
 WANDB_PROJECT = 'news_trading'
 
 def train_func(config: dict = None):
-    run = wandb.init()
+    run = wandb.init(save_code=True)
     if config is None: 
         config = wandb.config
     else: 
@@ -54,30 +54,39 @@ def train_func(config: dict = None):
     wandb_logger = WandbLogger(log_model=False, 
                                group='group',
                                offline=True)
-    # tensor_logger = TensorBoardLogger("tb_logs", 
-    #                                   name="my_model")
-
+    tensor_logger = TensorBoardLogger("tb_logs", 
+                                      name="my_model")
+    
+    print(f"ModelCheckpoint path at: data/ckpts/{run.id}")
     callbacks = [
-        LearningRateMonitor(logging_interval='step'),
-        ModelCheckpoint(monitor="val/loss", mode="min", save_top_k=2, save_last=True),
-        #StochasticWeightAveraging(swa_lrs=1e-2),
+        LearningRateMonitor(logging_interval='step',
+                            log_momentum=True),
+        ModelCheckpoint(
+            dirpath=f"data/ckpts/{run.id}",
+            monitor="val/loss", 
+            mode="min", 
+            save_top_k=1, 
+            save_last=True),
+        StochasticWeightAveraging(swa_lrs=1e-2),
         #TriggerWandbSyncLightningCallback()
         ]
     trainer = pl.Trainer(
-        # num_sanity_val_steps=2,
         max_epochs=config["epochs"],
-        # gradient_clip_val=1,
+        gradient_clip_val=1.5,
         callbacks=callbacks,
-        # accumulate_grad_batches=5,
+        accumulate_grad_batches=1,
         precision=16,
         accelerator="gpu", 
         devices=1,
-        logger=[wandb_logger],
+        logger=[wandb_logger, tensor_logger],
         fast_dev_run=config["fast_dev_run"]
         )
+    
+    #wandb_logger.watch(model)
+
     tuner = Tuner(trainer)
 
-    if config.get('fine_tune_lr'):
+    if config.get('lr_finder'):
         # Run learning rate finder
         lr_finder = tuner.lr_find(model, dm)
         fig = lr_finder.plot(suggest=True)
@@ -85,9 +94,13 @@ def train_func(config: dict = None):
         print("Created `data/lr_finder.png` and stopping.")
         exit()
 
+    # Performs one evaluation epoch before starting to train
+    # trainer.validate(model, 
+    #                  dm,
+    #                  ckpt_path=config.get('resume_training_ckpt'))
     trainer.fit(model,
                 dm,
-                ckpt_path=config.get('resume_trainig_ckpt'))
+                ckpt_path=config.get('resume_training_ckpt'))
 
 def parse_args():
     parser = ArgumentParser()
@@ -100,18 +113,19 @@ def parse_args():
     parser.add_argument("--batch_size", type=int)
     parser.add_argument("--hidden_layer_size", type=int)
     parser.add_argument("--learning_rate", type=float)
-    
-    parser.add_argument("--ckpt", type=str, help='Load weights for model from ckpt file')
-    parser.add_argument("--resume_training_ckpt", type=str, help='Restores full training from ckpt file, not just loading weights')
-    
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--deactivate_bert_learning", action='store_true')    
-    parser.add_argument("--fast_dev_run", action='store_true')
     parser.add_argument("--dropout_rate", type=float, default=0.1)
-    parser.add_argument("--fine_tune_lr", action='store_true', 
-                        help="Creates data/lr_finder.png and stops afterwards in order to inspect learning_rates")
+    parser.add_argument("--ckpt", type=str, help='Load weights for model from ckpt file')
     
+    # Rare/Optional
+    parser.add_argument("--fast_dev_run", action='store_true')
+    parser.add_argument("--lr_finder", action='store_true', 
+                        help="Creates data/lr_finder.png and stops afterwards in order to inspect learning_rates")
+    parser.add_argument("--resume_training_ckpt", type=str, help='Restores full training from ckpt file, not just loading weights')
+ 
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     print("Training module started...")
@@ -126,6 +140,5 @@ if __name__ == "__main__":
         wandb.agent(sweep_id=sweep_id, function=train_func, count=4)
     else:
         print("Start normal training")
-        print(f"{args_dict=}")
         train_func(config=args_dict)
 

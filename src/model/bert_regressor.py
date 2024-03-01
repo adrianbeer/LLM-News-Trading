@@ -4,8 +4,11 @@ from torch.nn import functional as F
 from transformers import BertModel
 import lightning as pl
 from torchmetrics.regression import MeanAbsoluteError
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import LambdaLR
 import wandb
+from torch import optim
+import numpy as np
+from lightning.pytorch.utilities import grad_norm
 
 class BERTRegressor(pl.LightningModule):
     
@@ -18,6 +21,7 @@ class BERTRegressor(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         
+        # Plotting and Visualizaton
         self.validation_step_outputs = []
         
         self.train_accuracy = MeanAbsoluteError()
@@ -53,10 +57,25 @@ class BERTRegressor(pl.LightningModule):
         preds.squeeze_(1)
         return preds
 
+    # def on_before_optimizer_step(self, optimizer):
+    #     # Compute the 2-norm for each layer
+    #     # If using mixed precision, the gradients are already unscaled here
+    #     norms = grad_norm(self.ff_layer, norm_type=2)
+    #     self.log_dict(norms)
+
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
-        scheduler = ReduceLROnPlateau(optimizer, factor=0.2, patience=3)
-        return optimizer, scheduler
+        optimizer = torch.optim.Adam(self.parameters(), 
+                                     lr=self.hparams.learning_rate, 
+                                     weight_decay=0.01)
+        scheduler = LinearWarmupScheduler(optimizer=optimizer, 
+                                          warmup=4, 
+                                          max_epochs=self.trainer.max_epochs)
+
+        return {
+            "optimizer": optimizer, 
+            "lr_scheduler": scheduler,
+            "monitor": "train/loss"
+            }
 
     def l1_loss(self, preds, labels):
         return F.l1_loss(preds, labels)
@@ -68,25 +87,6 @@ class BERTRegressor(pl.LightningModule):
 
         self.log_dict({"train/loss": loss}, on_step=True, on_epoch=True, prog_bar=True)
         return loss
-
-    def custom_histogram_adder(self):    
-        for name, params in self.ff_layer.named_parameters():
-            self.logger.experiment.add_histogram(name,
-                                                 params,
-                                                 self.current_epoch)    
-
-    # def training_epoch_end(self,outputs): 
-    #     # calculating average loss  
-    #     avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
- 
-    #     # logging histograms
-    #     self.custom_histogram_adder()
-         
-    #     epoch_dictionary={            
-    #                       'loss': avg_loss
-    #                       }
- 
-    #     return epoch_dictionary
     
     def validation_step(self, val_batch, batch_idx):
         y = val_batch["target"]
@@ -103,19 +103,40 @@ class BERTRegressor(pl.LightningModule):
     
     def on_validation_epoch_end(self):
         validation_step_outputs = self.validation_step_outputs
+        try:
+            flattened_preds = torch.flatten(torch.cat(validation_step_outputs)).to("cpu")
+            self.logger.experiment.log(
+                {"valid/preds": wandb.Histogram(flattened_preds),
+                "global_step": self.global_step})
+            
+            # data = [[s] for s in flattened_preds.numpy()]
+            # table = wandb.Table(data=data, columns=["predictions"])
+            # self.logger.experiment.log({
+            #     'my_histogram': wandb.plot.histogram(table, 
+            #                                         "predictions",
+            #                                         title="Predictions")
+            #     })
+        except Exception as e:
+            # Logging this failes sometimes for unknown reasons
+            print(e)
 
-        # dummy_input = torch.zeros(self.hparams["in_dims"], device=self.device)
-        
-        # model_filename = f"model_{str(self.global_step).zfill(5)}.onnx"
-        # torch.onnx.export(self, dummy_input, model_filename, opset_version=11)
-        # artifact = wandb.Artifact(name="model.ckpt", type="model")
-        # artifact.add_file(model_filename)
-        # self.logger.experiment.log_artifact(artifact)
 
-        flattened_preds = torch.flatten(torch.cat(validation_step_outputs))
-        self.logger.experiment.log(
-            {"valid/preds": wandb.Histogram(flattened_preds.to("cpu")),
-            "global_step": self.global_step})
-        
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         return self(batch)
+
+
+class LinearWarmupScheduler(optim.lr_scheduler._LRScheduler):
+    def __init__(self, optimizer, warmup, max_epochs):
+        self.warmup = warmup
+        self.max_epochs = max_epochs
+        super().__init__(optimizer)
+
+    def get_lr(self):
+        lr_factor = self.get_lr_factor(epoch=self.last_epoch)
+        return [base_lr * lr_factor for base_lr in self.base_lrs]
+
+    def get_lr_factor(self, epoch):
+        lr_factor = 1 - 0.5 * epoch / self.max_epochs
+        if epoch <= self.warmup:
+            lr_factor = epoch * 1.0 / self.warmup
+        return lr_factor
