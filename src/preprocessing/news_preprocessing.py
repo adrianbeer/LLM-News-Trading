@@ -133,7 +133,10 @@ def preprocess_news(ddf):
     ## Parsing News Bodies
     ddf["time"] = ddf["time"].progress_map(lambda x: convert_timezone(pd.to_datetime(x)))
     ddf["parsed_body"] = parallelize_dataframe(ddf, block_apply_factory(filter_body, axis=1), n_cores=os.cpu_count())
-    ddf["parsed_body"] = ddf.apply(lambda x: x['title'] + ". " + x['body'], axis=1)
+    
+    #! Since the title isn't preprocessed, the company title can be contained which could lead to the neural network
+    #! to overfit on the company name. 
+    ddf["parsed_body"] = ddf.apply(lambda x: x['title'] + ". " + x['parsed_body'], axis=1)
     return ddf, ticker_name_mapper_reduced
 
 

@@ -31,7 +31,7 @@ ACRONYMS = r'(?:[A-Z]\.)+'
 LINK_SENTENCE_REGEX = "[a-z]*\.[A-za-z]*\.com"
 EMAIL_SENTENCE_REGEX = "[A-za-z]*@[A-za-z]*\.com"
 PHONE_NUMBER_REGEX = "(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}"
-HTML_LINK_INDEX = "\.html"
+HTML_LINK_INDEX = "[^ ]*(html|https|www\.)[^ ]*"
 CONTACT_INFO_REGEX = "|".join([LINK_SENTENCE_REGEX, 
                                 EMAIL_SENTENCE_REGEX, 
                                 PHONE_NUMBER_REGEX, 
@@ -219,10 +219,8 @@ def filter_body(row: pd.Series) -> str:
     body = remove_contact_info_sentences(body)
     body = remove_date_specifics(body, pr_date)
     
-    
-    # TODO: ZUSAMMENFASSUNG KOMMT EVEL. VOR AUTHOR PRÄEMBEL, DANN IST es schlecht, alles vorher zu löschen
     # Note: np.isnan doesn't work for object or string types
-    if pd.isnull(author):
+    if not pd.isnull(author):
         patterns = [
             f"(.*{author})|(^.*{author})", # Remove author (preamble)
             "\([^\)]*\"[^\)]*\"[^\)]*\)"   # Remove (the "Company") parenthesis and other `("different name")`-constructs
