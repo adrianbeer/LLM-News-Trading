@@ -1,6 +1,9 @@
-program: src/model/training.py
+#program: src/model/training.py
 name: sweepdemo
 method: bayes
+
+#controller:
+#          type: local
 
 metric:
   goal: minimize
@@ -10,23 +13,20 @@ parameters:
   hidden_layer_size: 
     values: [128, 786]
   learning_rate:
-    distribution: lognormal
-    min: 1e-5
+    distribution: loguniform
+    min: 0.0001
     max: 0.1
   batch_size:
     values: [16, 32, 64]
   dropout_rate:
-    values: [0, 0.2]
+    value: 0
   epochs:
     value: 2
-
   fast_dev_run: 
-    value: False,
+    value: false
   stop_after_lr_finder: 
-    value: False,
-  ckpt": 
-    value: None,
-  num_samples: 
-    value: 4
+    value: false
+  ckpt: 
+    value: none
   deactivate_bert_learning: 
-    value: True  
+    value: true  

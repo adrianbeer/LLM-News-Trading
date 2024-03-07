@@ -40,6 +40,9 @@ class CustomDataset(Dataset):
     def get_baseline_mae(self):
         return np.abs((self.news_data - self.news_data.median())).mean()
 
+    def get_baseline_mse(self):
+        return ((self.news_data - self.news_data.mean())**2).mean()
+
     def get_class_distribution(self):
         class_distribution = (self.news_data.value_counts() / self.news_data.shape[0]).sort_index()
         return class_distribution
@@ -93,8 +96,12 @@ class CustomDataModule(pl.LightningDataModule):
                                                 stage="validation",
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
-            print(f"baseline MAE (train): {self.train_dataset.get_baseline_mae()} \n"
-                  f"baseline MAE (val): {self.val_dataset.get_baseline_mae()}")
+            print(
+                f"baseline MAE (train): {self.train_dataset.get_baseline_mae()} \n"
+                f"baseline MAE (val): {self.val_dataset.get_baseline_mae()} \n"
+                f"baseline MSE (train): {self.train_dataset.get_baseline_mse()} \n"
+                f"baseline MSE (train): {self.val_dataset.get_baseline_mse()}"
+                )
         if stage == "test":
             self.test_dataset = CustomDataset(news_data=self.news_data, 
                                                 input_ids=self.input_ids, 

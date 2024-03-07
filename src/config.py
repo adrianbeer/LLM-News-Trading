@@ -22,7 +22,8 @@ class ModelConfig:
     splitter: Splitter
     neural_net: nn.Module
     pretrained_network: str
-    input_col_name: str
+    masks: str
+    input_ids: str
     target_col_name: str
 
 @dataclass(frozen=True)
@@ -38,23 +39,15 @@ PREP_CONFIG = PreprocessingConfig(
     input_col_name =  "parsed_body",
     target_col_name = "z_score",
 )  
-    
-ClassificationConfig: ModelConfig = ModelConfig(
-    task = "Classification", # or "Regression"
-    splitter = RatioSplitter(0.75, 0.15),
-    pretrained_network = 'data/models/networks/finbert_pretrain',
-    neural_net = BERTClassifier,
-    input_col_name =  "parsed_body",
-    target_col_name = "z_score_class",
-)
 
 RegressorConfig: ModelConfig = ModelConfig(
     task = "Regression",
     splitter = RatioSplitter(0.75, 0.15),
     pretrained_network = 'data/models/networks/finbert_pretrain',
     neural_net = BERTRegressor,
-    input_col_name =  "parsed_body",
-    target_col_name = "z_score",
+    masks = config.data.news.title_only.masks, 
+    input_ids = config.data.news.title_only.input_ids,
+    target_col_name = "r_mkt_adj",
 )
 
 MODEL_CONFIG = RegressorConfig

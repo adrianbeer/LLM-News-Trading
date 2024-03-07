@@ -1,4 +1,5 @@
 
+from argparse import ArgumentParser
 import pandas as pd
 from src.config import config, PREP_CONFIG
 import numpy as np
@@ -9,14 +10,13 @@ import torch
 import os
 from torch import Tensor
 from src.utils.time import timing
-from transformers import BertTokenizerFast
+from transformers import AutoTokenizer
 from tqdm import tqdm
 
 
-MAX_ENCODING_LENGTH = 512
 DATASET_PATH = config.data.news.cleaned
 
-def tokenize_input(text, tokenizer: BertTokenizerFast):
+def tokenize_input(text, tokenizer, max_encoding_length=512):
     # Truncation = True as bert can only take inputs of max 512 tokens.
     # return_tensors = "pt" makes the funciton return PyTorch tensors
     # tokenizer.encode_plus specifically returns a dictionary of values instead of just a list of values
@@ -25,7 +25,7 @@ def tokenize_input(text, tokenizer: BertTokenizerFast):
         add_special_tokens = True, 
         truncation = True, 
         padding = "max_length", 
-        max_length = MAX_ENCODING_LENGTH,
+        max_length = max_encoding_length,
         return_attention_mask = True, 
         return_tensors = "pt"
     )
@@ -37,14 +37,15 @@ def tokenize_input(text, tokenizer: BertTokenizerFast):
 
 
 @timing
-def tokenize_inputs(texts: list, tokenizer: BertTokenizerFast) -> tuple[Tensor, Tensor]:
+def tokenize_inputs(texts: list, tokenizer, max_encoding_length: int) -> tuple[Tensor, Tensor]:
     input_ids = []
     attention_masks = []
     
     print("Start embedding inputs...")
     executor = ThreadPool(processes=os.cpu_count())
     ans = tqdm(executor.imap(partial(tokenize_input, 
-                                    tokenizer=tokenizer), 
+                                    tokenizer=tokenizer,
+                                    max_encoding_length=max_encoding_length), 
                             texts),
                total=len(texts))
     input_ids, attention_masks = list(zip(*ans))
@@ -62,25 +63,33 @@ def get_text_and_labels(dat: pd.DataFrame,
     return texts, labels
 
 
-def get_encoding(encoding_matrix_path: str):
-    encoding_matrix = np.load(file=encoding_matrix_path)
-    index = encoding_matrix[:, 0]
-    input_ids = encoding_matrix[:, 1:(MAX_ENCODING_LENGTH+1)]
-    masks = encoding_matrix[:, (MAX_ENCODING_LENGTH+1):]
-    return index, input_ids, masks
-
-
 if __name__ == "__main__":
-    tokenizer: BertTokenizerFast = BertTokenizerFast.from_pretrained(PREP_CONFIG.tokenizer)
-    dataset = pd.read_parquet(DATASET_PATH, columns=["parsed_body"])
+
+    parser = ArgumentParser()
+    parser.add_argument("--title_only", action='store_true')
+    args = parser.parse_args()
+
+    if args.title_only:
+        text_col = "title" 
+        input_ids_path = config.data.news.title_only.input_ids
+        masks_path = config.data.news.title_only.masks
+        max_encoding_length = 32
+    else:
+        text_col = "parsed_body"
+        input_ids_path = config.data.news.input_ids
+        masks_path = config.data.news.masks
+        max_encoding_length = 512
+        
+    tokenizer = AutoTokenizer.from_pretrained(PREP_CONFIG.tokenizer)
+    dataset = pd.read_parquet(DATASET_PATH, columns=[text_col])
 
     # Dummy column
-    dataset["text_length"] = dataset["parsed_body"].map(lambda x: len(x))
+    dataset["text_length"] = dataset[text_col].map(lambda x: len(x))
 
     texts, labels = get_text_and_labels(dat=dataset, 
-                                        text_col="parsed_body", 
+                                        text_col=text_col, 
                                         label_col="text_length")
-    input_ids, masks = tokenize_inputs(texts, tokenizer)
+    input_ids, masks = tokenize_inputs(texts, tokenizer, max_encoding_length)
 
     input_ids = pd.DataFrame(data=Tensor.numpy(input_ids), index=dataset.index)
     masks = pd.DataFrame(data=Tensor.numpy(masks), index=dataset.index)
@@ -88,5 +97,5 @@ if __name__ == "__main__":
     input_ids.columns = [str(x) for x in input_ids.columns]
     masks.columns = [str(x) for x in masks.columns]
 
-    input_ids.to_parquet(config.data.news.input_ids)
-    masks.to_parquet(config.data.news.masks)
+    input_ids.to_parquet(input_ids_path)
+    masks.to_parquet(masks_path)

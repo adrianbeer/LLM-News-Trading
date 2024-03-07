@@ -3,12 +3,11 @@ import torch.nn as nn
 from torch.nn import functional as F
 from transformers import BertModel
 import lightning as pl
-from torchmetrics.regression import MeanAbsoluteError
+from torchmetrics.regression import MeanSquaredLogError
 from torch.optim.lr_scheduler import LambdaLR
-import wandb
 from torch import optim
-import numpy as np
 from lightning.pytorch.utilities import grad_norm
+from functools import partial
 
 class BERTRegressor(pl.LightningModule):
     
@@ -17,15 +16,19 @@ class BERTRegressor(pl.LightningModule):
                  deactivate_bert_learning, 
                  learning_rate,
                  dropout_rate,
-                 hidden_layer_size):
+                 hidden_layer_size,
+                 n_warm_up_epochs):
         super().__init__()
         self.save_hyperparameters()
         
         # Plotting and Visualizaton
-        self.validation_step_outputs = []
-        
-        self.train_accuracy = MeanAbsoluteError()
-        self.val_accuracy = MeanAbsoluteError()
+        self.validation_outputs = []
+        self.validation_labels = []
+        self.training_outputs = []
+        self.training_labels = []
+                
+        self.train_loss = MeanSquaredLogError()
+        self.val_loss = MeanSquaredLogError()
 
         self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
         
@@ -40,11 +43,8 @@ class BERTRegressor(pl.LightningModule):
             nn.Linear(self.bert.config.hidden_size, hls), nn.LeakyReLU(),
             nn.Dropout(self.hparams.dropout_rate),
             
-            nn.Linear(hls, hls), nn.LeakyReLU(),
-            nn.Dropout(self.hparams.dropout_rate),
-            
-            nn.Linear(hls, hls), nn.LeakyReLU(),
-            nn.Dropout(self.hparams.dropout_rate),
+            # nn.Linear(hls, hls), nn.LeakyReLU(),
+            # nn.Dropout(self.hparams.dropout_rate),
             
             nn.Linear(hls, 1) # Output Layer
         )
@@ -57,83 +57,123 @@ class BERTRegressor(pl.LightningModule):
         preds.squeeze_(1)
         return preds
 
-    # def on_before_optimizer_step(self, optimizer):
-    #     # Compute the 2-norm for each layer
-    #     # If using mixed precision, the gradients are already unscaled here
-    #     norms = grad_norm(self.ff_layer, norm_type=2)
-    #     self.log_dict(norms)
+    def on_before_optimizer_step(self, optimizer):
+        # Compute the 2-norm for each layer
+        # If using mixed precision, the gradients are already unscaled here
+        norms = grad_norm(self.ff_layer, norm_type=2)
+        self.log_dict(norms)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), 
                                      lr=self.hparams.learning_rate, 
                                      weight_decay=0.01)
-        scheduler = LinearWarmupScheduler(optimizer=optimizer, 
-                                          warmup=4, 
-                                          max_epochs=self.trainer.max_epochs)
+        
+        scheduler = LambdaLR(optimizer, lr_lambda=[partial(lmbda, 
+                                                           max_epochs=self.trainer.max_epochs,
+                                                           warmup=self.hparams.n_warm_up_epochs)])
+        # scheduler = LinearWarmupScheduler(optimizer=optimizer, 
+        #                                   warmup=self.hparams.n_warm_up_epochs, 
+        #                                   max_epochs=self.trainer.max_epochs)
 
         return {
             "optimizer": optimizer, 
             "lr_scheduler": scheduler,
-            "monitor": "train/loss"
+            "monitor": f"train/{self.train_loss.__class__.__name__}"
             }
-
-    def l1_loss(self, preds, labels):
-        return F.l1_loss(preds, labels)
 
     def training_step(self, train_batch, batch_idx):
         y = train_batch["target"]
         preds = self.forward(train_batch)
-        loss = self.train_accuracy(preds, y)
+        loss = self.train_loss(preds, y)
 
-        self.log_dict({"train/loss": loss}, on_step=True, on_epoch=True, prog_bar=True)
+        self.training_outputs.append(preds)
+        self.training_labels.append(y)
+
+        self.log_dict({f"train/{self.train_loss.__class__.__name__}": loss}, 
+                      on_step=True, 
+                      on_epoch=True, 
+                      prog_bar=True)
         return loss
     
     def validation_step(self, val_batch, batch_idx):
         y = val_batch["target"]
         preds = self.forward(val_batch)
-        self.validation_step_outputs.append(preds)
+        self.validation_outputs.append(preds)
+        self.validation_labels.append(y)
         
-        loss = self.val_accuracy(preds, y)
+        loss = self.val_loss(preds, y)
     
         self.log_dict({
-            'val/loss': loss
+            f"val/{self.val_loss.__class__.__name__}": loss
             })
         
         return preds
     
-    def on_validation_epoch_end(self):
-        validation_step_outputs = self.validation_step_outputs
-        try:
-            flattened_preds = torch.flatten(torch.cat(validation_step_outputs)).to("cpu")
-            self.logger.experiment.log(
-                {"valid/preds": wandb.Histogram(flattened_preds),
-                "global_step": self.global_step})
+    def calculate_quantile_filteted_acc(self, flattened_preds, flattened_labels, percent):
+        # .float() required as the quantile function can't handle bfloat16 dtype
+        q = torch.quantile(flattened_preds.float(), percent)
+        mask = torch.where(flattened_preds >= q, 1, 0)
+        quantile_filtered_acc = torch.mean((torch.sign(flattened_preds[torch.nonzero(mask)]) == torch.sign(flattened_labels[torch.nonzero(mask)])).float())
+        return quantile_filtered_acc
+    
+    def on_train_epoch_end(self):    
+        flattened_labels = torch.flatten(torch.cat(self.training_labels))
+        flattened_preds = torch.flatten(torch.cat(self.training_outputs))
+        self.log_dict(
+            {
+                "train/quantile_95_filtered_acc": self.calculate_quantile_filteted_acc(flattened_preds, flattened_labels, 0.95),
+                "train/quantile_50_filtered_acc": self.calculate_quantile_filteted_acc(flattened_preds, flattened_labels, 0.5),
+                "global_step": self.global_step
+            })
+        flattened_preds = flattened_preds.to("cpu")
+        self.logger.experiment.add_histogram("train/preds", flattened_preds, self.current_epoch)
+        
+        # text_table = wandb.Table(columns=["epoch", "loss", "text"])
+        # text_table.add_data(epoch, loss, train_text) 
+        # self.logger.experiment.log({
             
-            # data = [[s] for s in flattened_preds.numpy()]
-            # table = wandb.Table(data=data, columns=["predictions"])
-            # self.logger.experiment.log({
-            #     'my_histogram': wandb.plot.histogram(table, 
-            #                                         "predictions",
-            #                                         title="Predictions")
-            #     })
-        except Exception as e:
-            # Logging this failes sometimes for unknown reasons
-            print(e)
+        # })
+        
+        self.training_outputs.clear()
+        self.training_labels.clear()
+    
+    def on_validation_epoch_end(self):    
+        flattened_labels = torch.flatten(torch.cat(self.validation_labels))
+        flattened_preds = torch.flatten(torch.cat(self.validation_outputs))
+        self.log_dict(
+            {
+                "val/quantile_95_filtered_acc": self.calculate_quantile_filteted_acc(flattened_preds, flattened_labels, 0.95),
+                "val/quantile_50_filtered_acc": self.calculate_quantile_filteted_acc(flattened_preds, flattened_labels, 0.5),
+                "global_step": self.global_step
+            })        
 
+
+        flattened_preds = flattened_preds.to("cpu")
+        self.logger.experiment.add_histogram("val/preds", flattened_preds, self.current_epoch)
+ 
+        self.validation_outputs.clear()
+        self.validation_labels.clear()
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         return self(batch)
 
+
+def lmbda(epoch, max_epochs, warmup):
+    lr_factor = 1 - 0.5 * epoch / max_epochs
+    if epoch <= warmup:
+        lr_factor = epoch * 1.0 / warmup
+    return lr_factor
 
 class LinearWarmupScheduler(optim.lr_scheduler._LRScheduler):
     def __init__(self, optimizer, warmup, max_epochs):
         self.warmup = warmup
         self.max_epochs = max_epochs
         super().__init__(optimizer)
+        print(f"{max_epochs=}")
 
     def get_lr(self):
         lr_factor = self.get_lr_factor(epoch=self.last_epoch)
-        return [base_lr * lr_factor for base_lr in self.base_lrs]
+        return [group['lr'] * lr_factor for group in self.optimizer.param_groups]
 
     def get_lr_factor(self, epoch):
         lr_factor = 1 - 0.5 * epoch / self.max_epochs

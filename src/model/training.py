@@ -29,46 +29,49 @@ torch.set_float32_matmul_precision('high')
 WANDB_PROJECT = 'news_trading'
 
 def train_func(config: dict = None):
-    run = wandb.init(save_code=True)
-    if config is None: 
-        config = wandb.config
-    else: 
-        wandb.config.update(config)
+    tensor_logger = TensorBoardLogger("tb_logs", 
+                                      name="my_model")
+    loggers = [tensor_logger]
+    if not config.get('lr_finder'):
+        run = wandb.init(save_code=True)
+        if config is None: 
+            config = wandb.config
+        else: 
+            wandb.config.update(config)
+            
+        print(f"{run.settings.mode=}")
+        print(config)
         
-    print(f"{run.settings.mode=}")
-    print(config)
-    
+        wandb_logger = WandbLogger(log_model=False, 
+                                group='group',
+                                offline=True)
+        loggers.append(wandb_logger)
+        
     model_args = dict((k, config[k]) for k in ('deactivate_bert_learning', 
                                                'learning_rate', 
                                                'dropout_rate', 
-                                               'hidden_layer_size'))
-
+                                               'hidden_layer_size',
+                                               'n_warm_up_epochs'))
+        
     dm = CustomDataModule(news_data_path=DATA_CONFIG.data.learning_dataset, 
-                          input_ids_path=DATA_CONFIG.data.news.input_ids, 
-                          masks_path=DATA_CONFIG.data.news.masks, 
+                          input_ids_path=MODEL_CONFIG.input_ids, 
+                          masks_path=MODEL_CONFIG.masks, 
                           batch_size=config["batch_size"],
                           target_col_name=MODEL_CONFIG.target_col_name)
     
     model: pl.LightningModule = get_model(config.get('ckpt'), model_args, dm)
-
-    wandb_logger = WandbLogger(log_model=False, 
-                               group='group',
-                               offline=True)
-    tensor_logger = TensorBoardLogger("tb_logs", 
-                                      name="my_model")
-    
+        
     print(f"ModelCheckpoint path at: data/ckpts/{run.id}")
     callbacks = [
         LearningRateMonitor(logging_interval='step',
                             log_momentum=True),
         ModelCheckpoint(
             dirpath=f"data/ckpts/{run.id}",
-            monitor="val/loss", 
-            mode="min", 
-            save_top_k=1, 
+            # monitor="val/loss", 
+            # mode="min", 
+            # save_top_k=1, 
             save_last=True),
         StochasticWeightAveraging(swa_lrs=1e-2),
-        #TriggerWandbSyncLightningCallback()
         ]
     trainer = pl.Trainer(
         max_epochs=config["epochs"],
@@ -76,15 +79,15 @@ def train_func(config: dict = None):
         callbacks=callbacks,
         accumulate_grad_batches=1,
         precision=16,
-        accelerator="gpu", 
+        accelerator="gpu" if not config["fast_dev_run"] else "cpu", 
         devices=1,
-        logger=[wandb_logger, tensor_logger],
-        fast_dev_run=config["fast_dev_run"]
+        logger=loggers,
+        fast_dev_run=config["fast_dev_run"],
         )
     
     #wandb_logger.watch(model)
 
-    tuner = Tuner(trainer)
+    tuner = Tuner(trainer)  
 
     if config.get('lr_finder'):
         # Run learning rate finder
@@ -117,6 +120,7 @@ def parse_args():
     parser.add_argument("--deactivate_bert_learning", action='store_true')    
     parser.add_argument("--dropout_rate", type=float, default=0.1)
     parser.add_argument("--ckpt", type=str, help='Load weights for model from ckpt file')
+    parser.add_argument("--n_warm_up_epochs", type=int, default=2)
     
     # Rare/Optional
     parser.add_argument("--fast_dev_run", action='store_true')
