@@ -20,6 +20,7 @@ data:
   news:
     raw_html_parsed: "data/news/raw_html_parsed.parquet" 
     cleaned: "data/news/processed_news.parquet" 
+    stripped: "data/news/stripped.parquet"
     input_ids: "data/news/input_ids.parquet"
     masks: "data/news/masks.parquet"
     title_only:

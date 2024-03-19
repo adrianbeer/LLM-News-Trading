@@ -2,7 +2,7 @@ import yaml
 from dotmap import DotMap
 import os 
 from src.model.bert_classifier import BERTClassifier
-from src.model.bert_regressor import BERTRegressor
+from src.model.bert_regressor import NNRegressor
 import torch.nn as nn
 from src.model.splits import Splitter, RatioSplitter
 from dataclasses import dataclass
@@ -35,7 +35,7 @@ class PreprocessingConfig:
 
 PREP_CONFIG = PreprocessingConfig(
     splitter = RatioSplitter(0.75, 0.15),
-    tokenizer = "data/models/tokenizers/finbert_pretrain",
+    tokenizer = "data/models/ProsusAI/finbert",
     input_col_name =  "parsed_body",
     target_col_name = "z_score",
 )  
@@ -43,8 +43,8 @@ PREP_CONFIG = PreprocessingConfig(
 RegressorConfig: ModelConfig = ModelConfig(
     task = "Regression",
     splitter = RatioSplitter(0.75, 0.15),
-    pretrained_network = 'data/models/networks/finbert_pretrain',
-    neural_net = BERTRegressor,
+    pretrained_network = 'data/models/ProsusAI/finbert',
+    neural_net = NNRegressor,
     masks = config.data.news.title_only.masks, 
     input_ids = config.data.news.title_only.input_ids,
     target_col_name = "r_mkt_adj",

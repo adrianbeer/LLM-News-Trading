@@ -73,7 +73,7 @@ if __name__ == '__main__':
             # Set staleness of first news message to 0 
             ticker_news.at[ticker_news.index[0], "staleness"] = 0
 
-            for time in  ticker_news.index:
+            for time in ticker_news.index:
                 previous_news = ticker_news.loc[(time-pd.DateOffset(days=3)):time, "cls_token"]
                 if len(previous_news) == 1:
                     ticker_news.at[time, "staleness"] = 0

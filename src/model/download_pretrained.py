@@ -1,7 +1,13 @@
-from transformers import BertTokenizerFast, BertModel
+from transformers import BertTokenizerFast, BertModel, BertTokenizer
+from transformers import BertForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-model = BertTokenizerFast.from_pretrained("yiyanghkust/finbert-pretrain")
-model.save_pretrained("data/models/tokenizers/finbert_pretrain")
+hf_id = "ProsusAI/finbert"
 
-model = BertModel.from_pretrained("yiyanghkust/finbert-pretrain")
-model.save_pretrained("data/models/networks/finbert_pretrain")
+tokenizer = AutoTokenizer.from_pretrained(hf_id)
+tokenizer.save_pretrained(f"data/models/{hf_id}")
+
+model = AutoModelForSequenceClassification.from_pretrained(hf_id)
+model.save_pretrained(f"data/models/{hf_id}")
+
+

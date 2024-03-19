@@ -139,28 +139,51 @@ def preprocess_news(ddf):
     ddf["parsed_body"] = ddf.apply(lambda x: x['title'] + ". " + x['parsed_body'], axis=1)
     return ddf, ticker_name_mapper_reduced
 
+from src.preprocessing.news_parser import remove_company_specifics
+WHITELIST = set("abcdefghijklmnopqrstuvwxyz ")
+
+def stripper(x):
+    text = x.lower()
+    text = ''.join(filter(WHITELIST.__contains__, text))
+    text = ' '.join(text.split(' ')) 
+    return text
+
+def make_stripped_news(ddf):
+    #! Should be done in preprocess_news, but dont want to execute it again right now
+    ddf["parsed_body"] = ddf.progress_apply(lambda x: remove_company_specifics(x.parsed_body, 
+                                                                               x.company_name, 
+                                                                               x.short_name, 
+                                                                               x.stocks),
+                                            axis=1)
+    ddf["parsed_body"] = parallelize_dataframe(ddf["parsed_body"], block_apply_factory(stripper), n_cores=os.cpu_count())
+    ddf.to_parquet(config.data.news.stripped) 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='First invoke with --ticker_name_mapping and afterwards with --process_body.')
+    parser = argparse.ArgumentParser(
+        description='First invoke with --ticker_name_mapping and afterwards with --process_body.')
     parser.add_argument('--ticker_name_mapping', action='store_true',
                         help='Takes quite a long time, and can`t be parallelized much')
     parser.add_argument('--process_body', action='store_true',
                         help='Can be heavilty parallelized. Invoke this after creating the ticker_name_mapping')
+    parser.add_argument('--stripper', action='store_true',
+                        help='Make stripped news')
     args = parser.parse_args()
     
     if args.ticker_name_mapping:
         print("Creating ticker_name_mapping...")
         make_ticker_name_mapping()
         print("Done")
-    
-    if not args.process_body:
-        exit
-    
-    print("Processing news bodies...")
-    ddf = merge_news_sources()
-    ddf, ticker_name_mapper_reduced = preprocess_news(ddf)
-    ddf.to_parquet(config.data.news.cleaned)
-    ticker_name_mapper_reduced.to_parquet(config.data.shared.ticker_name_mapper_reduced)
-    
+        
+    if args.process_body:
+        print("Processing news bodies...")
+        ddf = merge_news_sources()
+        ddf, ticker_name_mapper_reduced = preprocess_news(ddf)
+        ddf.to_parquet(config.data.news.cleaned)
+        ticker_name_mapper_reduced.to_parquet(config.data.shared.ticker_name_mapper_reduced)
+
+    if args.stripper:
+        ddf = pd.read_parquet(config.data.news.cleaned)
+        make_stripped_news(ddf)
+
     print("End.")
 

@@ -70,7 +70,8 @@ def merge_news_with_price_ts(prices_path,
                     "r_spy", 
                     "unadj_entry_open", 
                     "entry_is_too_far_apart", 
-                    "exit_is_too_far_apart"] + keep_columns_from_news
+                    "exit_is_too_far_apart",
+                    "parsed_body"] + keep_columns_from_news
 
 
     func = partial(merge_ticker_news_with_prices, spy=spy)
@@ -128,6 +129,7 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
         
         merged.set_index("index", inplace=True)
         dataset.loc[merged.index, indicators] = merged[indicators]
+    dataset = dataset.sort_index()
     dataset.to_parquet(path=merged_path)
 
 

@@ -16,9 +16,9 @@ from tqdm import tqdm
 
 DATASET_PATH = config.data.news.cleaned
 
-def tokenize_input(text, tokenizer, max_encoding_length=512):
+def tokenize_input(text, tokenizer, max_encoding_length):
     # Truncation = True as bert can only take inputs of max 512 tokens.
-    # return_tensors = "pt" makes the funciton return PyTorch tensors
+    # return_tensors = "pt" makes the function return PyTorch tensors
     # tokenizer.encode_plus specifically returns a dictionary of values instead of just a list of values
     encoding = tokenizer(
         text, 
@@ -55,14 +55,6 @@ def tokenize_inputs(texts: list, tokenizer, max_encoding_length: int) -> tuple[T
     return input_ids, attention_masks
 
 
-def get_text_and_labels(dat: pd.DataFrame, 
-                        text_col: str = None,
-                        label_col: str = None) -> tuple[List, List]:
-    texts = dat.loc[:, text_col].tolist()
-    labels = dat.loc[:, label_col].tolist()
-    return texts, labels
-
-
 if __name__ == "__main__":
 
     parser = ArgumentParser()
@@ -78,7 +70,7 @@ if __name__ == "__main__":
         text_col = "parsed_body"
         input_ids_path = config.data.news.input_ids
         masks_path = config.data.news.masks
-        max_encoding_length = 512
+        max_encoding_length = 256
         
     tokenizer = AutoTokenizer.from_pretrained(PREP_CONFIG.tokenizer)
     dataset = pd.read_parquet(DATASET_PATH, columns=[text_col])
@@ -86,9 +78,7 @@ if __name__ == "__main__":
     # Dummy column
     dataset["text_length"] = dataset[text_col].map(lambda x: len(x))
 
-    texts, labels = get_text_and_labels(dat=dataset, 
-                                        text_col=text_col, 
-                                        label_col="text_length")
+    texts = dataset.loc[:, text_col].tolist()
     input_ids, masks = tokenize_inputs(texts, tokenizer, max_encoding_length)
 
     input_ids = pd.DataFrame(data=Tensor.numpy(input_ids), index=dataset.index)

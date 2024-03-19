@@ -1,6 +1,7 @@
 
 import pandas as pd
 from src.config import config, MODEL_CONFIG
+import numpy as np
 
 def main():
     # ------------------------------------- Calculate target variables and additional features
@@ -8,11 +9,18 @@ def main():
 
     # TODO: overnight news tag
     
+    # The larger the move in the overall market the less idiosyncratic the move in the stock will be
+    # and hence will contain less information/ more noise w.r.t. to the company news.
+    dat.loc[:, 'sample_weights'] = 1 / np.log(dat['r_spy'])
+    
     dat.loc[:, "r_mkt_adj"] =  dat["r"] - dat["r_spy"]
+    
     #TODO: This needs to be of r_mkt_adj, not of wahtever else std_252 is or?
     dat.loc[:, "z_score"] = dat["r_mkt_adj"] / dat["std_252"]
+    
     # Winsorizing
     dat.loc[:, "z_score"] = dat["z_score"].clip(lower=dat["z_score"].quantile(0.05), upper=dat["z_score"].quantile(0.95))
+
 
     # TODO: Calculate based on training set split
     upper_z_quantile = dat["z_score"].quantile(0.75)
@@ -24,7 +32,6 @@ def main():
     dat.loc[dat["z_score"] <= lower_z_quantile, "z_score_class"] = 0
     dat["z_score_class"].value_counts()
     
-    dat = dat.sort_index()
     dat.to_parquet(path=config.data.merged)
 
     # ------------Final filtering of data and make learning_dataset
@@ -34,18 +41,19 @@ def main():
 
     # Filter out Stocks... TODO: put this into filter interface and make configurable in model_config
     penny_stock_mask = (dataset["unadj_open"] >= 1)    
-    staleness_mask = (dataset["staleness"] <= 0.99)  
+    staleness_mask = (dataset["staleness"] < 1)  
     dollar_volume_mask = (dataset["dollar_volume"] >= 30_000)
     
-    for name, mask in dict(penny_stock_mask=penny_stock_mask, 
-                           staleness_mask=staleness_mask, 
-                           dollar_volume_mask=dollar_volume_mask):
-        print(f"{name}: {mask.sum()} entries affected")
+    mask_dict = dict(penny_stock_mask=penny_stock_mask, 
+                    staleness_mask=staleness_mask, 
+                    dollar_volume_mask=dollar_volume_mask)
+    for name in mask_dict:
+        print(f"{name}: {(~mask_dict[name]).sum()} entries affected")
     
     dataset = dataset[
-        penny_stock_mask &         # penny stocks
-        dollar_volume_mask & # illiquid stocks TODO: this has look-ahead bias
-        staleness_mask        # repeat news      
+        penny_stock_mask &      # penny stocks
+        dollar_volume_mask #&     # illiquid stocks TODO: this has look-ahead bias
+        #staleness_mask        # repeat news      
         ]
     
     # TODO: How many columns do we have? this might be too aggressive of a dropna

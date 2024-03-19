@@ -9,7 +9,7 @@ from torch import optim
 from lightning.pytorch.utilities import grad_norm
 from functools import partial
 
-class BERTRegressor(pl.LightningModule):
+class NNRegressor(pl.LightningModule):
     
     def __init__(self, 
                  bert_model_name, 
@@ -127,13 +127,7 @@ class BERTRegressor(pl.LightningModule):
             })
         flattened_preds = flattened_preds.to("cpu")
         self.logger.experiment.add_histogram("train/preds", flattened_preds, self.current_epoch)
-        
-        # text_table = wandb.Table(columns=["epoch", "loss", "text"])
-        # text_table.add_data(epoch, loss, train_text) 
-        # self.logger.experiment.log({
-            
-        # })
-        
+    
         self.training_outputs.clear()
         self.training_labels.clear()
     

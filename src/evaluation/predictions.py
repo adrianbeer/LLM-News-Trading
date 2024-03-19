@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-from model.data_loading import CustomDataModule
+from src.model.data_loading import CustomDataModule
 
 dataset = pd.read_parquet(config.data.learning_dataset)
 target_col_name = MODEL_CONFIG.target_col_name
