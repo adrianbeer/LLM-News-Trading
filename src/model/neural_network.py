@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from transformers import BertModel
+from transformers import BertModel, RobertaModel
 import lightning as pl
 import torchmetrics
 from tqdm import tqdm
@@ -19,14 +19,14 @@ def get_model(ckpt, model_args, dm) -> pl.LightningModule:
         print(f"Using Checkpointed model at {ckpt}...")
     elif MODEL_CONFIG.task == "Regression":
         print("Initialize news regression model...")
-        model: pl.LightningModule = MODEL_CONFIG.neural_net(bert_model_name=MODEL_CONFIG.pretrained_network,
+        model: pl.LightningModule = MODEL_CONFIG.neural_net(base_model=MODEL_CONFIG.base_model,
                                                   **model_args)
     elif MODEL_CONFIG.task == "Classification":
         print("Initialize new Classification model...")
         dm.setup("fit")
         class_distribution = dm.get_class_distribution()
         print(dm.train_dataloader().dataset.get_class_distribution())
-        model: pl.LightningModule = MODEL_CONFIG.neural_net(bert_model_name=MODEL_CONFIG.pretrained_network,
+        model: pl.LightningModule = MODEL_CONFIG.neural_net(base_model=MODEL_CONFIG.base_model,
                                         num_classes=3,
                                         class_weights=1 / class_distribution.values,
                                         **model_args)

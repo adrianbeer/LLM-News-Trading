@@ -14,7 +14,7 @@ from transformers import AutoTokenizer
 from tqdm import tqdm
 
 
-DATASET_PATH = config.data.news.cleaned
+DATASET_PATH = config.data.news.stripped
 
 def tokenize_input(text, tokenizer, max_encoding_length):
     # Truncation = True as bert can only take inputs of max 512 tokens.

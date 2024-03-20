@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from transformers import BertModel
+from transformers import AutoModel
 import lightning as pl
 from torchmetrics.regression import MeanSquaredLogError
 from torch.optim.lr_scheduler import LambdaLR
@@ -12,7 +12,7 @@ from functools import partial
 class NNRegressor(pl.LightningModule):
     
     def __init__(self, 
-                 bert_model_name, 
+                 base_model, 
                  deactivate_bert_learning, 
                  learning_rate,
                  dropout_rate,
@@ -30,7 +30,7 @@ class NNRegressor(pl.LightningModule):
         self.train_loss = MeanSquaredLogError()
         self.val_loss = MeanSquaredLogError()
 
-        self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
+        self.bert: nn.Module = AutoModel.from_pretrained(base_model)
         
         if self.hparams.deactivate_bert_learning:
             for param in self.bert.parameters():

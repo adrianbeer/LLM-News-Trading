@@ -3,7 +3,7 @@ import pandas as pd
 import torch
 from transformers import BertModel
 from src.model.data_loading import create_dataloader
-from src.config import config, MODEL_CONFIG
+from src.config import config
 from numpy import dot
 from numpy.linalg import norm
 from src.model.neural_network import predict_cls
@@ -16,15 +16,16 @@ parser.add_argument('--batchsize', help='batch size')
 parser.add_argument('--generate_cls_tokens', action='store_true', help='')
 parser.add_argument('--calculate_staleness', action='store_true', help='')
 
+DECODER_MODEL = 'data/models/finbert-tone'
 
 if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.generate_cls_tokens:
-        print("Start loading in the BERT model...")
+        print("Start loading in the decoder model...")
         batch_size = int(args.batchsize)
         # Use baseline bert model to avoid look-ahead bias 
-        model = BertModel.from_pretrained(MODEL_CONFIG.pretrained_network)
+        model = BertModel.from_pretrained(DECODER_MODEL)
         model.eval()
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -1,5 +1,5 @@
 import torch
-from src.model.bert_regressor import BertRegressor
+from src.model.regr_transformer import BertRegressor
 from src.config import config, MODEL_CONFIG
 import numpy as np
 import pandas as pd
