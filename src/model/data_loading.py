@@ -72,9 +72,11 @@ class CustomDataModule(pl.LightningDataModule):
                  masks_path: str, 
                  batch_size: int, 
                  target_col_name: str, 
-                 news_data_idx = None):
+                 news_data_idx: int = None,
+                 n_samples: int = -1):
         super().__init__()
         self.news_data = pd.read_parquet(news_data_path)
+        self.news_data = self.news_data.iloc[:n_samples, :]
         self.input_ids = pd.read_parquet(input_ids_path)
         self.masks = pd.read_parquet(masks_path)
         self.batch_size = batch_size

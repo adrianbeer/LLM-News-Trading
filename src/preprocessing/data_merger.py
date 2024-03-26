@@ -30,7 +30,7 @@ def consolidate_tickers(tickers: pd.Series, ticker_mapper):
 
 
 def import_and_preprocess_news(input_path):
-    news = pd.read_parquet(path=input_path, columns=["time", "stocks", "parsed_body", "staleness"])
+    news = pd.read_parquet(path=input_path, columns=["time", "stocks", "parsed_body"]) #TODO:  staleness
 
     # (old comment?) Necessary to get `us` units, otherwise pandas will always convert back to `ns` for some reason.
     news["time"] = news.time.dt.tz_convert(eastern).astype('datetime64[ns, US/Eastern]')
@@ -61,7 +61,7 @@ def merge_news_with_price_ts(prices_path,
     spy.columns = [x.strip("adj_") for x in spy.columns]
     spy.columns = [f"SPY_{x}" for x in spy.columns]
 
-    keep_columns_from_news = ["staleness", 'stocks']
+    keep_columns_from_news = ['stocks'] # TODO: staleness
     keep_columns = ["est_entry_time",
                     "est_exit_time",
                     "entry_time",

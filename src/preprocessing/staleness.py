@@ -6,7 +6,7 @@ from src.model.data_loading import create_dataloader
 from src.config import config
 from numpy import dot
 from numpy.linalg import norm
-from src.model.neural_network import predict_cls
+from src.model.neural_network import predict_cls    
 from transformers.models.bert.modeling_bert import BertModel
 from tqdm.auto import tqdm
 import argparse

@@ -71,7 +71,7 @@ if __name__ == "__main__":
         input_ids_path = config.data.news.input_ids
         masks_path = config.data.news.masks
         max_encoding_length = 256
-        
+    
     tokenizer = AutoTokenizer.from_pretrained(PREP_CONFIG.tokenizer)
     dataset = pd.read_parquet(DATASET_PATH, columns=[text_col])
 

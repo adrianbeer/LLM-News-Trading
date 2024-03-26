@@ -13,7 +13,7 @@ target_col_name = "z_score_class"
 news_data_idx = [12460904, 12460977, 12460964, 12495579, 12460928, 12460928, 12495897]
 
 def test_single_label_training_accuracy():
-    model: nn.Module = BERTClassifier(bert_model_name=MODEL_CONFIG.pretrained_network,
+    model: nn.Module = BERTClassifier(bert_model_name=MODEL_CONFIG.base_model,
                                       num_classes=3,
                                       deactivate_bert_learning=True,
                                       learning_rate=0.01,

@@ -60,29 +60,34 @@ def train_func(config: dict = None):
                           target_col_name=MODEL_CONFIG.target_col_name)
     
     model: pl.LightningModule = get_model(config.get('ckpt'), model_args, dm)
-        
-    print(f"ModelCheckpoint path at: data/ckpts/{run.id}")
+
     callbacks = [
         LearningRateMonitor(logging_interval='step',
                             log_momentum=True),
-        ModelCheckpoint(
-            dirpath=f"data/ckpts/{run.id}",
-            # monitor="val/loss", 
-            # mode="min", 
-            # save_top_k=1, 
-            save_last=True),
         StochasticWeightAveraging(swa_lrs=1e-2),
         ]
+    
+    if not config.get('lr_finder'):
+        print(f"ModelCheckpoint path at: data/ckpts/{run.id}")
+        callbacks.append(ModelCheckpoint(
+                            dirpath=f"data/ckpts/{run.id}",
+                            # monitor="val/loss", 
+                            # mode="min", 
+                            # save_top_k=1, 
+                            save_last=True)
+                         )
+
     trainer = pl.Trainer(
         max_epochs=config["epochs"],
-        gradient_clip_val=1.5,
+        gradient_clip_val=0.1,
         callbacks=callbacks,
-        accumulate_grad_batches=1,
+        #accumulate_grad_batches=1,
         precision=16,
         accelerator="gpu" if not config["fast_dev_run"] else "cpu", 
         devices=1,
         logger=loggers,
         fast_dev_run=config["fast_dev_run"],
+        overfit_batches=config['overfit_batches'] if config['overfit_batches'] else 0.0,
         )
     
     #wandb_logger.watch(model)
@@ -108,11 +113,6 @@ def train_func(config: dict = None):
 def parse_args():
     parser = ArgumentParser()
 
-    # Option 1:
-    parser.add_argument("--hyperparameter_tune", action='store_true',
-                        help="If invoked, all other cli options don't matter.")
-
-    # Option 2:
     parser.add_argument("--batch_size", type=int)
     parser.add_argument("--hidden_layer_size", type=int)
     parser.add_argument("--learning_rate", type=float)
@@ -120,7 +120,9 @@ def parse_args():
     parser.add_argument("--deactivate_bert_learning", action='store_true')    
     parser.add_argument("--dropout_rate", type=float, default=0.1)
     parser.add_argument("--ckpt", type=str, help='Load weights for model from ckpt file')
-    parser.add_argument("--n_warm_up_epochs", type=int, default=2)
+    parser.add_argument("--n_warm_up_epochs", type=int, default=1)
+    parser.add_argument("--overfit_batches", type=float, default=None,
+                        help="pct of samples to fit on. Used for debugging. No validation")
     
     # Rare/Optional
     parser.add_argument("--fast_dev_run", action='store_true')
@@ -136,13 +138,6 @@ if __name__ == "__main__":
     args = parse_args()
     args_dict = vars(args)
     
-    if args.hyperparameter_tune:
-        import yaml
-        print("Starting hyperparameter search.")
-        sweep_config = yaml.safe_load(open("src/sweep_config.yaml"))
-        sweep_id = wandb.sweep(sweep=sweep_config)
-        wandb.agent(sweep_id=sweep_id, function=train_func, count=4)
-    else:
-        print("Start normal training")
-        train_func(config=args_dict)
+    print("Start normal training")
+    train_func(config=args_dict)
 

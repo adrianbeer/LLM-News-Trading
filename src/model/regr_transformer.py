@@ -3,8 +3,8 @@ import torch.nn as nn
 from torch.nn import functional as F
 from transformers import AutoModel
 import lightning as pl
-from torchmetrics.regression import MeanSquaredLogError
-from torch.optim.lr_scheduler import LambdaLR
+from torchmetrics.regression import MeanSquaredError, MeanAbsoluteError
+from torch.optim.lr_scheduler import LambdaLR, LinearLR, MultiStepLR
 from torch import optim
 from lightning.pytorch.utilities import grad_norm
 from functools import partial
@@ -27,8 +27,8 @@ class NNRegressor(pl.LightningModule):
         self.training_outputs = []
         self.training_labels = []
                 
-        self.train_loss = MeanSquaredLogError()
-        self.val_loss = MeanSquaredLogError()
+        self.train_loss = MeanAbsoluteError()
+        self.val_loss = MeanAbsoluteError()
 
         self.bert: nn.Module = AutoModel.from_pretrained(base_model)
         
@@ -66,14 +66,8 @@ class NNRegressor(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), 
                                      lr=self.hparams.learning_rate, 
-                                     weight_decay=0.01)
-        
-        scheduler = LambdaLR(optimizer, lr_lambda=[partial(lmbda, 
-                                                           max_epochs=self.trainer.max_epochs,
-                                                           warmup=self.hparams.n_warm_up_epochs)])
-        # scheduler = LinearWarmupScheduler(optimizer=optimizer, 
-        #                                   warmup=self.hparams.n_warm_up_epochs, 
-        #                                   max_epochs=self.trainer.max_epochs)
+                                     weight_decay=0.001)
+        scheduler = MultiStepLR(optimizer, milestones=[50,100, 150, 200, 250, 300], gamma=0.5)
 
         return {
             "optimizer": optimizer, 
@@ -119,6 +113,14 @@ class NNRegressor(pl.LightningModule):
     def on_train_epoch_end(self):    
         flattened_labels = torch.flatten(torch.cat(self.training_labels))
         flattened_preds = torch.flatten(torch.cat(self.training_outputs))
+        
+        # self.log_dict(
+        # {
+        #     "train/preds": flattened_preds,
+        #     "train/labels": flattened_labels,
+        #     "global_step": self.global_step
+        # })
+        
         self.log_dict(
             {
                 "train/quantile_95_filtered_acc": self.calculate_quantile_filteted_acc(flattened_preds, flattened_labels, 0.95),
@@ -152,25 +154,25 @@ class NNRegressor(pl.LightningModule):
         return self(batch)
 
 
-def lmbda(epoch, max_epochs, warmup):
-    lr_factor = 1 - 0.5 * epoch / max_epochs
-    if epoch <= warmup:
-        lr_factor = epoch * 1.0 / warmup
-    return lr_factor
+# def lmbda(epoch, max_epochs, warmup):
+#     lr_factor = 1 - 0.5 * epoch / max_epochs
+#     if epoch <= warmup:
+#         lr_factor = epoch * 1.0 / warmup
+#     return lr_factor
 
-class LinearWarmupScheduler(optim.lr_scheduler._LRScheduler):
-    def __init__(self, optimizer, warmup, max_epochs):
-        self.warmup = warmup
-        self.max_epochs = max_epochs
-        super().__init__(optimizer)
-        print(f"{max_epochs=}")
+# class LinearWarmupScheduler(optim.lr_scheduler._LRScheduler):
+#     def __init__(self, optimizer, warmup, max_epochs):
+#         self.warmup = warmup
+#         self.max_epochs = max_epochs
+#         super().__init__(optimizer)
+#         print(f"{max_epochs=}")
 
-    def get_lr(self):
-        lr_factor = self.get_lr_factor(epoch=self.last_epoch)
-        return [group['lr'] * lr_factor for group in self.optimizer.param_groups]
+#     def get_lr(self):
+#         lr_factor = self.get_lr_factor(epoch=self.last_epoch)
+#         return [group['lr'] * lr_factor for group in self.optimizer.param_groups]
 
-    def get_lr_factor(self, epoch):
-        lr_factor = 1 - 0.5 * epoch / self.max_epochs
-        if epoch <= self.warmup:
-            lr_factor = epoch * 1.0 / self.warmup
-        return lr_factor
+#     def get_lr_factor(self, epoch):
+#         lr_factor = 1 - 0.5 * epoch / self.max_epochs
+#         if epoch <= self.warmup:
+#             lr_factor = epoch * 1.0 / self.warmup
+#         return lr_factor

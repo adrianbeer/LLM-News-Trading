@@ -35,7 +35,7 @@ class PreprocessingConfig:
 
 PREP_CONFIG = PreprocessingConfig(
     splitter = RatioSplitter(0.75, 0.15),
-    tokenizer = "data/models/ProsusAI/finbert", # This is for staleness calculation
+    tokenizer = "data/models/newstokenizer",
     input_col_name =  "parsed_body",
     target_col_name = "z_score",
 )  
@@ -43,7 +43,7 @@ PREP_CONFIG = PreprocessingConfig(
 RegressorConfig: ModelConfig = ModelConfig(
     task = "Regression",
     splitter = RatioSplitter(0.75, 0.15),
-    base_model = 'data/models/roberta_base',
+    base_model = 'data/models/roberta_base', 
     neural_net = NNRegressor,
     masks = config.data.news.masks, 
     input_ids = config.data.news.input_ids,
