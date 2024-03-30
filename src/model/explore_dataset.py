@@ -3,6 +3,4 @@ from src.config import config, MODEL_CONFIG
 
 dat = pd.read_parquet(config.data.learning_dataset)
 print(dat.describe())
-
-print(f"{dat.max()=}")
-print(f"{dat.min()=}")
+dat.describe().to_csv("data/learn_dat_describe.csv")

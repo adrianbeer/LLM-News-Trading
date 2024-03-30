@@ -1,5 +1,6 @@
 from transformers import RobertaConfig, RobertaModel, RobertaForMaskedLM, RobertaTokenizerFast
 from transformers import DataCollatorForLanguageModeling
+from transformers import Trainer, TrainingArguments
 
 configuration = RobertaConfig(vocab_size = 30000,
                               hidden_size = 256,
@@ -24,6 +25,7 @@ model = RobertaModel(configuration)
 print(model.num_parameters())
 model.save_pretrained("data/models/roberta_base")
 
+
 model = RobertaForMaskedLM(config=configuration)
 tokenizer = RobertaTokenizerFast.from_pretrained("data/models/newstokenizer", max_len=256)
 
@@ -31,3 +33,26 @@ tokenizer = RobertaTokenizerFast.from_pretrained("data/models/newstokenizer", ma
 data_collator = DataCollatorForLanguageModeling(
     tokenizer=tokenizer, mlm=True, mlm_probability=0.15
 )
+
+training_args = TrainingArguments(
+    output_dir="data/models/roberta_mlm",
+    logging_dir='tb_logs/mlm',
+    evaluation_strategy="epoch",
+    learning_rate=2e-5,
+    num_train_epochs=3,
+    weight_decay=0.01,
+)
+from src.model.data_loading import MLMDataset
+
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=MLMDataset(evaluate=False),
+    eval_dataset=MLMDataset(evaluate=True),
+    data_collator=data_collator,
+)
+
+trainer.train()
+
+#! Fix checkpoints... Waaay too many checkpoints before executing module again

@@ -42,8 +42,8 @@ PREP_CONFIG = PreprocessingConfig(
 
 RegressorConfig: ModelConfig = ModelConfig(
     task = "Regression",
-    splitter = RatioSplitter(0.75, 0.15),
-    base_model = 'data/models/roberta_base', 
+    splitter = RatioSplitter(train_perc=0.75, val_perc=0.15),
+    base_model = 'data/models/roberta_mlm/checkpoint-900000', 
     neural_net = NNRegressor,
     masks = config.data.news.masks, 
     input_ids = config.data.news.input_ids,

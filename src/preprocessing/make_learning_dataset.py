@@ -6,12 +6,14 @@ import numpy as np
 def main():
     # ------------------------------------- Calculate target variables and additional features
     dat: pd.DataFrame = pd.read_parquet(path=config.data.merged)
-
+    print(f"{dat.columns=}")
+    
     # TODO: overnight news tag
     
     # The larger the move in the overall market the less idiosyncratic the move in the stock will be
     # and hence will contain less information/ more noise w.r.t. to the company news.
-    dat.loc[:, 'sample_weights'] = 1 / np.log(dat['r_spy'])
+    dat.loc[:, 'sample_weights'] = 1 / (1+np.abs(dat['r_spy'])*100)**1.5
+    
     
     dat.loc[:, "r_mkt_adj"] =  dat["r"] - dat["r_spy"]
     
@@ -43,15 +45,21 @@ def main():
     penny_stock_mask = (dataset["unadj_open"] >= 1)    
     staleness_mask = (dataset["staleness"] < 1)  
     dollar_volume_mask = (dataset["dollar_volume"] >= 30_000)
+    keywords = ["beats", "estimates", "dividend", "increase", "split", "expected"]
+    keyword_mask = dataset["parsed_body"].apply(lambda x: any([k in x for k in keywords]))
+    
     
     mask_dict = dict(penny_stock_mask=penny_stock_mask, 
                     staleness_mask=staleness_mask, 
-                    dollar_volume_mask=dollar_volume_mask)
+                    dollar_volume_mask=dollar_volume_mask,
+                    keyword_mask=keyword_mask)
+    
     for name in mask_dict:
         print(f"{name}: {(~mask_dict[name]).sum()} entries affected")
     
     dataset = dataset[
         penny_stock_mask &      # penny stocks
+        keyword_mask & 
         dollar_volume_mask #&     # illiquid stocks TODO: this has look-ahead bias
         #staleness_mask        # repeat news      
         ]

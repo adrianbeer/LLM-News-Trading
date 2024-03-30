@@ -21,6 +21,8 @@ from src.model.neural_network import get_model
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
+torch.manual_seed(2024)  
+
 pt_version = torch.__version__
 print(f"[INFO] Current PyTorch version: {pt_version} (should be 2.x+)")
 print(f'{torch.cuda.is_available()=}')
@@ -71,9 +73,9 @@ def train_func(config: dict = None):
         print(f"ModelCheckpoint path at: data/ckpts/{run.id}")
         callbacks.append(ModelCheckpoint(
                             dirpath=f"data/ckpts/{run.id}",
-                            # monitor="val/loss", 
-                            # mode="min", 
-                            # save_top_k=1, 
+                            # monitor="val/loss",
+                            # mode="min",
+                            # save_top_k=1,
                             save_last=True)
                          )
 

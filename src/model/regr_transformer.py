@@ -1,13 +1,10 @@
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
 from transformers import AutoModel
 import lightning as pl
 from torchmetrics.regression import MeanSquaredError, MeanAbsoluteError
 from torch.optim.lr_scheduler import LambdaLR, LinearLR, MultiStepLR
-from torch import optim
 from lightning.pytorch.utilities import grad_norm
-from functools import partial
 
 class NNRegressor(pl.LightningModule):
     
@@ -27,7 +24,7 @@ class NNRegressor(pl.LightningModule):
         self.training_outputs = []
         self.training_labels = []
                 
-        self.train_loss = MeanAbsoluteError()
+        self.train_mae = MeanAbsoluteError()
         self.val_loss = MeanAbsoluteError()
 
         self.bert: nn.Module = AutoModel.from_pretrained(base_model)
@@ -72,18 +69,35 @@ class NNRegressor(pl.LightningModule):
         return {
             "optimizer": optimizer, 
             "lr_scheduler": scheduler,
-            "monitor": f"train/{self.train_loss.__class__.__name__}"
+            "monitor": f"train/loss"
             }
+
+    def loss_function(self, preds, y, weights=None):
+        loss = self.weighted_mse_loss(preds=preds, y=y, weights=weights)
+        return loss
+
+    def weighted_mse_loss(self, preds, y, weights=None):
+        loss = (preds - y) ** 2
+        if weights is not None:
+            loss *= weights.expand_as(loss)
+        loss = torch.mean(loss)
+        return loss
 
     def training_step(self, train_batch, batch_idx):
         y = train_batch["target"]
         preds = self.forward(train_batch)
-        loss = self.train_loss(preds, y)
+        weights = train_batch["sample_weights"]
+        loss = self.loss_function(preds, y, weights)
+        
+        self.train_mae(preds, y)
 
         self.training_outputs.append(preds)
         self.training_labels.append(y)
 
-        self.log_dict({f"train/{self.train_loss.__class__.__name__}": loss}, 
+        self.log_dict({
+            "train/loss": loss,
+            "train/mae": self.train_mae
+                       }, 
                       on_step=True, 
                       on_epoch=True, 
                       prog_bar=True)
@@ -95,10 +109,10 @@ class NNRegressor(pl.LightningModule):
         self.validation_outputs.append(preds)
         self.validation_labels.append(y)
         
-        loss = self.val_loss(preds, y)
+        loss = self.loss_function(preds, y)
     
         self.log_dict({
-            f"val/{self.val_loss.__class__.__name__}": loss
+            f"val/loss": loss
             })
         
         return preds
@@ -113,13 +127,6 @@ class NNRegressor(pl.LightningModule):
     def on_train_epoch_end(self):    
         flattened_labels = torch.flatten(torch.cat(self.training_labels))
         flattened_preds = torch.flatten(torch.cat(self.training_outputs))
-        
-        # self.log_dict(
-        # {
-        #     "train/preds": flattened_preds,
-        #     "train/labels": flattened_labels,
-        #     "global_step": self.global_step
-        # })
         
         self.log_dict(
             {

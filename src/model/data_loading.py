@@ -26,6 +26,7 @@ class CustomDataset(Dataset):
         if self.stage:
             self.news_data = self.news_data.loc[self.news_data.split == self.stage, :]
         
+        self.sample_weights = self.news_data.loc[:, 'sample_weights']
         self.news_data = self.news_data.loc[:, target_col_name]
         
         self.input_ids = input_ids
@@ -55,12 +56,14 @@ class CustomDataset(Dataset):
             idx = idx.tolist()
 
         news_data = torch.tensor(self.news_data.iloc[idx])
+        sample_weights = torch.tensor(self.sample_weights.iloc[idx])
         input_ids = torch.from_numpy(self.input_ids.iloc[idx, :].values) 
         masks = torch.from_numpy(self.masks.iloc[idx, :].values) 
         
         sample = {'target': news_data, 
                   'input_id': input_ids, 
-                  "mask": masks}
+                  'mask': masks,
+                  'sample_weights': sample_weights}
         
         return sample
 
@@ -75,10 +78,12 @@ class CustomDataModule(pl.LightningDataModule):
                  news_data_idx: int = None,
                  n_samples: int = -1):
         super().__init__()
-        self.news_data = pd.read_parquet(news_data_path)
+        self.news_data = pd.read_parquet(news_data_path, columns=[target_col_name, 'sample_weights', 'split'])
         self.news_data = self.news_data.iloc[:n_samples, :]
+        
         self.input_ids = pd.read_parquet(input_ids_path)
         self.masks = pd.read_parquet(masks_path)
+        
         self.batch_size = batch_size
         self.target_col_name = target_col_name
         self.news_data_idx = news_data_idx
@@ -167,3 +172,31 @@ def create_dataloader(tensors: List[Tensor],
                             batch_size=batch_size,
                             **data_loader_kwargs)
     return dataloader
+
+
+class MLMDataset(Dataset):
+    def __init__(self, evaluate: bool = False):
+        self.ids = pd.read_parquet("data/news/input_ids.parquet")
+        self.masks = pd.read_parquet("data/news/masks.parquet")
+        assert (self.ids.index == self.masks.index).all()
+        self.ids = self.ids.values
+        self.masks = self.masks.values
+        
+        N = len(self.ids)
+        cutoff = int(N*0.1)
+        if evaluate:
+            self.ids = self.ids[:cutoff, :]
+            self.masks = self.masks[:cutoff, :]
+        else:
+            self.ids = self.ids[cutoff:, :]
+            self.masks = self.masks[cutoff:, :]
+
+    def __len__(self):
+        return len(self.ids)
+
+    def __getitem__(self, i):
+        # We’ll pad at the batch level.
+        return { 
+                "input_ids": self.ids[i],
+                "attention_mask": self.masks[i]
+                }

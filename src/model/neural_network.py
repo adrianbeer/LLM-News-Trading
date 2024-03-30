@@ -1,10 +1,6 @@
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.nn import functional as F
-from transformers import BertModel, RobertaModel
 import lightning as pl
-import torchmetrics
 from tqdm import tqdm
 from src.config import MODEL_CONFIG
 from src.model.bert_classifier import (
