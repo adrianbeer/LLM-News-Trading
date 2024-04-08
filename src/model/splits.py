@@ -1,4 +1,5 @@
 import pandas as pd 
+import random 
 
 class Splitter:
     
@@ -45,6 +46,9 @@ class RatioSplitter(Splitter):
     def _split(self, dat: pd.DataFrame) -> pd.DataFrame:
         N = dat.shape[0]
         dat["split"] = "training"
+        
+        # Shuffle rows to make selection random 
+        dat = dat.sample(frac=1, random_state=42)
         dat.iloc[int(N * self.train_perc):, : ].loc[:, "split"] = "validation"
         dat.iloc[int(N * (self.train_perc + self.val_perc)):, : ].loc[:, "split"] = "testing"
         dat["split"] = dat["split"].astype("category")

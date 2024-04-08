@@ -123,6 +123,8 @@ class CustomDataModule(pl.LightningDataModule):
                                                 stage=None,
                                                 target_col_name=self.target_col_name,
                                                 news_data_idx=self.news_data_idx)
+        if stage not in ['fit', 'test', 'predict']:
+            raise ValueError('Invalid stage.')
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)

@@ -23,7 +23,7 @@ def get_model(ckpt, model_args, dm) -> pl.LightningModule:
         class_distribution = dm.get_class_distribution()
         print(dm.train_dataloader().dataset.get_class_distribution())
         model: pl.LightningModule = MODEL_CONFIG.neural_net(base_model=MODEL_CONFIG.base_model,
-                                        num_classes=3,
+                                        num_classes=2,
                                         class_weights=1 / class_distribution.values,
                                         **model_args)
         initialize_final_layer_bias_with_class_weights(model, class_distribution)

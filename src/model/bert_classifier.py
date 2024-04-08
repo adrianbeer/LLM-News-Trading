@@ -4,12 +4,13 @@ from torch.nn import functional as F
 from transformers import BertModel
 import lightning as pl
 import torchmetrics
+from transformers import AutoModel
 
 
 class BERTClassifier(pl.LightningModule):
     
     def __init__(self, 
-                 bert_model_name, 
+                 base_model, 
                  num_classes, 
                  deactivate_bert_learning, 
                  learning_rate,
@@ -21,24 +22,24 @@ class BERTClassifier(pl.LightningModule):
         class_weights = torch.Tensor(class_weights, device=self.device)
         self.register_buffer("class_weights", class_weights)
         
-        average = "weighted"
-        self.train_accuracy = torchmetrics.classification.Accuracy(task="multiclass", num_classes=num_classes, average=average)
-        self.val_accuracy = torchmetrics.classification.Accuracy(task="multiclass", num_classes=num_classes, average=average)
-        self.train_f1_score = torchmetrics.classification.F1Score(task="multiclass", num_classes=num_classes, average=average)
-        self.val_f1_score = torchmetrics.classification.F1Score(task="multiclass", num_classes=num_classes, average=average)
+        self.train_accuracy = torchmetrics.classification.Accuracy(task="binary")
+        self.val_accuracy = torchmetrics.classification.Accuracy(task="binary")
         
-        self.bert: nn.Module = BertModel.from_pretrained(bert_model_name)
+        self.bert: nn.Module = AutoModel.from_pretrained(base_model)
+        
         if deactivate_bert_learning:
             for param in self.bert.parameters():
                 param.requires_grad = False
                 
-        self.dropout = nn.Dropout(0)
+        self.dropout = nn.Dropout(0.2)
         
         self.ff_layer: nn.Module = nn.Sequential(
-            # nn.Dropout(0.2),
             nn.Linear(self.bert.config.hidden_size, 10),
             nn.LeakyReLU(),
-            # nn.Dropout(0.2),
+            nn.Dropout(0.2),
+            nn.Linear(self.bert.config.hidden_size, 10),
+            nn.LeakyReLU(),
+            nn.Dropout(0.2),
             nn.Linear(10, num_classes)
         )
         
@@ -50,8 +51,19 @@ class BERTClassifier(pl.LightningModule):
         return logits
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
-        return optimizer
+        optimizer = torch.optim.AdamW(params=self.parameters(), 
+                                     lr=self.hparams.learning_rate, 
+                                     weight_decay=0.01)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=1)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.00005, steps_per_epoch=52000, epochs=3)
+        
+        lr_scheduler_config = {
+            'scheduler': scheduler,
+            'interval': 'step',
+            "frequency": 1,
+            "monitor": f"train/loss"
+        }
+        
 
     def cross_entropy_loss(self, logits, labels, weights=None):
         return F.cross_entropy(logits, labels, weight=weights)
@@ -61,7 +73,6 @@ class BERTClassifier(pl.LightningModule):
         logits = self.forward(train_batch["input_id"], train_batch["mask"])
         preds = logits.softmax(dim=1)
         
-        weighted_loss = self.cross_entropy_loss(logits, y, self.class_weights)
         unweighted_loss = self.cross_entropy_loss(logits, y)
         self.train_accuracy(preds, y)
         self.train_f1_score(preds, y)
@@ -71,9 +82,7 @@ class BERTClassifier(pl.LightningModule):
                        "train_accuracy": self.train_accuracy}, 
                       on_step=True, on_epoch=True, prog_bar=False)
         
-        self.log_dict({'train_loss (weighted)': weighted_loss,}, 
-                      on_step=True, on_epoch=True, prog_bar=True)
-        return weighted_loss
+        return unweighted_loss
     
     def validation_step(self, val_batch, batch_idx):
         y = val_batch["target"]

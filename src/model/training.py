@@ -42,6 +42,7 @@ def train_func(config: dict = None):
             wandb.config.update(config)
             
         print(f"{run.settings.mode=}")
+        print(MODEL_CONFIG)
         print(config)
         
         wandb_logger = WandbLogger(log_model=False, 
@@ -66,7 +67,7 @@ def train_func(config: dict = None):
     callbacks = [
         LearningRateMonitor(logging_interval='step',
                             log_momentum=True),
-        StochasticWeightAveraging(swa_lrs=1e-2),
+        # StochasticWeightAveraging(swa_lrs=1e-2),
         ]
     
     if not config.get('lr_finder'):
@@ -81,11 +82,11 @@ def train_func(config: dict = None):
 
     trainer = pl.Trainer(
         max_epochs=config["epochs"],
-        gradient_clip_val=0.1,
+        # gradient_clip_val=0.1,
         callbacks=callbacks,
         #accumulate_grad_batches=1,
-        precision=16,
-        accelerator="gpu" if not config["fast_dev_run"] else "cpu", 
+        # precision=16,
+        accelerator="gpu" if not (config["fast_dev_run"] or config["cpu"]) else "cpu", 
         devices=1,
         logger=loggers,
         fast_dev_run=config["fast_dev_run"],
@@ -125,7 +126,8 @@ def parse_args():
     parser.add_argument("--n_warm_up_epochs", type=int, default=1)
     parser.add_argument("--overfit_batches", type=float, default=None,
                         help="pct of samples to fit on. Used for debugging. No validation")
-    
+    parser.add_argument("--cpu", action='store_true')
+
     # Rare/Optional
     parser.add_argument("--fast_dev_run", action='store_true')
     parser.add_argument("--lr_finder", action='store_true', 

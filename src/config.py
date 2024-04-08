@@ -40,6 +40,16 @@ PREP_CONFIG = PreprocessingConfig(
     target_col_name = "z_score",
 )  
 
+ClassificationConfig: ModelConfig = ModelConfig(
+    task = "Classification",
+    splitter = RatioSplitter(train_perc=0.75, val_perc=0.15),
+    base_model = 'data/models/roberta_mlm/checkpoint-900000', 
+    neural_net = BERTClassifier,
+    masks = config.data.news.masks, 
+    input_ids = config.data.news.input_ids,
+    target_col_name = "z_class",
+)
+
 RegressorConfig: ModelConfig = ModelConfig(
     task = "Regression",
     splitter = RatioSplitter(train_perc=0.75, val_perc=0.15),

@@ -40,8 +40,11 @@ class NNRegressor(pl.LightningModule):
             nn.Linear(self.bert.config.hidden_size, hls), nn.LeakyReLU(),
             nn.Dropout(self.hparams.dropout_rate),
             
-            # nn.Linear(hls, hls), nn.LeakyReLU(),
-            # nn.Dropout(self.hparams.dropout_rate),
+            nn.Linear(hls, hls), nn.LeakyReLU(),
+            nn.Dropout(self.hparams.dropout_rate),
+            
+            nn.Linear(hls, hls), nn.LeakyReLU(),
+            nn.Dropout(self.hparams.dropout_rate),
             
             nn.Linear(hls, 1) # Output Layer
         )
@@ -61,15 +64,22 @@ class NNRegressor(pl.LightningModule):
         self.log_dict(norms)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), 
+        optimizer = torch.optim.AdamW(params=self.parameters(), 
                                      lr=self.hparams.learning_rate, 
-                                     weight_decay=0.001)
-        scheduler = MultiStepLR(optimizer, milestones=[50,100, 150, 200, 250, 300], gamma=0.5)
-
+                                     weight_decay=0.01)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=1)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.00005, steps_per_epoch=52000, epochs=3)
+        
+        lr_scheduler_config = {
+            'scheduler': scheduler,
+            'interval': 'step',
+            "frequency": 1,
+            "monitor": f"train/loss"
+        }
+        
         return {
             "optimizer": optimizer, 
-            "lr_scheduler": scheduler,
-            "monitor": f"train/loss"
+            "lr_scheduler": lr_scheduler_config 
             }
 
     def loss_function(self, preds, y, weights=None):
@@ -77,7 +87,8 @@ class NNRegressor(pl.LightningModule):
         return loss
 
     def weighted_mse_loss(self, preds, y, weights=None):
-        loss = (preds - y) ** 2
+        # cant raise to a fraction, otherwise NaNs occurr for negative values (sqrt of neg. value)
+        loss = (preds - y) ** 2 
         if weights is not None:
             loss *= weights.expand_as(loss)
         loss = torch.mean(loss)
@@ -94,6 +105,9 @@ class NNRegressor(pl.LightningModule):
         self.training_outputs.append(preds)
         self.training_labels.append(y)
 
+        # import pdb
+        # pdb.set_trace()
+
         self.log_dict({
             "train/loss": loss,
             "train/mae": self.train_mae
@@ -106,6 +120,8 @@ class NNRegressor(pl.LightningModule):
     def validation_step(self, val_batch, batch_idx):
         y = val_batch["target"]
         preds = self.forward(val_batch)
+        # import pdb
+        # pdb.set_trace()
         self.validation_outputs.append(preds)
         self.validation_labels.append(y)
         
@@ -134,9 +150,15 @@ class NNRegressor(pl.LightningModule):
                 "train/quantile_50_filtered_acc": self.calculate_quantile_filteted_acc(flattened_preds, flattened_labels, 0.5),
                 "global_step": self.global_step
             })
+        
+        # import pdb
+        # pdb.set_trace()
+        
         flattened_preds = flattened_preds.to("cpu")
-        self.logger.experiment.add_histogram("train/preds", flattened_preds, self.current_epoch)
-    
+        if not torch.isnan(flattened_preds).any():
+            self.logger.experiment.add_histogram("train/preds", flattened_preds, self.current_epoch)
+        else:
+            print("NaN flattened_preds in train/preds")
         self.training_outputs.clear()
         self.training_labels.clear()
     
@@ -150,9 +172,13 @@ class NNRegressor(pl.LightningModule):
                 "global_step": self.global_step
             })        
 
-
+        # import pdb
+        # pdb.set_trace()
         flattened_preds = flattened_preds.to("cpu")
-        self.logger.experiment.add_histogram("val/preds", flattened_preds, self.current_epoch)
+        if not torch.isnan(flattened_preds).any():
+            self.logger.experiment.add_histogram("val/preds", flattened_preds, self.current_epoch)
+        else:
+            print("NaN preds in val/preds")
  
         self.validation_outputs.clear()
         self.validation_labels.clear()
