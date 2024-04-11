@@ -1,4 +1,6 @@
-from src.model.neural_network import BERTClassifier, initialize_final_layer_bias_with_class_weights
+from src.model.neural_network import initialize_final_layer_bias_with_class_weights
+from src.model.bert_classifier import BERTClassifier
+from src.model.regr_transformer import NNRegressor
 from src.model.data_loading import CustomDataModule
 from lightning.pytorch.callbacks import StochasticWeightAveraging
 import lightning as pl
@@ -13,7 +15,7 @@ target_col_name = "z_score_class"
 news_data_idx = [12460904, 12460977, 12460964, 12495579, 12460928, 12460928, 12495897]
 
 def test_single_label_training_accuracy():
-    model: nn.Module = BERTClassifier(bert_model_name=MODEL_CONFIG.base_model,
+    model: nn.Module = BERTClassifier(base_model=MODEL_CONFIG.base_model,
                                       num_classes=3,
                                       deactivate_bert_learning=True,
                                       learning_rate=0.01,
@@ -43,5 +45,3 @@ def test_single_label_training_accuracy():
     assert (binary_preds == np.array([0, 0, 1, 1, 2, 2])).all()
 
 
-def test_multi_label_training_accuracy():
-    pass

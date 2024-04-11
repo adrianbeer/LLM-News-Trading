@@ -1,6 +1,6 @@
 
 import pandas as pd
-from src.config import config, MODEL_CONFIG
+from src.config import config, PREP_CONFIG
 import numpy as np
 
 def filter_conditions(dataset: pd.DataFrame):
@@ -9,28 +9,33 @@ def filter_conditions(dataset: pd.DataFrame):
     # Filter out Stocks... TODO: put this into filter interface and make configurable in model_config
     penny_stock_mask = (dataset["unadj_open"] >= 2)    
     staleness_mask = (dataset["staleness"] < 1)  
-    dollar_volume_mask = (dataset["dollar_volume"] >= 30_000)
+    jaccard_mask = (dataset["jaccard"] < 1)  
+    dollar_volume_mask = (dataset["dollar_volume"] >= 30_000) # illiquid stocks TODO: this has look-ahead bias (?)
     keywords = ["estimate", "dividend", "split"]
     keyword_mask = dataset["parsed_body"].apply(lambda x: any([k in x for k in keywords]))
     
     
     mask_dict = dict(penny_stock_mask=penny_stock_mask, 
                     staleness_mask=staleness_mask, 
+                    jaccard_mask=jaccard_mask,
                     dollar_volume_mask=dollar_volume_mask,
                     keyword_mask=keyword_mask)
     
-    for name in mask_dict:
-        print(f"{name}: {(~mask_dict[name]).sum()} entries affected")
+    active_masks = ['penny_stock_mask', 'dollar_volume_mask', 'jaccard_mask']
     
-    dataset = dataset[
-        penny_stock_mask &      # penny stocks
-        #keyword_mask & 
-        dollar_volume_mask &     # illiquid stocks TODO: this has look-ahead bias
-        staleness_mask        # repeat news      
-        ]
+    for name in mask_dict:
+        print(f"{'(active) 'if name in active_masks else ''}{name}: {(~mask_dict[name]).sum()} entries affected")
+    
+    combined_mask = [all(column) for column in zip(*[mask_dict[mask] for mask in active_masks])]
+    
+    dataset = dataset[combined_mask]
     
     # TODO: How many columns do we have? this might be too aggressive of a dropna
+    print(dataset.columns)
+    print("Dropping any NaNs...")
     dataset.dropna(inplace=True)
+    
+    print(f"After filtering: {dataset.shape[0]}")
     return dataset
 
 def main():
@@ -47,30 +52,31 @@ def main():
     # and hence will contain less information/ more noise w.r.t. to the company news.
     dat.loc[:, 'sample_weights'] = 1 / (1 + np.abs(dat['r_spy'])*100 ) ** 1.5
     
-    
     dat.loc[:, "r_mkt_adj"] =  dat["r"] - dat["r_spy"]
     
     #TODO: This needs to be of r_mkt_adj, not of wahtever else std_252 is or?
     dat.loc[:, "z_score"] = dat["r_mkt_adj"]# / dat["std_252"]
     
     # Winsorizing
-    dat.loc[:, "z_score"] = dat["z_score"].clip(lower=dat["z_score"].quantile(0.05), upper=dat["z_score"].quantile(0.9))
+    dat.loc[:, "z_score"] = dat["z_score"].clip(lower=dat["z_score"].quantile(0.05), upper=dat["z_score"].quantile(0.95))
     # Scaling to avoid numerical issues
     dat.loc[:, "z_score"] = (dat.loc[:, "z_score"] / dat.loc[:, "z_score"].std())
     
-    # TODO: Calculate based on training set split
-    upper_z_quantile = dat["z_score"].quantile(0.5)
-    lower_z_quantile = dat["z_score"].quantile(0.0)
+    print(f"After filtering: {dat.shape[0]}")
+    dat: pd.DataFrame = PREP_CONFIG.splitter.add_splits(dat)
+    
+    # Making balanced data set based on training data set
+    train_dat = dat['split'] == 'training'
+    upper_z_quantile = dat.loc[train_dat, "z_score"].quantile(0.666)
+    lower_z_quantile = dat.loc[train_dat, "z_score"].quantile(0.333)
     
     # Ordinal labeling
     dat.loc[:, "z_score_class"] = 0
     dat.loc[dat["z_score"] >= upper_z_quantile, "z_score_class"] = 1
-    #dat.loc[dat["z_score"] <= lower_z_quantile, "z_score_class"] = 0
+    dat.loc[dat["z_score"] <= lower_z_quantile, "z_score_class"] = 2
     print(dat["z_score_class"].value_counts())
-
-    print(f"After filtering: {dat.shape[0]}")
-
-    dat: pd.DataFrame = MODEL_CONFIG.splitter.add_splits(dat)
+    
+    
     dat.to_parquet(config.data.learning_dataset)
 
 if __name__ == "__main__":

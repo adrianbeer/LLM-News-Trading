@@ -68,7 +68,7 @@ class NNRegressor(pl.LightningModule):
                                      lr=self.hparams.learning_rate, 
                                      weight_decay=0.01)
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=1)
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.00005, steps_per_epoch=52000, epochs=3)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=self.hparams.learning_rate, steps_per_epoch=52000, epochs=3)
         
         lr_scheduler_config = {
             'scheduler': scheduler,

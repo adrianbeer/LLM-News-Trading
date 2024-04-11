@@ -25,14 +25,15 @@ class Splitter:
 
 class DateSplitter(Splitter):
     
-    def __init__(self, val_cutoff_date, test_cutoff_date):
+    def __init__(self, val_cutoff_date, test_cutoff_date, time_column):
         self.val_cutoff_date = val_cutoff_date
         self.test_cutoff_date = test_cutoff_date
-
+        self.time_column = time_column
+        
     def _split(self, dat):
         dat["split"] = "training"
-        dat.loc[dat.time >= self.val_cutoff_date, "split"] = "validation"
-        dat.loc[dat.time >= self.test_cutoff_date, "split"] = "testing"
+        dat.loc[dat[self.time_column] >= self.val_cutoff_date, "split"] = "validation"
+        dat.loc[dat[self.time_column] >= self.test_cutoff_date, "split"] = "testing"
         dat["split"] = dat["split"].astype("category")
         return dat
     

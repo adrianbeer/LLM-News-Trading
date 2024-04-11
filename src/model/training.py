@@ -14,7 +14,7 @@ from lightning.pytorch.loggers import WandbLogger, TensorBoardLogger
 from lightning.pytorch.tuner import Tuner
 from wandb_osh.lightning_hooks import TriggerWandbSyncLightningCallback
 
-from src.config import MODEL_CONFIG
+from src.config import RegressorConfig, ClassificationConfig
 from src.config import config as DATA_CONFIG
 from src.model.data_loading import CustomDataModule
 from src.model.neural_network import get_model
@@ -42,14 +42,15 @@ def train_func(config: dict = None):
             wandb.config.update(config)
             
         print(f"{run.settings.mode=}")
-        print(MODEL_CONFIG)
+        model_config = RegressorConfig if config['task'] == "regression" else ClassificationConfig
+        print(model_config)
         print(config)
         
         wandb_logger = WandbLogger(log_model=False, 
                                 group='group',
                                 offline=True)
         loggers.append(wandb_logger)
-        
+    
     model_args = dict((k, config[k]) for k in ('deactivate_bert_learning', 
                                                'learning_rate', 
                                                'dropout_rate', 
@@ -57,12 +58,12 @@ def train_func(config: dict = None):
                                                'n_warm_up_epochs'))
         
     dm = CustomDataModule(news_data_path=DATA_CONFIG.data.learning_dataset, 
-                          input_ids_path=MODEL_CONFIG.input_ids, 
-                          masks_path=MODEL_CONFIG.masks, 
+                          input_ids_path=model_config.input_ids, 
+                          masks_path=model_config.masks, 
                           batch_size=config["batch_size"],
-                          target_col_name=MODEL_CONFIG.target_col_name)
+                          target_col_name=model_config.target_col_name)
     
-    model: pl.LightningModule = get_model(config.get('ckpt'), model_args, dm)
+    model: pl.LightningModule = get_model(config.get('ckpt'), model_args, dm, model_config=model_config)
 
     callbacks = [
         LearningRateMonitor(logging_interval='step',
@@ -127,6 +128,7 @@ def parse_args():
     parser.add_argument("--overfit_batches", type=float, default=None,
                         help="pct of samples to fit on. Used for debugging. No validation")
     parser.add_argument("--cpu", action='store_true')
+    parser.add_argument("--task", type=str, help='Either classification or regression')
 
     # Rare/Optional
     parser.add_argument("--fast_dev_run", action='store_true')

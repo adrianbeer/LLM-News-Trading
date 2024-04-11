@@ -107,7 +107,7 @@ class CustomDataModule(pl.LightningDataModule):
                 f"baseline MAE (train): {self.train_dataset.get_baseline_mae()} \n"
                 f"baseline MAE (val): {self.val_dataset.get_baseline_mae()} \n"
                 f"baseline MSE (train): {self.train_dataset.get_baseline_mse()} \n"
-                f"baseline MSE (train): {self.val_dataset.get_baseline_mse()}"
+                f"baseline MSE (val): {self.val_dataset.get_baseline_mse()}"
                 )
         if stage == "test":
             self.test_dataset = CustomDataset(news_data=self.news_data, 

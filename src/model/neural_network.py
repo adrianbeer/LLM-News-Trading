@@ -2,31 +2,29 @@ import numpy as np
 import torch
 import lightning as pl
 from tqdm import tqdm
-from src.config import MODEL_CONFIG
-from src.model.bert_classifier import (
-    initialize_final_layer_bias_with_class_weights,
-)
+# from src.model.bert_classifier import (
+#     initialize_final_layer_bias_with_class_weights,
+# )
 
-def get_model(ckpt, model_args, dm) -> pl.LightningModule:
+def get_model(ckpt, model_args, dm, model_config) -> pl.LightningModule:
     if ckpt:
         #! I found that when you integrate lightning with ray tune, you must use model.load_state_dict() instead of model.load_from_checkpoint() to really get the trained weights.
-        model: pl.LightningModule = MODEL_CONFIG.neural_net.load_from_checkpoint(ckpt, 
+        model: pl.LightningModule = model_config.neural_net.load_from_checkpoint(ckpt, 
                                                                                  **model_args)
         print(f"Using Checkpointed model at {ckpt}...")
-    elif MODEL_CONFIG.task == "Regression":
+    elif model_config.task == "Regression":
         print("Initialize news regression model...")
-        model: pl.LightningModule = MODEL_CONFIG.neural_net(base_model=MODEL_CONFIG.base_model,
+        model: pl.LightningModule = model_config.neural_net(base_model=model_config.base_model,
                                                   **model_args)
-    elif MODEL_CONFIG.task == "Classification":
-        print("Initialize new Classification model...")
-        dm.setup("fit")
-        class_distribution = dm.get_class_distribution()
-        print(dm.train_dataloader().dataset.get_class_distribution())
-        model: pl.LightningModule = MODEL_CONFIG.neural_net(base_model=MODEL_CONFIG.base_model,
-                                        num_classes=2,
-                                        class_weights=1 / class_distribution.values,
+    elif model_config.task == "Classification":
+        print("Initialize new classification model...")
+        # dm.setup("fit")
+        # class_distribution = dm.get_class_distribution()
+        # print(dm.train_dataloader().dataset.get_class_distribution())
+        model: pl.LightningModule = model_config.neural_net(base_model=model_config.base_model,
+                                        num_classes=3,
                                         **model_args)
-        initialize_final_layer_bias_with_class_weights(model, class_distribution)
+        # initialize_final_layer_bias_with_class_weights(model, class_distribution)
     else:
         raise ValueError()
     return model

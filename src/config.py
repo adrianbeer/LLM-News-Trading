@@ -4,7 +4,7 @@ import os
 from src.model.bert_classifier import BERTClassifier
 from src.model.regr_transformer import NNRegressor
 import torch.nn as nn
-from src.model.splits import Splitter, RatioSplitter
+from src.model.splits import Splitter, RatioSplitter, DateSplitter
 from dataclasses import dataclass
 
 # Default location/file
@@ -19,7 +19,6 @@ config = DotMap(yaml.safe_load(open(data_config_path)), _dynamic=False)
 @dataclass(frozen=True)
 class ModelConfig:
     task: str
-    splitter: Splitter
     neural_net: nn.Module
     base_model: str
     masks: str
@@ -34,7 +33,7 @@ class PreprocessingConfig:
     target_col_name: str
 
 PREP_CONFIG = PreprocessingConfig(
-    splitter = RatioSplitter(0.75, 0.15),
+    splitter = DateSplitter(val_cutoff_date="2022-06-01", test_cutoff_date="2023-06-01", time_column="est_entry_time"),
     tokenizer = "data/models/newstokenizer",
     input_col_name =  "parsed_body",
     target_col_name = "z_score",
@@ -42,22 +41,18 @@ PREP_CONFIG = PreprocessingConfig(
 
 ClassificationConfig: ModelConfig = ModelConfig(
     task = "Classification",
-    splitter = RatioSplitter(train_perc=0.75, val_perc=0.15),
     base_model = 'data/models/roberta_mlm/checkpoint-900000', 
     neural_net = BERTClassifier,
     masks = config.data.news.masks, 
     input_ids = config.data.news.input_ids,
-    target_col_name = "z_class",
+    target_col_name = "z_score_class",
 )
 
 RegressorConfig: ModelConfig = ModelConfig(
     task = "Regression",
-    splitter = RatioSplitter(train_perc=0.75, val_perc=0.15),
     base_model = 'data/models/roberta_mlm/checkpoint-900000', 
     neural_net = NNRegressor,
     masks = config.data.news.masks, 
     input_ids = config.data.news.input_ids,
     target_col_name = "z_score",
 )
-
-MODEL_CONFIG = RegressorConfig
