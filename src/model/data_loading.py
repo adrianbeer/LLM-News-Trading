@@ -75,11 +75,9 @@ class CustomDataModule(pl.LightningDataModule):
                  masks_path: str, 
                  batch_size: int, 
                  target_col_name: str, 
-                 news_data_idx: int = None,
-                 n_samples: int = -1):
+                 news_data_idx: int = None):
         super().__init__()
         self.news_data = pd.read_parquet(news_data_path, columns=[target_col_name, 'sample_weights', 'split'])
-        self.news_data = self.news_data.iloc[:n_samples, :]
         
         self.input_ids = pd.read_parquet(input_ids_path)
         self.masks = pd.read_parquet(masks_path)
@@ -127,16 +125,29 @@ class CustomDataModule(pl.LightningDataModule):
             raise ValueError('Invalid stage.')
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=True)
+        return DataLoader(self.train_dataset, 
+                          batch_size=self.batch_size, 
+                          shuffle=True, 
+                          pin_memory=True)
         
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
+        return DataLoader(self.val_dataset, 
+                          batch_size=self.batch_size, 
+                          shuffle=False, 
+                          pin_memory=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
+        return DataLoader(self.test_dataset, 
+                          batch_size=self.batch_size, 
+                          shuffle=False, 
+                          pin_memory=True)
 
     def predict_dataloader(self):
-        return DataLoader(self.predict_dataset, batch_size=self.batch_size, shuffle=False, pin_memory=True)
+        return DataLoader(self.predict_dataset, 
+                          batch_size=self.batch_size, 
+                          shuffle=False, 
+                          pin_memory=True,
+                          num_workers=3)
 
 
 def get_data_loader_from_dataset(dataset: pd. DataFrame, 
