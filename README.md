@@ -16,6 +16,7 @@ Download data using the modules in src.downloaders etc.
 1. python -m src.preprocessing.staleness --calculate_staleness
 1. python -m src.preprocessing.data_merger initial_merge
 1. python -m src.preprocessing.data_merger merge_daily_indicators
+1. python -m src.preprocessing.adding_jaccard
 1. python -m src.preprocessing.make_learning_dataset
 
 ## 3. Training

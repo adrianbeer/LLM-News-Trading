@@ -15,8 +15,8 @@ dataset = pd.read_parquet(config.data.learning_dataset)
 # ---- Classification Model ---- 
 BATCH_SIZE = 64
 target_col_name = 'z_score_class'
-model_id = '7zdo79pv'
-model_step = 'epoch=3-step=171548'
+model_id = '4mnp2it4'
+model_step = 'last'
 
 torch.cuda.empty_cache()
 dm = CustomDataModule(news_data_path=config.data.learning_dataset, 
@@ -25,7 +25,7 @@ dm = CustomDataModule(news_data_path=config.data.learning_dataset,
                       batch_size=64,
                       target_col_name=target_col_name)
 
-model = BERTClassifier.load_from_checkpoint(f"data/ckpts/{model_id}/{model_step}.ckpt", num_classes=3)
+model = BERTClassifier.load_from_checkpoint(f"data/ckpts/{model_id}/{model_step}.ckpt")
 dm.setup('predict')
 
 # disable randomness, dropout, etc...

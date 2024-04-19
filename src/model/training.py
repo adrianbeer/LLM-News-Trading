@@ -75,10 +75,10 @@ def train_func(config: dict = None):
         print(f"ModelCheckpoint path at: data/ckpts/{run.id}")
         callbacks.append(ModelCheckpoint(
                             dirpath=f"data/ckpts/{run.id}",
-                            # monitor="val/loss",
-                            # mode="min",
-                            # save_top_k=1,
-                            save_last=True)
+                            monitor="val/loss",
+                            mode="min",
+                            save_top_k=1,
+                            save_last=False)
                          )
 
     trainer = pl.Trainer(

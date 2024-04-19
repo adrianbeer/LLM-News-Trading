@@ -33,7 +33,7 @@ class PreprocessingConfig:
     target_col_name: str
 
 PREP_CONFIG = PreprocessingConfig(
-    splitter = DateSplitter(val_cutoff_date="2022-06-01", test_cutoff_date="2023-06-01", time_column="est_entry_time"),
+    splitter = DateSplitter(val_cutoff_date="2022-01-01", test_cutoff_date="2023-01-01", time_column="est_entry_time"),
     tokenizer = "data/models/newstokenizer",
     input_col_name =  "parsed_body",
     target_col_name = "z_score",
@@ -45,7 +45,7 @@ ClassificationConfig: ModelConfig = ModelConfig(
     neural_net = BERTClassifier,
     masks = config.data.news.masks, 
     input_ids = config.data.news.input_ids,
-    target_col_name = "z_score_class",
+    target_col_name = "z_score_2_class",
 )
 
 RegressorConfig: ModelConfig = ModelConfig(

@@ -16,7 +16,8 @@ class BERTClassifier(pl.LightningModule):
                  learning_rate,
                  dropout_rate,
                  hidden_layer_size,
-                 n_warm_up_epochs
+                 n_warm_up_epochs,
+                 indicators_length
                  ):
         super().__init__()
         self.save_hyperparameters()
@@ -38,7 +39,7 @@ class BERTClassifier(pl.LightningModule):
         self.dropout = nn.Dropout(dropout_rate)
         hls = self.hparams.hidden_layer_size
         self.ff_layer: nn.Module = nn.Sequential(
-            nn.Linear(self.bert.config.hidden_size, hls),
+            nn.Linear(self.bert.config.hidden_size + self.hparams.indicators_length, hls),
             nn.LeakyReLU(),
             nn.Dropout(dropout_rate),
             nn.Linear(hls, hls),
@@ -47,11 +48,12 @@ class BERTClassifier(pl.LightningModule):
             nn.Linear(hls, num_classes)
         )
         
-    def forward(self, input_ids, masks):
+    def forward(self, input_ids, masks, indicators):
         outputs = self.bert(input_ids=input_ids, attention_mask=masks)
         pooled_output = outputs.pooler_output
         x = self.dropout(pooled_output)
-        logits = self.ff_layer(x)
+        ff_inputs = torch.cat((x, indicators))
+        logits = self.ff_layer(ff_inputs)
         return logits
 
     def configure_optimizers(self):
@@ -72,21 +74,40 @@ class BERTClassifier(pl.LightningModule):
             "lr_scheduler": lr_scheduler_config 
             }
 
+    # def sce_loss(self, pred, labels, weights):
+    #     alpha = 0.3
+    #     beta = 5
+    #     ce = self.weighted_cross_entropy(pred, labels, weights)
+    #     # RCE
+    #     pred = F.softmax(pred, dim=1)
+    #     pred = torch.clamp(pred, min=1e-7, max=1.0)
+    #     label_one_hot = torch.nn.functional.one_hot(labels, self.hparams.num_classes)
+    #     label_one_hot = torch.clamp(label_one_hot, min=1e-4, max=1.0)
+    #     rce = (-1*torch.sum(pred * torch.log(label_one_hot), dim=1))
+    #     if weights is not None:
+    #         rce = rce*weights
+    #     # Loss
+    #     loss = alpha * ce + beta * rce.mean()
+    #     return loss
 
-    def cross_entropy_loss(self, logits, labels, weights=None):
+    def weighted_cross_entropy(self, logits, labels, weights=None):
         loss = F.cross_entropy(logits, labels, reduction='none')
         if weights is not None:
             loss = loss * weights
         loss = torch.mean(loss)
         return loss
 
+    def my_loss(self, logits, labels, weights=None):
+        return self.weighted_cross_entropy(logits, labels, weights)
+
     def training_step(self, train_batch, batch_idx):
         y = train_batch["target"]
-        logits = self.forward(train_batch["input_id"], train_batch["mask"])
+        indicators = train_batch["indicators"]
+        logits = self.forward(train_batch["input_id"], train_batch["mask"], indicators)
         preds = logits.softmax(dim=1)
         
         weights = train_batch['sample_weights']
-        unweighted_loss = self.cross_entropy_loss(logits, y, weights=weights)
+        unweighted_loss = self.my_loss(logits, y, weights=weights)
         self.train_accuracy(preds, y)
         # self.train_f1_score(preds, y)
     
@@ -99,10 +120,11 @@ class BERTClassifier(pl.LightningModule):
     
     def validation_step(self, val_batch, batch_idx):
         y = val_batch["target"]
-        logits = self.forward(val_batch["input_id"], val_batch["mask"])
+        indicators = val_batch["indicators"]
+        logits = self.forward(val_batch["input_id"], val_batch["mask"], indicators)
         preds = logits.softmax(dim=1)
         
-        loss = self.cross_entropy_loss(logits, y)        
+        loss = self.my_loss(logits, y)        
         self.val_accuracy(preds, y)
         # self.val_f1_score(preds, y)
     
@@ -112,7 +134,7 @@ class BERTClassifier(pl.LightningModule):
         return loss
     
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        return self(batch["input_id"], batch["mask"])
+        return self(batch["input_id"], batch["mask"], batch['indicators'])
 
 
 # def initialize_final_layer_bias_with_class_weights(model, weights):
