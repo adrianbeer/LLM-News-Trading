@@ -2,15 +2,8 @@ from tqdm.auto import tqdm
 import pandas as pd 
 import numpy as np
 from src.config import config
-
+from src.utils.strings import jaccard_similarity
 dataset: pd.DataFrame = pd.read_parquet(path=config.data.merged)
-
-def jaccard_similarity(str1, str2):
-    set1 = set(str1.split())
-    set2 = set(str2.split())
-    intersection = set1.intersection(set2)
-    union = set1.union(set2)
-    return len(intersection) / len(union)
 
 # To determine the freshness of news, I compare the similarity of each news article with all articles published in the previous three days.
 original_index_name = dataset.index.name

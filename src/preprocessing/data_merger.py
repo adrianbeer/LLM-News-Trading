@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 import plotly.express as px
+from src.utils.strings import jaccard_similarity
 
 tqdm.pandas()
 import pytz
@@ -127,7 +128,7 @@ def add_additional_indicators():
     dat: pd.DataFrame = pd.read_parquet(path=config.data.merged)
 
     # Add overnight news tag
-    dat["has_intraday_time"] = ~((dat.news_time.dt.hour == 0) & (dat.news_time.dt.minute == 0))
+    dat["has_intraday_time"] = ~((dat.news_time.dt.hour == 0) & (dat.news_time.dt.minute == 0) & (dat.news_time.dt.seconds == 0))
     # Set is_overnight_news to 1... These should not contain as much unprocessed information as real time news
     dat["is_overnight_news"] = (
         dat.news_time.dt.hour >= 16) \
@@ -136,6 +137,18 @@ def add_additional_indicators():
     )
     
     dat.to_parquet(config.data.merged)
+
+
+def _same_night_news_jaccard_filter(ddf):
+    drop_idcs = []
+    for i in list(range(ddf.shape[0]))[:-1]:
+        for j in list(range(ddf.shape[0]))[i+1:]:
+            jaccard_body = jaccard_similarity(ddf.iloc[i]['parsed_body'], ddf.iloc[j]['parsed_body'])
+            if jaccard_body > 0.9:
+                drop_idcs.append(ddf.iloc[i].index)
+    ddf = ddf.drop(drop_idcs)
+    print(f"Dropping {len(drop_idcs)=} news via same_night_news_jaccard_filter function.")
+    return ddf
 
 
 def merge_same_night_news(df: pd.DataFrame) -> pd.Series:
@@ -148,6 +161,8 @@ def merge_same_night_news(df: pd.DataFrame) -> pd.Series:
         #! If we have importance/ relevance tags on the news we might want to prioritice e.g. ad-hocs here 
         df.sort_values('news_time', ascending=False).iloc[0]
         assert df.iloc[0]['news_time'] >= df.iloc[1]['news_time']
+        df = _same_night_news_jaccard_filter(df)
+        
         merged_row = df.iloc[0]
         merged_row['title'] = ' '.join(df['title'].tolist())
         merged_row['parsed_body'] = ' '.join(df['parsed_body'].tolist())
@@ -174,8 +189,7 @@ def merge_all_overnight_news():
 
     dat = dat.groupby('stocks').apply(merge_overnight_news_for_stock)
     print(f"After overnight merging {dat.shape[0]=}")
-    #! This is only temporary for debugging
-    dat.to_parquet(path="data/debugging_merged_overnight.parquet")
+    return dat
 
 if __name__ == "__main__":
     news_msg_source = config.data.news.cleaned
@@ -189,8 +203,10 @@ if __name__ == "__main__":
         add_additional_indicators()
 
     if cmd == 'merge_overnight_news':
-        merge_all_overnight_news()
-
+        df = merge_all_overnight_news()
+        #! This is only temporary for debugging
+        df.to_parquet(path="data/debugging_merged_overnight.parquet")
+        
     elif cmd == "merge_daily_indicators":
         merge_with_daily_indicators(daily_ts_dir_path=config.data.iqfeed.daily.cleaned,
                                     merged_path=config.data.merged)

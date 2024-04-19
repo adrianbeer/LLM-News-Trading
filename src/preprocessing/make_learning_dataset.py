@@ -14,21 +14,18 @@ def filter_conditions(dataset: pd.DataFrame):
     dollar_volume_mask = (dataset["dollar_volume"] >= 30_000) # illiquid stocks TODO: this has look-ahead bias (?)
     keywords = ["estimate", "dividend", "split"]
     keyword_mask = dataset["parsed_body"].apply(lambda x: any([k in x for k in keywords]))
-    has_intraday_time = dataset['has_intraday_time']
     
     mask_dict = dict(penny_stock_mask=penny_stock_mask, 
                     # staleness_mask=staleness_mask, 
                     jaccard_mask=jaccard_mask,
                     dollar_volume_mask=dollar_volume_mask,
                     keyword_mask=keyword_mask,
-                    has_intraday_time=has_intraday_time,
                     )
     
     active_masks = [
         'penny_stock_mask', 
         #'dollar_volume_mask', 
-        'jaccard_mask', 
-        'has_intraday_time',]
+        'jaccard_mask']
     
     for name in mask_dict:
         print(f"{'(active) 'if name in active_masks else ''}{name}: {(~mask_dict[name]).sum()} entries affected")

@@ -12,6 +12,7 @@ from src.preprocessing.news_parser import filter_body, infer_author
 from src.utils.dataframes import block_apply_factory, parallelize_dataframe
 from src.utils.time import convert_timezone
 import argparse
+from src.preprocessing.news_parser import remove_company_specifics
 
 logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 tqdm.pandas()
@@ -40,6 +41,18 @@ def merge_news_sources():
     ddf = pd.concat(dfs, axis=0)
     print(f"{dfs[0].shape[0]=}(bzg) + {dfs[1].shape[0]=} (fnspid) = {ddf.shape[0]=}")
     ddf = ddf.reset_index(drop=True)
+
+    # Removing all news without intra_day time information, otherwise merging news in the same
+    # over night decision segement doesn't work
+    is_intra_day_time_news = ~((ddf.news_time.dt.hour == 0) & (ddf.news_time.dt.minute == 0) & (ddf.news_time.dt.seconds == 0))
+    ddf = ddf.loc[is_intra_day_time_news, :].drop(columns=['intra_day_time'])
+    
+    # Set is_overnight_news to 1... These should not contain as much unprocessed information as real time news
+    ddf["is_overnight_news"] = (
+        ddf.news_time.dt.hour >= 16) \
+        | (ddf.news_time.dt.hour <= 9) \
+        | ((ddf.news_time.dt.hour == 9) & ((ddf.news_time.dt.minute <= 30))
+    )
 
     ## Remove rows for which no stock ticker is recorded
     ddf = ddf[ddf.stocks != '']
@@ -133,11 +146,10 @@ def preprocess_news(ddf):
 
     ## Parsing News Bodies
     ddf["time"] = ddf["time"].progress_map(lambda x: convert_timezone(pd.to_datetime(x)))
-    ddf["parsed_body"] = parallelize_dataframe(ddf, block_apply_factory(filter_body, axis=1), n_cores=os.cpu_count())
+    ddf["parsed_body"] = parallelize_dataframe(ddf, block_apply_factory(filter_body, axis=1), n_cores=os.cpu_count())        
     
     return ddf, ticker_name_mapper_reduced
 
-from src.preprocessing.news_parser import remove_company_specifics
 WHITELIST = set("abcdefghijklmnopqrstuvwxyz ")
 
 def stripper(x):
@@ -147,12 +159,6 @@ def stripper(x):
     return text
 
 def make_stripped_news(ddf):
-    #! Should be done in preprocess_news, but dont want to execute it again right now
-    ddf["parsed_body"] = ddf.progress_apply(lambda x: remove_company_specifics(x.parsed_body, 
-                                                                               x.company_name, 
-                                                                               x.short_name, 
-                                                                               x.stocks),
-                                            axis=1)
     ddf["parsed_body"] = parallelize_dataframe(ddf["parsed_body"], block_apply_factory(stripper), n_cores=os.cpu_count())
     ddf.to_parquet(config.data.news.stripped) 
 
@@ -182,8 +188,6 @@ if __name__ == "__main__":
                         help='Takes quite a long time, and can`t be parallelized much')
     parser.add_argument('--process_body', action='store_true',
                         help='Can be heavilty parallelized. Invoke this after creating the ticker_name_mapping')
-    parser.add_argument('--check_for_company_in_title', action='store_true',
-                        help='Removes rows for which the company name is not in title')
     parser.add_argument('--stripper', action='store_true',
                         help='Make stripped news')
     args = parser.parse_args()
@@ -197,13 +201,20 @@ if __name__ == "__main__":
         print("Processing news bodies...")
         ddf = merge_news_sources()
         ddf, ticker_name_mapper_reduced = preprocess_news(ddf)
-        ddf.to_parquet(config.data.news.cleaned)
         ticker_name_mapper_reduced.to_parquet(config.data.shared.ticker_name_mapper_reduced)
-
-    if args.check_for_company_in_title:
-        ddf = pd.read_parquet(path=config.data.news.cleaned)
+        
+        # Removing news, where the company name doesnt appear in the title
         idcs = get_indices_where_company_name_is_in_title(ddf)
         ddf = ddf.loc[idcs, :]
+        
+        # After making sure that the company name appears in the title (relevance) we remove company identifers
+        # from the title.
+        ddf.loc[:, "title"] = ddf.progress_apply(lambda x: remove_company_specifics(x.title, 
+                                                                             x.company_name, 
+                                                                             x.short_name, 
+                                                                             x.stocks),
+                                                 axis=1)
+        
         ddf.to_parquet(config.data.news.cleaned)
         
     if args.stripper:

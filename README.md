@@ -11,26 +11,26 @@ Download data using the modules in src.downloaders etc.
 ## 2. Preprocessing Pipeline
 1. python -m src.preprocessing.news_preprocessing --ticker_name_mapping
 1. python -m src.preprocessing.news_preprocessing --process_body
-1. python -m src.preprocessing.news_preprocessing --check_for_company_in_title
 1. python -m src.preprocessing.news_preprocessing --stripper
 1. <!-- python -m src.preprocessing.staleness --generate_cls_tokens --batchsize <batchsize> -->
 1. <!-- python -m src.preprocessing.staleness --calculate_staleness -->
 1. python -m src.preprocessing.data_merger initial_merge
 1. python -m src.preprocessing.data_merger merge_daily_indicators
 
-#! jaccard should be checked for same overnight news before merging news titles and bodies to avoid crowding with the same information
-
-#! and then afterwards again to check freshnews after, two applications of jaccard index
 1. python -m src.preprocessing.adding_jaccard
-<!-- Tokenizer needs to be applied after data_merger as we merge news that occurr in the same night in that module -->
-
-#! Only here should the title be appended
-1. python -m src.preprocessing.tokenizer
 1. python -m src.preprocessing.make_learning_dataset
+
+#! Tokenizer should have access only to `parsed_body` (mayber `merged_msg` in future?) of the **training** set.
+
+# both of these require the GPU!
+1. python -m src.preprocessing.tokenizer
+1. python -m src.model.mlm_train
 
 ## 3. Training
 See `python -m src.model.training -h` for more info.
 
+## 4. Predictions:
+python -m src.evaluation.predictions
 
 # Miscellaneous 
 ## Google Colab
