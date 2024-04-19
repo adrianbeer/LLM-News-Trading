@@ -8,27 +8,27 @@ def filter_conditions(dataset: pd.DataFrame):
     print(f"Before filtering: {dataset.shape[0]}")
 
     # Filter out Stocks... TODO: put this into filter interface and make configurable in model_config
-    penny_stock_mask = (dataset["unadj_open"] >= 2)    
+    penny_stock_mask = (dataset["unadj_open"] >= 1)    
     # staleness_mask = (dataset["staleness"] < 1)  
     jaccard_mask = (dataset["jaccard"] < 0.9)  
     dollar_volume_mask = (dataset["dollar_volume"] >= 30_000) # illiquid stocks TODO: this has look-ahead bias (?)
     keywords = ["estimate", "dividend", "split"]
     keyword_mask = dataset["parsed_body"].apply(lambda x: any([k in x for k in keywords]))
-    time_is_available = ~((dataset['news_time'].dt.hour == 0) & (dataset['news_time'].dt.minute == 0))
+    has_intraday_time = dataset['has_intraday_time']
     
     mask_dict = dict(penny_stock_mask=penny_stock_mask, 
                     # staleness_mask=staleness_mask, 
                     jaccard_mask=jaccard_mask,
                     dollar_volume_mask=dollar_volume_mask,
                     keyword_mask=keyword_mask,
-                    time_is_available=time_is_available,
+                    has_intraday_time=has_intraday_time,
                     )
     
     active_masks = [
-        #'penny_stock_mask', 
+        'penny_stock_mask', 
         #'dollar_volume_mask', 
         'jaccard_mask', 
-        'time_is_available']
+        'has_intraday_time',]
     
     for name in mask_dict:
         print(f"{'(active) 'if name in active_masks else ''}{name}: {(~mask_dict[name]).sum()} entries affected")
@@ -52,9 +52,6 @@ def main():
     
     # We need to filter before winsorizing, otherwise crazy outliers will affect max/min values a lot 
     dat = filter_conditions(dataset=dat)
-    
-    #! Adding indicators here... move this somewhere else at some point
-    dat.loc[:, 'is_overnight_news'] == (dat.news['news_time'].dt.hour >= 16) | ((dat.news['news_time'].dt.hour <= 9) & (dat.news['news_time'].dt.minute < 30))
     
     # The larger the move in the overall market the less idiosyncratic the move in the stock will be
     # and hence will contain less information/ more noise w.r.t. to the company news.

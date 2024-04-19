@@ -108,6 +108,7 @@ def preprocess_news(ddf):
     ddf = ddf[ddf.stocks.isin(mapper.index.to_list())]
     ddf["company_name"] = ddf.stocks.progress_map(lambda x: mapper.company_names.loc[x]).astype(str)
     ddf["short_name"] = ddf.stocks.progress_map(lambda x: mapper.short_name.loc[x]).astype(str)
+    ddf.loc[:, 'short_name'] = ddf.loc[:, 'short_name'].progress_map(lambda x: x.strip('&,. '))
     print(f"Es verbleiben {ddf.shape[0]} Nachrichten, für die wir den Ticker zu einem Firmennamen aufgelösen konnten.")
 
     ### Firmennamen-Nachrichtenkörper-Verifikation
@@ -134,9 +135,6 @@ def preprocess_news(ddf):
     ddf["time"] = ddf["time"].progress_map(lambda x: convert_timezone(pd.to_datetime(x)))
     ddf["parsed_body"] = parallelize_dataframe(ddf, block_apply_factory(filter_body, axis=1), n_cores=os.cpu_count())
     
-    #! Since the title isn't preprocessed, the company title can be contained which could lead to the neural network
-    #! to overfit on the company name. 
-    ddf["parsed_body"] = ddf.apply(lambda x: x['title'] + ". " + x['parsed_body'], axis=1)
     return ddf, ticker_name_mapper_reduced
 
 from src.preprocessing.news_parser import remove_company_specifics
@@ -158,6 +156,25 @@ def make_stripped_news(ddf):
     ddf["parsed_body"] = parallelize_dataframe(ddf["parsed_body"], block_apply_factory(stripper), n_cores=os.cpu_count())
     ddf.to_parquet(config.data.news.stripped) 
 
+
+def get_indices_where_company_name_is_in_title(ddf):
+    proc_news: pd.DataFrame = ddf
+
+    comma_appears_in_short_name = proc_news.apply((lambda x: ',' in x['short_name']), axis=1)
+    f"{comma_appears_in_short_name.sum() / proc_news.shape[0]:.0%}"    
+
+    comma_appears_in_short_name = proc_news.apply((lambda x: ',' in x['short_name']), axis=1)
+    print(f"{comma_appears_in_short_name.sum()=}")
+    proc_news.loc[comma_appears_in_short_name, 'short_name'] = proc_news.loc[comma_appears_in_short_name, 'short_name'].apply(lambda x: x.split(',')[0])
+
+    company_name_appears_in_title = proc_news.apply(
+        lambda x: (' '.join(x['short_name'].lower().split(' ')[:-1]) in x['title'].lower()) or (x['stocks'].lower() in x['title'].lower()), axis=1
+    )
+    f"% of news where the company name appears in the title: {company_name_appears_in_title.sum() / proc_news.shape[0]:.0%}"
+
+    valid_indices = proc_news[company_name_appears_in_title].index
+    return valid_indices
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='First invoke with --ticker_name_mapping and afterwards with --process_body.')
@@ -165,6 +182,8 @@ if __name__ == "__main__":
                         help='Takes quite a long time, and can`t be parallelized much')
     parser.add_argument('--process_body', action='store_true',
                         help='Can be heavilty parallelized. Invoke this after creating the ticker_name_mapping')
+    parser.add_argument('--check_for_company_in_title', action='store_true',
+                        help='Removes rows for which the company name is not in title')
     parser.add_argument('--stripper', action='store_true',
                         help='Make stripped news')
     args = parser.parse_args()
@@ -181,6 +200,12 @@ if __name__ == "__main__":
         ddf.to_parquet(config.data.news.cleaned)
         ticker_name_mapper_reduced.to_parquet(config.data.shared.ticker_name_mapper_reduced)
 
+    if args.check_for_company_in_title:
+        ddf = pd.read_parquet(path=config.data.news.cleaned)
+        idcs = get_indices_where_company_name_is_in_title(ddf)
+        ddf = ddf.loc[idcs, :]
+        ddf.to_parquet(config.data.news.cleaned)
+        
     if args.stripper:
         ddf = pd.read_parquet(config.data.news.cleaned)
         make_stripped_news(ddf)

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
+import plotly.express as px
 
 tqdm.pandas()
 import pytz
@@ -61,19 +62,6 @@ def merge_news_with_price_ts(prices_path,
     spy.columns = [x.strip("adj_") for x in spy.columns]
     spy.columns = [f"SPY_{x}" for x in spy.columns]
 
-    # keep_columns_from_news = ['stocks']
-    # keep_columns = ["est_entry_time",
-    #                 "est_exit_time",
-    #                 "entry_time",
-    #                 "exit_time",
-    #                 "r",
-    #                 "r_spy", 
-    #                 "unadj_entry_open", 
-    #                 "entry_is_too_far_apart", 
-    #                 "exit_is_too_far_apart",
-    #                 "parsed_body"] + keep_columns_from_news
-
-
     func = partial(merge_ticker_news_with_prices, spy=spy)
 
     with tqdm(total=len(news.stocks.unique()), desc="merge_stock", leave=True, position=0) as pbar:
@@ -133,14 +121,75 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
     dataset.to_parquet(path=merged_path)
 
 
+
+def add_additional_indicators():
+    print("Adding additional indicators...")
+    dat: pd.DataFrame = pd.read_parquet(path=config.data.merged)
+
+    # Add overnight news tag
+    dat["has_intraday_time"] = ~((dat.news_time.dt.hour == 0) & (dat.news_time.dt.minute == 0))
+    # Set is_overnight_news to 1... These should not contain as much unprocessed information as real time news
+    dat["is_overnight_news"] = (
+        dat.news_time.dt.hour >= 16) \
+        | (dat.news_time.dt.hour <= 9) \
+        | ((dat.news_time.dt.hour == 9) & ((dat.news_time.dt.minute <= 30))
+    )
+    
+    dat.to_parquet(config.data.merged)
+
+
+def merge_same_night_news(df: pd.DataFrame) -> pd.Series:
+    assert 'title' in df.columns
+    if df.shape[0] == 1:
+        # Nothing to merge
+        return df.iloc[0]
+    else:
+        # Take the row/ time of the latest news in that overnight segment as the new row template
+        #! If we have importance/ relevance tags on the news we might want to prioritice e.g. ad-hocs here 
+        df.sort_values('news_time', ascending=False).iloc[0]
+        assert df.iloc[0]['news_time'] >= df.iloc[1]['news_time']
+        merged_row = df.iloc[0]
+        merged_row['title'] = ' '.join(df['title'].tolist())
+        merged_row['parsed_body'] = ' '.join(df['parsed_body'].tolist())
+        #! merge title and parsed body here...
+        merged_row['parsed_body'] = ' '.join([merged_row['title'], merged_row['parsed_body']])
+        
+        return merged_row
+
+def merge_overnight_news_for_stock(df):
+    df = df.groupby('est_entry_time').apply(merge_same_night_news)
+    return df
+
+def merge_all_overnight_news():
+    dat: pd.DataFrame = pd.read_parquet(path=config.data.merged)
+    print(f"Before overnight merging {dat.shape[0]=}")
+    
+    tmp = dat.loc[:, ['est_entry_time', 'r', 'stocks']].groupby(['stocks', 'est_entry_time']).count()
+    sum_of_news_sharing_a_segment = tmp.loc[tmp['r'] > 2, 'r'].sum()
+    count_of_segments_with_more_than_one_news = tmp[tmp['r'] > 2].shape[0]
+    print(f"{sum_of_news_sharing_a_segment / dat.shape[0]:.0%} of news are in the same decision segment!!!")
+    print(
+        f"{sum_of_news_sharing_a_segment} same segment news will be compressed to {count_of_segments_with_more_than_one_news} segments.." \
+        f"\nOn average {sum_of_news_sharing_a_segment/count_of_segments_with_more_than_one_news:.1f} of those news will be compressed to one segment")
+
+    dat = dat.groupby('stocks').apply(merge_overnight_news_for_stock)
+    print(f"After overnight merging {dat.shape[0]=}")
+    #! This is only temporary for debugging
+    dat.to_parquet(path="data/debugging_merged_overnight.parquet")
+
 if __name__ == "__main__":
-    print(f"Starting data_merger: {sys.argv}")
+    news_msg_source = config.data.news.cleaned
+    print(f"Starting data_merger: {sys.argv} using {news_msg_source=}")
     cmd = sys.argv[1]
     
     if cmd == "initial_merge":
-        news = import_and_preprocess_news(input_path=config.data.news.cleaned)
+        news = import_and_preprocess_news(input_path=news_msg_source)
         merge_news_with_price_ts(prices_path=config.data.iqfeed.minute.cleaned,
                                  news=news)
+        add_additional_indicators()
+
+    if cmd == 'merge_overnight_news':
+        merge_all_overnight_news()
 
     elif cmd == "merge_daily_indicators":
         merge_with_daily_indicators(daily_ts_dir_path=config.data.iqfeed.daily.cleaned,
@@ -148,11 +197,3 @@ if __name__ == "__main__":
     else:
         raise ValueError(f"Invalid input argument: {cmd}")
     print("Finished data_merger...") 
-
-
-# ------------ Inspecting staleness
-# dataset = pd.read_parquet(config.data.news.cleaned, columns=["time", "stocks", "staleness"])
-# print((dataset["staleness"] >= 1).sum())
-# print((dataset["staleness"] >= 0.995).sum())
-# import plotly.express as px
-# px.histogram(dataset["staleness"])

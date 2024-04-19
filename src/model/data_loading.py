@@ -27,6 +27,7 @@ class CustomDataset(Dataset):
             self.news_data = self.news_data.loc[self.news_data.split == self.stage, :]
         
         self.sample_weights = self.news_data.loc[:, 'sample_weights']
+        self.is_overnight_news = self.news_data.loc[:, 'is_overnight_news']
         self.news_data = self.news_data.loc[:, target_col_name]
         
         self.input_ids = input_ids
@@ -59,11 +60,14 @@ class CustomDataset(Dataset):
         sample_weights = torch.tensor(self.sample_weights.iloc[idx])
         input_ids = torch.from_numpy(self.input_ids.iloc[idx, :].values) 
         masks = torch.from_numpy(self.masks.iloc[idx, :].values) 
+        #! Change this to something like misc_indicators
+        is_overnight_news = torch.tensor(self.is_overnight_news.iloc[idx])
         
         sample = {'target': news_data, 
                   'input_id': input_ids, 
                   'mask': masks,
-                  'sample_weights': sample_weights}
+                  'sample_weights': sample_weights,
+                  'is_overnight_news': is_overnight_news}
         
         return sample
 

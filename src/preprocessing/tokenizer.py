@@ -14,7 +14,7 @@ from transformers import AutoTokenizer
 from tqdm import tqdm
 
 
-DATASET_PATH = config.data.news.stripped
+DATASET_PATH = config.data.merged
 
 def tokenize_input(text, tokenizer, max_encoding_length):
     # Truncation = True as bert can only take inputs of max 512 tokens.
@@ -60,6 +60,8 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--title_only", action='store_true')
     args = parser.parse_args()
+
+    print(f"Tokenizing the {DATASET_PATH=} using tokenizer {PREP_CONFIG.tokenizer=}")
 
     if args.title_only:
         text_col = "title" 

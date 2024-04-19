@@ -4,6 +4,9 @@
 # This is preferred over calculating the indicators for each timestamp/date, as it saves 
 # a lot of computations. \
 # It does require us to do a look-up, but so does the alternative.
+
+#! Check this module... overnight news.. which date is chosen... look-ahead bias?
+
 import concurrent.futures
 import os
 import argparse
