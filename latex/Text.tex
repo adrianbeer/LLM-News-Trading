@@ -41,7 +41,8 @@
 	\section{Related Work}
 	"Following the work of Luss and d’Aspremont (2015), Ding et al. (2015), Xu and Cohen (2018), Ke et al. (2019), we formulate the stock movement prediction as a binary classification task"
 	
-	\textbf{\cite{salbrechter_financial_2021-1}} investigates the impact of financial news on the daily returns of S\&P 500 constituents using a self-fine-tuned BERT model. 
+	
+	\textbf{\cite{salbrechter_financial_2021}} investigates the impact of financial news on the daily returns of S\&P 500 constituents using a self-fine-tuned BERT model. 
 	Their algorithm produce the CLS Token from FinNewsBert and a Topic vector from Text2Topic and feed these into a standard feed forward NN, which then produces probabilities for the 3 classes.
 	They find that the news is priced in within one day, but not instantaneously.
 	Their FinNewsBert model is retrained every two years in order to obtain a large time-frame for their out-of-sample study.
@@ -91,6 +92,22 @@
 	No buy or sell threshold, positive sentiment results in buy, negative sentiment in sell.
 	Using the individual sentiment scores of 58 news articles per day and some technical indicators as features for teh
 	Random Forest, they achieve a marginal outperformance, even though it doesn't seem to have been sustainable and statistically significant.
+	
+	\bigskip
+	\textbf{\cite{chen_stock_2021}} utilize news headlines from Bloomberg News to build a Fine-Tuned Contextualized-Embedding Recurrent Neural Network (FT-CE-RNN).
+	They constructed both a 2-class and a 3-class model using market adjusted return quantile to label the data.
+	They found that their 3-class model performed worse than their 2-class model.
+	Using various baseline models, including BERT and FinBert (cite yang).
+	They look at forecasting accuracies for different prediction score quantiles.
+	They also consider transaction costs of 4bps proportional to the daily turnover.
+	They found that FT-CE-RNN outperforms the other baseline models.
+	Using their model they backtested two different long-short strategies S1 and S2, where they buy the stocks with the strongest and sell the stocks with the weakest scores.
+	S1 is equal and S2 is score-weighted w.r.t. the investment amount.
+	Better Sharpe-ratios were achieved with S2.
+	
+	\cite{hu_listening_2019} train a neural network on chinese financial news using both title and content of about 425k news articles.
+	They use return quantiles of the data set to construct a label balanced data set for a 3-class classification task.
+	They achieve accuracies of about 48\% with their hybrid attention network with self-learning process (HAN-SPL).
 	
 	\subsection{Topic Modeling}
 	Salbrechter use Text2Topic, which is based on Word2Vec and cosine similarity.
