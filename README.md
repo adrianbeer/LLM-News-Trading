@@ -20,7 +20,7 @@ Download data using the modules in src.downloaders etc.
 1. python -m src.preprocessing.adding_jaccard
 1. python -m src.preprocessing.make_learning_dataset
 
-#! Tokenizer should have access only to `parsed_body` (mayber `merged_msg` in future?) of the **training** set.
+#! MLM Trainer should have access only to `parsed_body` (mayber `merged_msg` in future?) of the **training** set.
 
 # both of these require the GPU!
 1. python -m src.preprocessing.tokenizer

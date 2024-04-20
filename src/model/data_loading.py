@@ -193,11 +193,16 @@ def create_dataloader(tensors: List[Tensor],
 
 class MLMDataset(Dataset):
     def __init__(self, evaluate: bool = False):
-        self.ids = pd.read_parquet("data/news/input_ids.parquet")
-        self.masks = pd.read_parquet("data/news/masks.parquet")
+        learning_dataset = pd.read_parquet(config.data.learning_dataset, columns=['split'])
+        training_idx = learning_dataset.loc[learning_dataset['split'] == 'training', :].index
+
+        self.ids = pd.read_parquet(config.data.news.input_ids)
+        self.masks = pd.read_parquet(config.data.news.masks)
+        
         assert (self.ids.index == self.masks.index).all()
-        self.ids = self.ids.values
-        self.masks = self.masks.values
+        # For the MLM task, should only use samples from the training set
+        self.ids = self.ids.loc[training_idx, :].values
+        self.masks = self.masks.loc[training_idx, :].values
         
         N = len(self.ids)
         cutoff = int(N*0.1)

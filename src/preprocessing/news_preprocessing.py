@@ -44,14 +44,14 @@ def merge_news_sources():
 
     # Removing all news without intra_day time information, otherwise merging news in the same
     # over night decision segement doesn't work
-    is_intra_day_time_news = ~((ddf.news_time.dt.hour == 0) & (ddf.news_time.dt.minute == 0) & (ddf.news_time.dt.seconds == 0))
+    is_intra_day_time_news = ~((ddf.time.dt.hour == 0) & (ddf.time.dt.minute == 0) & (ddf.time.dt.seconds == 0))
     ddf = ddf.loc[is_intra_day_time_news, :].drop(columns=['intra_day_time'])
     
     # Set is_overnight_news to 1... These should not contain as much unprocessed information as real time news
     ddf["is_overnight_news"] = (
-        ddf.news_time.dt.hour >= 16) \
-        | (ddf.news_time.dt.hour <= 9) \
-        | ((ddf.news_time.dt.hour == 9) & ((ddf.news_time.dt.minute <= 30))
+        ddf.time.dt.hour >= 16) \
+        | (ddf.time.dt.hour <= 9) \
+        | ((ddf.time.dt.hour == 9) & ((ddf.time.dt.minute <= 30))
     )
 
     ## Remove rows for which no stock ticker is recorded
@@ -59,10 +59,12 @@ def merge_news_sources():
     return ddf
 
 def make_ticker_name_mapping():
-    all_tickers = set()
+    all_tickers = None
     for source in NEWS_SOURCES:
-        df = pd.read_parquet(NEWS_SOURCES[source], columns="stocks")
-        all_tickers = all_tickers | df.stocks.unique()
+        df = pd.read_parquet(NEWS_SOURCES[source], columns=["stocks"])
+        if all_tickers is None: 
+            all_tickers = df.stocks.drop_duplicates()
+        all_tickers = pd.concat([all_tickers, df.stocks.drop_duplicates()], axis=0).drop_duplicates()
 
     # Tickers sometimes have a dollar sign in front of them.
     # This is common practice to indicate that the acronym refers to a stock ticker.
