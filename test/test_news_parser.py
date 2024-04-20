@@ -1,7 +1,7 @@
 from datetime import timedelta
 import pandas as pd
 import pytest
-from src.preprocessing import news_parser
+from src.utils.preprocessing import news_preprocessing
 
 contact_info_test_sentences = [
     ("Hey. Ho. Now comes an E-Mail: www.website.com. Now the Text continues.", 
@@ -19,7 +19,7 @@ contact_info_test_sentences = [
 ]
 @pytest.mark.parametrize("text, output", contact_info_test_sentences)
 def test_remove_contact_info_sentences(text, output):
-    body = news_parser.remove_contact_info_sentences(text)
+    body = news_preprocessing.remove_contact_info_sentences(text)
     assert body == output
     
     
@@ -32,7 +32,7 @@ company_name_tests = [
 @pytest.mark.parametrize("company_name, target_short_name", company_name_tests)
 def test_get_company_abbreviation(company_name, target_short_name):
     company_endings = pd.read_table("data_shared/corporation_endings.txt").iloc[:, 0]
-    short_name = news_parser.get_company_abbreviation(company_name, company_endings)    
+    short_name = news_preprocessing.get_company_abbreviation(company_name, company_endings)    
     assert short_name == target_short_name
 
 
@@ -41,7 +41,7 @@ def test_parser():
     company_name="Cambium Networks Corporation"
     short_name="Cambium Networks"
     ticker=None
-    body = news_parser.remove_company_specifics(body=text, 
+    body = news_preprocessing.remove_company_specifics(body=text, 
                                                 company_name=company_name, 
                                                 short_name=short_name, 
                                                 ticker=ticker)
@@ -52,7 +52,7 @@ def test_ticker_remover():
     company_name=None
     short_name=None
     ticker="NVR"
-    body = news_parser.remove_company_specifics(body=text, 
+    body = news_preprocessing.remove_company_specifics(body=text, 
                                                 company_name=company_name, 
                                                 short_name=short_name, 
                                                 ticker=ticker)
@@ -72,9 +72,9 @@ def test_filter_body():
         "company_name":"comScore, Inc.", 
         "short_name":"comScore"
     })
-    body = news_parser.filter_body(row)
+    body = news_preprocessing.filter_body(row)
     assert body == '“We\'ve improved our core car insurance apps to bring even more useful tools to'
 
 def test_is_feasible_date():
     d = timedelta(hours=1)
-    assert news_parser.is_feasible_date(d) is False 
+    assert news_preprocessing.is_feasible_date(d) is False 

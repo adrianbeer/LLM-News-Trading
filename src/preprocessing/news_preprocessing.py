@@ -2,17 +2,18 @@ import logging
 import os
 import re
 import sys
-
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
-from src.preprocessing.news_parser import get_company_abbreviation, yahoo_get_wrapper
+from src.utils.preprocessing.news_preprocessing import (get_company_abbreviation, 
+                                           yahoo_get_wrapper, 
+                                           filter_body, 
+                                           infer_author,
+                                           remove_company_specifics)
 from src.config import config
-from src.preprocessing.news_parser import filter_body, infer_author
 from src.utils.dataframes import block_apply_factory, parallelize_dataframe
 from src.utils.time import convert_timezone
 import argparse
-from src.preprocessing.news_parser import remove_company_specifics
 
 logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 tqdm.pandas()
@@ -42,6 +43,8 @@ def merge_news_sources():
     print(f"{dfs[0].shape[0]=}(bzg) + {dfs[1].shape[0]=} (fnspid) = {ddf.shape[0]=}")
     ddf = ddf.reset_index(drop=True)
 
+    ddf.loc[:, 'time'] = ddf['time'].progress_map(lambda x: convert_timezone(pd.to_datetime(x)))
+    
     # Removing all news without intra_day time information, otherwise merging news in the same
     # over night decision segement doesn't work
     is_intra_day_time_news = ~((ddf.time.dt.hour == 0) & (ddf.time.dt.minute == 0) & (ddf.time.dt.seconds == 0))
@@ -147,7 +150,6 @@ def preprocess_news(ddf):
     print(f"From {ticker_name_mapper.shape[0]} to {ticker_name_mapper_reduced.shape[0]} tickers (reduced)")
 
     ## Parsing News Bodies
-    ddf["time"] = ddf["time"].progress_map(lambda x: convert_timezone(pd.to_datetime(x)))
     ddf["parsed_body"] = parallelize_dataframe(ddf, block_apply_factory(filter_body, axis=1), n_cores=os.cpu_count())        
     
     return ddf, ticker_name_mapper_reduced

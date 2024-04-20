@@ -7,7 +7,7 @@ import logging
 import sys
 logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 from src.utils.dataframes import parallelize_dataframe, block_apply_factory
-from src.preprocessing.news_parser import body_formatter
+from src.preprocessing.news_preprocessing import body_formatter
 
 '''
 ## Grobes HTML-Parsing
