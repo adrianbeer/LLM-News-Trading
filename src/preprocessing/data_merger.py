@@ -32,7 +32,14 @@ def consolidate_tickers(tickers: pd.Series, ticker_mapper):
 
 
 def import_and_preprocess_news(input_path):
-    news = pd.read_parquet(path=input_path, columns=["time", "stocks", "parsed_body", "staleness"])
+    #! what is going on here?
+    try:
+        news = pd.read_parquet(path=input_path, columns=["time", "stocks", "parsed_body"])
+    except Exception as e:
+        print(e)
+        print("continuing.")
+        news = pd.read_parquet(path=input_path)
+        news = news[["time", "stocks", "parsed_body"]]
 
     # (old comment?) Necessary to get `us` units, otherwise pandas will always convert back to `ns` for some reason.
     news["time"] = news.time.dt.tz_convert(eastern).astype('datetime64[ns, US/Eastern]')
@@ -128,12 +135,11 @@ def add_additional_indicators():
     dat: pd.DataFrame = pd.read_parquet(path=config.data.merged)
 
     # Add overnight news tag
-    dat["has_intraday_time"] = ~((dat.news_time.dt.hour == 0) & (dat.news_time.dt.minute == 0) & (dat.news_time.dt.seconds == 0))
     # Set is_overnight_news to 1... These should not contain as much unprocessed information as real time news
     dat["is_overnight_news"] = (
         dat.news_time.dt.hour >= 16) \
-        | (dat.news_time.dt.hour <= 9) \
-        | ((dat.news_time.dt.hour == 9) & ((dat.news_time.dt.minute <= 30))
+        | (dat.news_time.dt.hour < 9) \
+        | ((dat.news_time.dt.hour == 9) & ((dat.news_time.dt.minute < 30))
     )
     
     dat.to_parquet(config.data.merged)
@@ -202,7 +208,7 @@ if __name__ == "__main__":
                                  news=news)
         add_additional_indicators()
 
-    if cmd == 'merge_overnight_news':
+    elif cmd == 'merge_overnight_news':
         df = merge_all_overnight_news()
         #! This is only temporary for debugging
         df.to_parquet(path="data/debugging_merged_overnight.parquet")

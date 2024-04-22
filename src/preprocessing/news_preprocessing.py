@@ -43,11 +43,11 @@ def merge_news_sources():
     print(f"{dfs[0].shape[0]=}(bzg) + {dfs[1].shape[0]=} (fnspid) = {ddf.shape[0]=}")
     ddf = ddf.reset_index(drop=True)
 
-    ddf.loc[:, 'time'] = ddf['time'].progress_map(lambda x: convert_timezone(pd.to_datetime(x)))
+    ddf['time'] = ddf['time'].progress_map(lambda x: convert_timezone(pd.to_datetime(x)))
     
     # Removing all news without intra_day time information, otherwise merging news in the same
     # over night decision segement doesn't work
-    is_intra_day_time_news = ~((ddf.time.dt.hour == 0) & (ddf.time.dt.minute == 0) & (ddf.time.dt.seconds == 0))
+    is_intra_day_time_news = ~((ddf.time.dt.hour == 0) & (ddf.time.dt.minute == 0) & (ddf.time.dt.second == 0))
     ddf = ddf.loc[is_intra_day_time_news, :].drop(columns=['intra_day_time'])
     
     # Set is_overnight_news to 1... These should not contain as much unprocessed information as real time news
@@ -92,6 +92,7 @@ def make_ticker_name_mapping():
     all_tickers.drop_duplicates(inplace=True)
 
     ### Full-Name-Discovery
+    #! This  should not be executed on a cluster because of missing internet connection...
     company_names = all_tickers.progress_map(lambda x: yahoo_get_wrapper(x))
     all_mapper = pd.concat([all_tickers, company_names], axis=1)
     all_mapper.columns = ["ticker", "company_names"]
