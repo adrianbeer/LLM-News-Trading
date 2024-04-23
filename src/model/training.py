@@ -87,6 +87,7 @@ def train_func(config: dict = None):
         callbacks=callbacks,
         #accumulate_grad_batches=1,
         # precision=16,
+        val_check_interval=0.33,
         accelerator="gpu" if not (config["fast_dev_run"] or config["cpu"]) else "cpu", 
         devices=1,
         logger=loggers,

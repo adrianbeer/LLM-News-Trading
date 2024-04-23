@@ -9,13 +9,18 @@
 Download data using the modules in src.downloaders etc.
 
 ## 2. Preprocessing Pipeline
+ticker_name_mapping requires an internet connection!!
 1. python -m src.preprocessing.news_preprocessing --ticker_name_mapping
 1. python -m src.preprocessing.news_preprocessing --process_body
-1. python -m src.preprocessing.news_preprocessing --stripper
+
 1. <!-- python -m src.preprocessing.staleness --generate_cls_tokens --batchsize <batchsize> -->
 1. <!-- python -m src.preprocessing.staleness --calculate_staleness -->
 1. python -m src.preprocessing.data_merger initial_merge
+1. python -m src.preprocessing.data_merger merge_overnight_news
 1. python -m src.preprocessing.data_merger merge_daily_indicators
+
+IF anything stripper should be applied AFTER initial merge... otherwise we would have to merge again... 
+1. python -m src.preprocessing.news_preprocessing --stripper
 
 1. python -m src.preprocessing.adding_jaccard
 1. python -m src.preprocessing.make_learning_dataset

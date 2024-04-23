@@ -52,7 +52,7 @@ class BERTClassifier(pl.LightningModule):
         outputs = self.bert(input_ids=input_ids, attention_mask=masks)
         pooled_output = outputs.pooler_output
         x = self.dropout(pooled_output)
-        ff_inputs = torch.cat((x, indicators))
+        ff_inputs = x#torch.cat((x, indicators), dim=0)
         logits = self.ff_layer(ff_inputs)
         return logits
 

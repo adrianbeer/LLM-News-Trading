@@ -60,14 +60,15 @@ class CustomDataset(Dataset):
         sample_weights = torch.tensor(self.sample_weights.iloc[idx])
         input_ids = torch.from_numpy(self.input_ids.iloc[idx, :].values) 
         masks = torch.from_numpy(self.masks.iloc[idx, :].values) 
-        #! Change this to something like misc_indicators
-        is_overnight_news = torch.tensor(self.is_overnight_news.iloc[idx])
+
+        is_overnight_news = torch.tensor(int(self.is_overnight_news.iloc[idx]))
+        # indicators = torch.append ... [is_overnight_news]
         
         sample = {'target': news_data, 
                   'input_id': input_ids, 
                   'mask': masks,
                   'sample_weights': sample_weights,
-                  'is_overnight_news': is_overnight_news}
+                  'indicators': is_overnight_news}
         
         return sample
 
@@ -81,7 +82,8 @@ class CustomDataModule(pl.LightningDataModule):
                  target_col_name: str, 
                  news_data_idx: int = None):
         super().__init__()
-        self.news_data = pd.read_parquet(news_data_path, columns=[target_col_name, 'sample_weights', 'split'])
+        indicators = ['is_overnight_news']
+        self.news_data = pd.read_parquet(news_data_path, columns=[target_col_name, 'sample_weights', 'split'] + indicators)
         
         self.input_ids = pd.read_parquet(input_ids_path)
         self.masks = pd.read_parquet(masks_path)

@@ -34,12 +34,12 @@ def consolidate_tickers(tickers: pd.Series, ticker_mapper):
 def import_and_preprocess_news(input_path):
     #! what is going on here?
     try:
-        news = pd.read_parquet(path=input_path, columns=["time", "stocks", "parsed_body"])
+        news = pd.read_parquet(path=input_path, columns=["time", "title", "stocks", "parsed_body"])
     except Exception as e:
         print(e)
         print("continuing.")
         news = pd.read_parquet(path=input_path)
-        news = news[["time", "stocks", "parsed_body"]]
+        news = news[["time", "title", "stocks", "parsed_body"]]
 
     # (old comment?) Necessary to get `us` units, otherwise pandas will always convert back to `ns` for some reason.
     news["time"] = news.time.dt.tz_convert(eastern).astype('datetime64[ns, US/Eastern]')
@@ -91,7 +91,7 @@ def merge_news_with_price_ts(prices_path,
         f"NaNs should occurr, when we don't have a price time series when news occurred.")
 
     news.dropna(inplace=True)
-    news.to_parquet(config.data.merged)
+    return news
 
 
 def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
@@ -130,9 +130,8 @@ def merge_with_daily_indicators(daily_ts_dir_path, merged_path):
 
 
 
-def add_additional_indicators():
+def add_additional_indicators(dat):
     print("Adding additional indicators...")
-    dat: pd.DataFrame = pd.read_parquet(path=config.data.merged)
 
     # Add overnight news tag
     # Set is_overnight_news to 1... These should not contain as much unprocessed information as real time news
@@ -142,7 +141,7 @@ def add_additional_indicators():
         | ((dat.news_time.dt.hour == 9) & ((dat.news_time.dt.minute < 30))
     )
     
-    dat.to_parquet(config.data.merged)
+    return dat
 
 
 def _same_night_news_jaccard_filter(ddf):
@@ -150,10 +149,12 @@ def _same_night_news_jaccard_filter(ddf):
     for i in list(range(ddf.shape[0]))[:-1]:
         for j in list(range(ddf.shape[0]))[i+1:]:
             jaccard_body = jaccard_similarity(ddf.iloc[i]['parsed_body'], ddf.iloc[j]['parsed_body'])
-            if jaccard_body > 0.9:
-                drop_idcs.append(ddf.iloc[i].index)
+            jaccard_title = jaccard_similarity(ddf.iloc[i]['title'], ddf.iloc[j]['title'])
+            if max([jaccard_body, jaccard_title]) > 0.90:
+                drop_idcs.append(ddf.index[i])
     ddf = ddf.drop(drop_idcs)
-    print(f"Dropping {len(drop_idcs)=} news via same_night_news_jaccard_filter function.")
+    # if len(drop_idcs) > 0:
+    #    print(f"Dropping {len(drop_idcs)=} news via same_night_news_jaccard_filter function.")
     return ddf
 
 
@@ -165,24 +166,23 @@ def merge_same_night_news(df: pd.DataFrame) -> pd.Series:
     else:
         # Take the row/ time of the latest news in that overnight segment as the new row template
         #! If we have importance/ relevance tags on the news we might want to prioritice e.g. ad-hocs here 
-        df.sort_values('news_time', ascending=False).iloc[0]
+        df = df.sort_values('news_time', ascending=False)
         assert df.iloc[0]['news_time'] >= df.iloc[1]['news_time']
         df = _same_night_news_jaccard_filter(df)
         
         merged_row = df.iloc[0]
         merged_row['title'] = ' '.join(df['title'].tolist())
         merged_row['parsed_body'] = ' '.join(df['parsed_body'].tolist())
-        #! merge title and parsed body here...
+        #! merging title and parsed body here...
         merged_row['parsed_body'] = ' '.join([merged_row['title'], merged_row['parsed_body']])
         
         return merged_row
 
 def merge_overnight_news_for_stock(df):
-    df = df.groupby('est_entry_time').apply(merge_same_night_news)
+    df = df.groupby('est_entry_time', as_index=False).apply(merge_same_night_news)
     return df
 
-def merge_all_overnight_news():
-    dat: pd.DataFrame = pd.read_parquet(path=config.data.merged)
+def merge_all_overnight_news(dat: pd.DataFrame):
     print(f"Before overnight merging {dat.shape[0]=}")
     
     tmp = dat.loc[:, ['est_entry_time', 'r', 'stocks']].groupby(['stocks', 'est_entry_time']).count()
@@ -193,25 +193,29 @@ def merge_all_overnight_news():
         f"{sum_of_news_sharing_a_segment} same segment news will be compressed to {count_of_segments_with_more_than_one_news} segments.." \
         f"\nOn average {sum_of_news_sharing_a_segment/count_of_segments_with_more_than_one_news:.1f} of those news will be compressed to one segment")
 
-    dat = dat.groupby('stocks').apply(merge_overnight_news_for_stock)
+    index_name = dat.index.name
+    dat = dat.reset_index().groupby('stocks', as_index=False).apply(merge_overnight_news_for_stock)
+    dat.set_index(index_name, inplace=True)
     print(f"After overnight merging {dat.shape[0]=}")
     return dat
 
 if __name__ == "__main__":
     news_msg_source = config.data.news.cleaned
-    print(f"Starting data_merger: {sys.argv} using {news_msg_source=}")
     cmd = sys.argv[1]
     
     if cmd == "initial_merge":
+        print(f"Starting data_merger: {sys.argv} using {news_msg_source=}")
         news = import_and_preprocess_news(input_path=news_msg_source)
-        merge_news_with_price_ts(prices_path=config.data.iqfeed.minute.cleaned,
-                                 news=news)
-        add_additional_indicators()
+        news = merge_news_with_price_ts(prices_path=config.data.iqfeed.minute.cleaned,
+                                        news=news)
+        dat = news
+        dat = add_additional_indicators(dat)
+        dat.to_parquet(config.data.merged)
 
     elif cmd == 'merge_overnight_news':
-        df = merge_all_overnight_news()
-        #! This is only temporary for debugging
-        df.to_parquet(path="data/debugging_merged_overnight.parquet")
+        df = pd.read_parquet(config.data.merged)
+        df = merge_all_overnight_news(df)
+        df.to_parquet(path=config.data.merged)
         
     elif cmd == "merge_daily_indicators":
         merge_with_daily_indicators(daily_ts_dir_path=config.data.iqfeed.daily.cleaned,

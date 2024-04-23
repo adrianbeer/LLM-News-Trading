@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from src.config import config
 from src.utils.strings import jaccard_similarity
+
+
 dataset: pd.DataFrame = pd.read_parquet(path=config.data.merged)
 
 # To determine the freshness of news, I compare the similarity of each news article with all articles published in the previous three days.
@@ -23,8 +25,12 @@ for ticker in tqdm(list(set(dataset.stocks)), desc="stocks"):
             ticker_news.at[time, "jaccard"] = 0
         else:
             current_str = orig_sort_ticker_news.at[idx, 'parsed_body']
-            previous_news = previous_news
+            # try:
             jaccards = previous_news.apply(lambda x: jaccard_similarity(current_str, x))
+            # except ZeroDivisionError as e:
+            #     print(e)
+            #     print(f"{current_str=}")
+            #     print(f"{previous_news=}")
             ticker_news.loc[ticker_news[original_index_name] == idx, "jaccard"] = jaccards.max()
             
     ticker_news.set_index(original_index_name, inplace=True)

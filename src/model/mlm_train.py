@@ -1,6 +1,7 @@
 from transformers import RobertaConfig, RobertaModel, RobertaForMaskedLM, RobertaTokenizerFast
 from transformers import DataCollatorForLanguageModeling
 from transformers import Trainer, TrainingArguments
+from src.model.data_loading import MLMDataset
 
 configuration = RobertaConfig(vocab_size = 30000,
                               hidden_size = 256,
@@ -38,12 +39,15 @@ training_args = TrainingArguments(
     output_dir="data/models/roberta_mlm",
     logging_dir='tb_logs/mlm',
     evaluation_strategy="epoch",
-    learning_rate=2e-5,
-    num_train_epochs=3,
+    learning_rate=1e-4,
+    adam_epsilon=1e-6,
+    max_steps=500000,
+    warmup_steps=10000,
     weight_decay=0.01,
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=32,
+    save_total_limit=10,
 )
-from src.model.data_loading import MLMDataset
-
 
 trainer = Trainer(
     model=model,
@@ -54,5 +58,3 @@ trainer = Trainer(
 )
 
 trainer.train()
-
-#! Fix checkpoints... Waaay too many checkpoints before executing module again
