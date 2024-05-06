@@ -1,4 +1,4 @@
-# PROJECT B U G A T T I
+# NewsTrading using LLMs
 
 ## Interesting Links:
 - https://stackoverflow.com/questions/25665114/understanding-interactive-brokers-tick-events
